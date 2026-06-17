@@ -1,0 +1,271 @@
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px max(16px, calc((100vw - 1120px) / 2));
+  background: rgba(243, 247, 251, 0.96);
+  border-bottom: 1px solid rgba(216, 226, 238, 0.9);
+  backdrop-filter: blur(14px);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: max-content;
+}
+
+.brand-mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  color: #fff;
+  background: var(--check-primary);
+  border-radius: 10px;
+  box-shadow: 0 10px 22px rgba(30, 58, 95, 0.20);
+  font-weight: 950;
+}
+
+.brand strong,
+.brand small {
+  display: block;
+}
+
+.brand strong {
+  color: var(--check-primary);
+  font-size: 1.02rem;
+  line-height: 1.15;
+}
+
+.brand small {
+  color: var(--check-muted);
+  font-size: 0.74rem;
+  line-height: 1.2;
+}
+
+.site-nav,
+.site-footer nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--check-muted);
+  font-size: 0.94rem;
+}
+
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 7px 12px;
+  color: var(--check-primary);
+  background: #fff;
+  border: 1px solid var(--check-border);
+  border-radius: 999px;
+  box-shadow: 0 1px 0 rgba(17, 24, 39, 0.04);
+  font-weight: 850;
+}
+
+.site-nav a:hover {
+  color: var(--check-blue);
+  border-color: rgba(37, 99, 235, 0.32);
+}
+
+.hero-band {
+  padding: 48px 0 58px;
+  background: var(--check-bg);
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.92fr) minmax(360px, 1.08fr);
+  gap: 30px;
+  align-items: center;
+}
+
+.hero-copy {
+  min-width: 0;
+}
+
+.hero-title {
+  max-width: 12.4em;
+  margin-bottom: 18px;
+  color: var(--check-primary);
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  line-height: 1.08;
+  letter-spacing: -0.048em;
+}
+
+.hero-title span {
+  color: var(--check-blue);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.hero-panel {
+  min-width: 0;
+}
+
+.content-band {
+  padding: 58px 0;
+  background: #fff;
+  border-top: 1px solid rgba(216, 226, 238, 0.7);
+}
+
+.content-band.muted {
+  background: var(--check-surface-soft);
+}
+
+.content-band.compact {
+  padding: 44px 0;
+}
+
+.section-intro {
+  max-width: 780px;
+  margin-bottom: 26px;
+}
+
+.section-intro.center {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.section-intro h2,
+.page-shell h1 {
+  margin-bottom: 10px;
+  color: var(--check-primary);
+  font-size: clamp(1.72rem, 3vw, 2.4rem);
+  line-height: 1.25;
+  letter-spacing: -0.035em;
+}
+
+.section-intro p {
+  color: var(--check-muted);
+}
+
+.two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.compact-gap {
+  gap: 18px;
+}
+
+.three-column {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.page-shell {
+  width: min(880px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 58px 0 74px;
+}
+
+.page-card {
+  padding: 28px;
+  background: var(--check-surface);
+  border: 1px solid var(--check-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--check-shadow-soft);
+}
+
+.page-card + .page-card {
+  margin-top: 18px;
+}
+
+.site-footer {
+  padding: 34px 0;
+  color: #cbd5e1;
+  background: #101820;
+  border-top: 1px solid #26313d;
+}
+
+.site-footer strong,
+.site-footer a {
+  color: #f8fafc;
+}
+
+.site-footer p {
+  margin-bottom: 0;
+}
+
+.footer-grid {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.footer-note {
+  max-width: 660px;
+}
+
+@media (max-width: 940px) {
+  .hero-grid,
+  .two-column,
+  .three-column {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-band {
+    padding-top: 34px;
+  }
+}
+
+@media (max-width: 720px) {
+  body {
+    font-size: 15px;
+  }
+
+  .site-header {
+    position: static;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .site-nav {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+
+  .site-nav a {
+    flex: 0 0 auto;
+  }
+
+  .hero-title {
+    font-size: clamp(2.1rem, 10vw, 3rem);
+  }
+
+  .content-band {
+    padding: 42px 0;
+  }
+
+  .page-card {
+    padding: 22px;
+    border-radius: 22px;
+  }
+
+  .footer-grid {
+    flex-direction: column;
+  }
+}

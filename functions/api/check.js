@@ -85,14 +85,13 @@ export async function onRequestPost({ request, env }) {
   }
 }
 
-async 
 function normalizeMode(value) {
   const mode = String(value || 'full').trim();
   const allowed = ['status', 'validate', 'mail-order', 'compare', 'checklist', 'full'];
   return allowed.includes(mode) ? mode : 'full';
 }
 
-function safeJson(request) {
+async function safeJson(request) {
   try {
     return await request.json();
   } catch {

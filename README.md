@@ -4,7 +4,16 @@
 
 ## 구성
 
-- 정적 페이지: `index.html`, `about.html`, `privacy.html`, `disclaimer.html`, `data-sources.html`, `contact.html`
+- 홈: `index.html`
+  - 한눈계산과 유사한 카드형 주요 기능 선택 UI
+  - 우측 사업자 정보 미리보기 화면 제거
+- 기능 페이지
+  - `tools/business-status.html`: 사업자등록 상태 조회
+  - `tools/business-validate.html`: 사업자 진위확인
+  - `tools/mail-order.html`: 통신판매업 신고 조회
+  - `tools/store-compare.html`: 쇼핑몰 하단 정보 비교
+  - `tools/pre-payment-checklist.html`: 거래 전 체크리스트
+- 기본 페이지: `about.html`, `privacy.html`, `disclaimer.html`, `data-sources.html`, `contact.html`, `404.html`
 - 스타일: `assets/css/base.css`, `assets/css/layout.css`, `assets/css/components.css`
 - 프론트 기능: `assets/js/app.js`
 - API 라우트: `functions/api/check.js`

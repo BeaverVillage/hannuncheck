@@ -24,6 +24,7 @@ export async function onRequestPost({ request, env }) {
     const startDate = onlyDigits(input.startDate).slice(0, 8);
     const permitNumber = cleanText(input.permitNumber, 60);
     const storeUrl = cleanText(input.storeUrl, 180);
+    const mode = normalizeMode(input.mode);
 
     if (!/^\d{10}$/.test(businessNumber)) {
       return json({ message: '사업자등록번호는 숫자 10자리로 입력해야 합니다.' }, { status: 400 });
@@ -33,12 +34,20 @@ export async function onRequestPost({ request, env }) {
     const ntsKey = getEnv(env, ['NTS_SERVICE_KEY', 'NTS_API_KEY']) || dataKey;
     const ftcKey = getEnv(env, ['FTC_SERVICE_KEY', 'FTC_API_KEY']) || dataKey;
 
+    const wantsStatus = ['status', 'validate', 'compare', 'checklist', 'full'].includes(mode);
+    const wantsValidate = ['validate', 'compare', 'full'].includes(mode) && startDate && representativeName;
+    const wantsFtc = ['mail-order', 'compare', 'checklist', 'full'].includes(mode);
+
     const [statusResult, validateResult, ftcResult] = await Promise.all([
-      ntsKey ? fetchNtsStatus(ntsKey, businessNumber) : missingApi('국세청 API 키가 설정되지 않았습니다.'),
-      ntsKey && startDate && representativeName
-        ? fetchNtsValidate(ntsKey, { businessNumber, startDate, representativeName, storeName })
-        : { checked: false, summary: '개업일자와 대표자명을 입력하면 진위확인을 함께 시도합니다.' },
-      ftcKey ? fetchFtcDetail(ftcKey, { businessNumber, permitNumber }) : missingApi('공정위 API 키가 설정되지 않았습니다.')
+      wantsStatus
+        ? (ntsKey ? fetchNtsStatus(ntsKey, businessNumber) : missingApi('국세청 API 키가 설정되지 않았습니다.'))
+        : { skipped: true, summary: '이번 기능에서는 사업자등록 상태조회를 생략했습니다.' },
+      wantsValidate
+        ? (ntsKey ? fetchNtsValidate(ntsKey, { businessNumber, startDate, representativeName, storeName }) : missingApi('국세청 API 키가 설정되지 않았습니다.'))
+        : { checked: false, summary: '대표자명과 개업일자를 입력하는 기능에서 진위확인을 시도합니다.' },
+      wantsFtc
+        ? (ftcKey ? fetchFtcDetail(ftcKey, { businessNumber, permitNumber }) : missingApi('공정위 API 키가 설정되지 않았습니다.'))
+        : { skipped: true, summary: '이번 기능에서는 통신판매업 조회를 생략했습니다.' }
     ]);
 
     const normalizedStatus = normalizeNtsStatus(statusResult, businessNumber);
@@ -58,6 +67,7 @@ export async function onRequestPost({ request, env }) {
 
     return json({
       ok: true,
+      mode,
       checkedAt: new Date().toISOString(),
       businessNumberMasked: maskBusinessNumber(businessNumber),
       businessStatus: normalizedStatus,
@@ -75,7 +85,14 @@ export async function onRequestPost({ request, env }) {
   }
 }
 
-async function safeJson(request) {
+async 
+function normalizeMode(value) {
+  const mode = String(value || 'full').trim();
+  const allowed = ['status', 'validate', 'mail-order', 'compare', 'checklist', 'full'];
+  return allowed.includes(mode) ? mode : 'full';
+}
+
+function safeJson(request) {
   try {
     return await request.json();
   } catch {
@@ -165,6 +182,9 @@ async function fetchFtcDetail(key, { businessNumber, permitNumber }) {
 }
 
 function normalizeNtsStatus(result, businessNumber) {
+  if (result?.skipped) {
+    return { tone: 'neutral', label: '생략', summary: result.summary || '사업자등록 상태조회를 생략했습니다.' };
+  }
   if (result?.apiMissing) {
     return {
       tone: 'warning',
@@ -220,6 +240,9 @@ function normalizeNtsValidate(result) {
 }
 
 function normalizeFtc(result) {
+  if (result?.skipped) {
+    return { found: false, count: 0, summary: result.summary || '통신판매업 조회를 생략했습니다.' };
+  }
   if (result?.apiMissing) {
     return {
       found: false,

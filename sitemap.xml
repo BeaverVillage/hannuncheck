@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://hannuncheck.com/</loc></url>
+  <url><loc>https://hannuncheck.com/tools/business-status.html</loc></url>
+  <url><loc>https://hannuncheck.com/tools/business-validate.html</loc></url>
+  <url><loc>https://hannuncheck.com/tools/mail-order.html</loc></url>
+  <url><loc>https://hannuncheck.com/tools/store-compare.html</loc></url>
+  <url><loc>https://hannuncheck.com/tools/pre-payment-checklist.html</loc></url>
   <url><loc>https://hannuncheck.com/about.html</loc></url>
   <url><loc>https://hannuncheck.com/privacy.html</loc></url>
   <url><loc>https://hannuncheck.com/disclaimer.html</loc></url>

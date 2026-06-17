@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1e3a5f">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <meta name="description" content="사업자등록번호로 계속사업자, 휴업자, 폐업자 여부와 과세유형을 확인하는 한눈체크 기능입니다.">
+    <title>사업자등록 상태 조회 - 한눈체크</title>
+    <link rel="canonical" href="https://hannuncheck.com/tools/business-status.html">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ko_KR">
+    <meta property="og:site_name" content="한눈체크">
+    <meta property="og:title" content="사업자등록 상태 조회 - 한눈체크">
+    <meta property="og:description" content="사업자등록번호로 계속사업자, 휴업자, 폐업자 여부와 과세유형을 확인하는 한눈체크 기능입니다.">
+    <meta property="og:url" content="https://hannuncheck.com/tools/business-status.html">
+    <link rel="stylesheet" href="/assets/css/base.css">
+    <link rel="stylesheet" href="/assets/css/layout.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/index.html" aria-label="한눈체크 홈">
+        <span class="brand-mark">한</span>
+        <span>
+          <strong>한눈체크</strong>
+          <small>사업자 정보 확인</small>
+        </span>
+      </a>
+      <nav class="site-nav" aria-label="주요 메뉴">
+        <a href="/index.html#features">주요 기능</a>
+        <a href="/index.html#how-to">사용 방법</a>
+        <a href="/index.html#safe-position">운영 원칙</a>
+        <a href="/index.html#faq">질문</a>
+        <a href="/about.html">소개</a>
+      </nav>
+    </header>
+    <main>
+      <section class="tool-hero-band">
+        <div class="container">
+          <nav class="breadcrumb" aria-label="현재 위치"><a href="/index.html">홈</a><span>/</span><span>사업자등록 상태 조회</span></nav>
+          <div class="section-intro">
+            <p class="eyebrow">Business status</p>
+            <h1>사업자등록 상태를 확인하세요</h1>
+            <p>사업자등록번호 10자리로 현재 사업자등록 상태와 과세유형을 확인합니다.</p>
+          </div>
+        </div>
+      </section>
+      <section class="content-band tool-content-band">
+        <div class="container tool-layout">
+          <article class="check-console tool-console">
+            <div class="console-header">
+              <span class="console-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+              <strong>사업자등록 상태 조회</strong>
+            </div>
+              <form class="check-form" id="business-check-form" data-scope="status" data-submit-label="사업자등록 상태 조회하기" data-loading-label="상태 조회 중입니다..." novalidate>
+                <div class="form-row">
+                  <label for="business-number">사업자등록번호 <span>필수</span></label>
+                  <input id="business-number" name="businessNumber" type="text" inputmode="numeric" autocomplete="off" placeholder="123-45-67890" maxlength="12" required>
+                  <small>숫자 10자리 또는 하이픈 포함 형식으로 입력하세요.</small>
+                </div>
+                <button class="submit-button" id="check-submit" type="submit">사업자등록 상태 조회하기</button>
+                <p class="preview-note">계속사업자, 휴업자, 폐업자 여부와 과세유형을 확인합니다. 이 결과는 거래 안전성을 보장하지 않습니다.</p>
+              </form>
+              <div class="result-panel" id="result-panel" hidden aria-live="polite">
+                <div class="result-header">
+                  <div>
+                    <p class="eyebrow">Check result</p>
+                    <strong class="result-title">조회 결과</strong>
+                  </div>
+                  <span class="status-pill neutral" id="result-updated">대기 중</span>
+                </div>
+                <div class="message-box" id="result-message" hidden></div>
+                <div class="status-stack" id="status-stack">
+                  <article class="status-card skeleton-card">
+                    <span class="status-icon neutral" aria-hidden="true">i</span>
+                    <span><strong>정보를 입력하고 조회하세요</strong><small>조회 결과가 이곳에 표시됩니다.</small></span>
+                    <em class="status-pill neutral">대기</em>
+                  </article>
+                </div>
+                <div class="comparison-box" id="comparison-box" hidden>
+                  <h3>입력정보 비교</h3>
+                  <div class="result-list" id="comparison-list"></div>
+                </div>
+                <div class="checklist-box" id="dynamic-checklist" hidden>
+                  <h3>거래 전 체크리스트</h3>
+                  <ul class="checklist" id="checklist-list"></ul>
+                </div>
+                <p class="legal-note">이 결과는 공식 등록정보 조회 및 입력값 비교를 위한 참고자료입니다. 사기 여부 또는 거래 안전성을 판정하거나 보장하지 않습니다.</p>
+              </div>
+          </article>
+          <aside class="tool-sidebar">
+            <article class="notice-card blue">
+              <p class="eyebrow">Guide</p>
+              <h2>사업자등록 상태란?</h2>
+              <p>국세청 등록정보 기준으로 사업자가 계속 운영 중인지, 휴업 또는 폐업 상태인지 확인하는 항목입니다.</p>
+            </article>
+            <article class="page-card">
+              <h2>확인할 항목</h2>
+              <ul class="checklist"><li>사업자등록번호는 숫자 10자리로 입력합니다.</li>
+<li>결과의 계속사업자, 휴업자, 폐업자 여부를 확인합니다.</li>
+<li>폐업 또는 휴업으로 보이면 거래 전 추가 확인이 필요합니다.</li></ul>
+            </article>
+            <article class="notice-card warning">
+              <h2>주의</h2>
+              <p>한눈체크는 등록정보 확인 도구입니다. 조회 결과가 정상이어도 거래 안전을 보장하지 않습니다.</p>
+            </article>
+          </aside>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div class="footer-note">
+          <strong>한눈체크</strong>
+          <p>공식 등록정보를 바탕으로 구매 전 확인 흐름을 돕는 사업자 정보 확인 도구입니다. 사기 여부 또는 거래 안전성을 보장하지 않습니다.</p>
+        </div>
+        <nav aria-label="푸터 메뉴">
+          <a href="/about.html">소개</a>
+          <a href="/privacy.html">개인정보처리방침</a>
+          <a href="/disclaimer.html">면책 안내</a>
+          <a href="/data-sources.html">데이터 출처</a>
+          <a href="/contact.html">문의</a>
+        </nav>
+      </div>
+    </footer>
+    <script src="/assets/js/app.js" defer></script>
+  </body>
+</html>

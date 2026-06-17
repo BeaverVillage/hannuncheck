@@ -14,6 +14,21 @@
   const businessInput = document.querySelector('#business-number');
   const startDateInput = document.querySelector('#start-date');
 
+  const scope = form.dataset.scope || 'full';
+  const submitLabel = form.dataset.submitLabel || '사업자 정보 확인하기';
+  const loadingLabel = form.dataset.loadingLabel || '확인 중입니다...';
+
+  const visibleScopes = {
+    status: { status: true, validate: false, mailOrder: false, comparison: false, checklist: true },
+    validate: { status: true, validate: true, mailOrder: false, comparison: false, checklist: true },
+    'mail-order': { status: false, validate: false, mailOrder: true, comparison: false, checklist: true },
+    compare: { status: true, validate: true, mailOrder: true, comparison: true, checklist: true },
+    checklist: { status: true, validate: false, mailOrder: true, comparison: true, checklist: true },
+    full: { status: true, validate: true, mailOrder: true, comparison: true, checklist: true }
+  };
+
+  const currentScope = visibleScopes[scope] || visibleScopes.full;
+
   const formatBusinessNumber = (value) => {
     const digits = value.replace(/\D/g, '').slice(0, 10);
     if (digits.length <= 3) return digits;
@@ -45,7 +60,7 @@
 
   const setLoading = (isLoading) => {
     submitButton.disabled = isLoading;
-    submitButton.textContent = isLoading ? '확인 중입니다...' : '사업자 정보 확인하기';
+    submitButton.textContent = isLoading ? loadingLabel : submitLabel;
     resultPanel.hidden = false;
     if (isLoading) {
       resultUpdated.textContent = '조회 중';
@@ -55,7 +70,7 @@
         icon: 'i',
         tone: 'neutral',
         title: '조회 중입니다',
-        description: '사업자등록 상태와 통신판매업 정보를 확인하고 있습니다.',
+        description: '필요한 공식 정보를 확인하고 있습니다.',
         pill: '조회 중'
       });
       comparisonBox.hidden = true;
@@ -88,6 +103,7 @@
   const collectPayload = () => {
     const data = new FormData(form);
     return {
+      mode: scope,
       businessNumber: String(data.get('businessNumber') || '').trim(),
       storeName: String(data.get('storeName') || '').trim(),
       representativeName: String(data.get('representativeName') || '').trim(),
@@ -109,37 +125,49 @@
     resultUpdated.className = 'status-pill success';
     setMessage(messages[0] || '조회가 완료되었습니다. 아래 항목을 쇼핑몰 하단 정보와 함께 비교해 주세요.');
 
-    const statusTone = status.tone || 'neutral';
-    const statusIcon = statusTone === 'success' ? '✓' : statusTone === 'warning' ? '!' : statusTone === 'danger' ? '!' : 'i';
-    const ftcTone = mailOrder.found ? 'success' : (mailOrder.error ? 'warning' : 'neutral');
-    const ftcIcon = mailOrder.found ? '✓' : 'i';
-    const validateTone = validate.checked ? (validate.valid ? 'success' : 'warning') : 'neutral';
-
-    statusStack.innerHTML = [
-      statusCard({
+    const cards = [];
+    if (currentScope.status) {
+      const statusTone = status.tone || 'neutral';
+      const statusIcon = statusTone === 'success' ? '✓' : statusTone === 'warning' ? '!' : statusTone === 'danger' ? '!' : 'i';
+      cards.push(statusCard({
         icon: statusIcon,
         tone: statusTone,
         title: '사업자등록 상태',
         description: status.summary || '조회 결과가 없습니다.',
         pill: status.label || '확인 필요'
-      }),
-      statusCard({
+      }));
+    }
+    if (currentScope.validate) {
+      const validateTone = validate.checked ? (validate.valid ? 'success' : 'warning') : 'neutral';
+      cards.push(statusCard({
         icon: validateTone === 'success' ? '✓' : 'i',
         tone: validateTone,
         title: '사업자 진위확인',
         description: validate.summary || '개업일자와 대표자명을 입력하면 진위확인을 함께 시도합니다.',
         pill: validate.checked ? (validate.valid ? '일치' : '확인 필요') : '선택'
-      }),
-      statusCard({
+      }));
+    }
+    if (currentScope.mailOrder) {
+      const ftcTone = mailOrder.found ? 'success' : (mailOrder.error ? 'warning' : 'neutral');
+      const ftcIcon = mailOrder.found ? '✓' : 'i';
+      cards.push(statusCard({
         icon: ftcIcon,
         tone: ftcTone,
         title: '통신판매업 정보',
         description: mailOrder.summary || '통신판매업 등록상세 조회 결과가 없습니다.',
         pill: mailOrder.found ? '확인됨' : (mailOrder.error ? '확인 필요' : '정보 없음')
-      })
-    ].join('');
+      }));
+    }
 
-    if (comparisons.length) {
+    statusStack.innerHTML = cards.join('') || statusCard({
+      icon: 'i',
+      tone: 'neutral',
+      title: '조회 완료',
+      description: '확인 가능한 항목이 없습니다.',
+      pill: '완료'
+    });
+
+    if (currentScope.comparison && comparisons.length) {
       comparisonBox.hidden = false;
       comparisonList.innerHTML = comparisons.map(comparisonRow).join('');
     } else {
@@ -147,7 +175,7 @@
       comparisonList.innerHTML = '';
     }
 
-    if (checklist.length) {
+    if (currentScope.checklist && checklist.length) {
       checklistBox.hidden = false;
       checklistList.innerHTML = checklist.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
     } else {
@@ -176,6 +204,26 @@
       comparisonBox.hidden = true;
       checklistBox.hidden = true;
       return;
+    }
+
+    if (scope === 'validate') {
+      const startDate = payload.startDate.replace(/\D/g, '');
+      if (!payload.representativeName || startDate.length !== 8) {
+        resultPanel.hidden = false;
+        resultUpdated.textContent = '입력 확인';
+        resultUpdated.className = 'status-pill warning';
+        setMessage('진위확인은 대표자명과 YYYYMMDD 형식의 개업일자가 필요합니다.', 'error');
+        statusStack.innerHTML = statusCard({
+          icon: '!',
+          tone: 'warning',
+          title: '필수 입력값 확인 필요',
+          description: '대표자명과 개업일자를 다시 확인해 주세요.',
+          pill: '확인 필요'
+        });
+        comparisonBox.hidden = true;
+        checklistBox.hidden = true;
+        return;
+      }
     }
 
     setLoading(true);

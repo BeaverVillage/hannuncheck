@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1e3a5f">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <meta name="description" content="한눈체크는 구매 전 사업자등록 상태, 통신판매업 신고 정보, 쇼핑몰 하단 정보 확인 흐름을 한 화면에서 제공하기 위한 사업자 정보 확인 도구입니다.">
+    <title>한눈체크 - 구매 전 사업자 정보 확인 도구</title>
+    <link rel="canonical" href="https://hannuncheck.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ko_KR">
+    <meta property="og:site_name" content="한눈체크">
+    <meta property="og:title" content="한눈체크 - 구매 전 사업자 정보 확인 도구">
+    <meta property="og:description" content="구매 전, 입금 전, 사업자등록 상태와 통신판매업 정보를 한눈에 확인하는 서비스입니다.">
+    <meta property="og:url" content="https://hannuncheck.com/">
+    <script type="application/ld+json">{
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "한눈체크",
+      "url": "https://hannuncheck.com/",
+      "inLanguage": "ko-KR",
+      "description": "구매 전 사업자등록 상태와 통신판매업 정보를 한눈에 확인하는 사업자 정보 확인 도구입니다.",
+      "publisher": {"@type": "Organization", "name": "한눈체크"}
+    }</script>
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="한눈체크 홈">
+        <span class="brand-mark">한</span>
+        <span>
+          <strong>한눈체크</strong>
+          <small>사업자 정보 확인</small>
+        </span>
+      </a>
+      <nav class="site-nav" aria-label="주요 메뉴">
+        <a href="#check-preview">조회 화면</a>
+        <a href="#features">기능 구성</a>
+        <a href="#how-to">사용 방법</a>
+        <a href="#faq">질문</a>
+        <a href="about.html">소개</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero-band">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">Official info check</p>
+            <h1 class="hero-title">구매 전, 입금 전<br><span>사업자 정보를 한눈에</span></h1>
+            <p class="lead">
+              쇼핑몰 하단의 사업자번호, 상호명, 통신판매업 정보를 공식 등록정보와 비교해
+              거래 전에 확인해야 할 항목을 차분하게 정리하는 서비스입니다.
+            </p>
+            <div class="badge-row" aria-label="서비스 특징">
+              <span class="soft-badge">사업자등록 상태</span>
+              <span class="soft-badge">통신판매업 신고</span>
+              <span class="soft-badge">입력정보 비교</span>
+              <span class="soft-badge">거래 전 체크리스트</span>
+            </div>
+            <div class="hero-actions">
+              <a class="primary-link" href="#check-preview">화면 시안 보기</a>
+              <a class="secondary-link" href="#safe-position">운영 원칙 확인</a>
+            </div>
+          </div>
+
+          <aside class="hero-panel" id="check-preview" aria-label="한눈체크 조회 화면 예시">
+            <div class="check-console">
+              <div class="console-header">
+                <span class="console-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                <strong>사업자 정보 확인 화면</strong>
+              </div>
+              <div class="check-form-preview">
+                <div class="form-row">
+                  <label for="business-number-preview">사업자등록번호</label>
+                  <input id="business-number-preview" type="text" value="123-45-67890" aria-describedby="preview-note" disabled>
+                </div>
+                <div class="form-row">
+                  <label for="store-name-preview">상호명 또는 쇼핑몰명</label>
+                  <input id="store-name-preview" type="text" value="한눈상점" disabled>
+                </div>
+                <div class="form-row">
+                  <label for="store-url-preview">쇼핑몰 주소</label>
+                  <input id="store-url-preview" type="text" value="example-store.co.kr" disabled>
+                </div>
+                <button class="disabled-submit" type="button" disabled>다음 단계에서 조회 기능 연동</button>
+                <p class="preview-note" id="preview-note">
+                  현재 파일은 디자인 시안입니다. 국세청·공정위 API 조회 기능은 다음 작업 단계에서 연결하도록 비워두었습니다.
+                </p>
+              </div>
+              <div class="status-stack" aria-label="결과 카드 예시">
+                <article class="status-card">
+                  <span class="status-icon success" aria-hidden="true">✓</span>
+                  <span><strong>사업자등록 상태</strong><small>계속사업자 · 일반과세자 예시</small></span>
+                  <em class="status-pill success">확인됨</em>
+                </article>
+                <article class="status-card">
+                  <span class="status-icon neutral" aria-hidden="true">i</span>
+                  <span><strong>통신판매업 정보</strong><small>신고번호, 신고일자, 업소상태 확인 영역</small></span>
+                  <em class="status-pill neutral">조회 예정</em>
+                </article>
+                <article class="status-card">
+                  <span class="status-icon warning" aria-hidden="true">!</span>
+                  <span><strong>입력정보 비교</strong><small>상호명, 대표자명, 주소, 도메인 비교</small></span>
+                  <em class="status-pill warning">확인 필요</em>
+                </article>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="content-band" id="features">
+        <div class="container">
+          <div class="section-intro">
+            <p class="eyebrow">Service structure</p>
+            <h2>한눈체크 기능 구성</h2>
+            <p>
+              이번 버전은 실제 조회 로직 없이 한눈체크의 화면 구조와 문구를 먼저 구성했습니다.
+              추후 API 연동 시 아래 카드들이 실제 결과 영역으로 확장됩니다.
+            </p>
+          </div>
+          <div class="three-column">
+            <article class="feature-card">
+              <span class="feature-icon">01</span>
+              <h3>사업자등록 상태 확인</h3>
+              <p>사업자번호를 기준으로 계속사업자, 휴업자, 폐업자 여부를 보여주는 결과 영역입니다.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-icon">02</span>
+              <h3>통신판매업 정보 확인</h3>
+              <p>온라인 판매 사업자의 신고 여부, 신고번호, 신고일자, 업소상태를 정리하는 영역입니다.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-icon">03</span>
+              <h3>쇼핑몰 정보 비교</h3>
+              <p>사용자가 본 쇼핑몰 하단 정보와 공식 등록정보가 같은지 비교할 수 있게 안내합니다.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-band muted" id="safe-position">
+        <div class="container two-column">
+          <div class="notice-card blue">
+            <p class="eyebrow">Safe position</p>
+            <h2>한눈체크는 사기 판정 서비스가 아닙니다</h2>
+            <p>
+              한눈체크는 계좌번호, 전화번호, 사용자 신고 이력, 피해사례 DB를 다루지 않는 방향으로 설계합니다.
+              서비스의 핵심은 공식 등록정보 확인과 사용자가 직접 비교할 수 있는 체크리스트 제공입니다.
+            </p>
+          </div>
+          <div class="notice-card warning">
+            <p class="eyebrow">Notice</p>
+            <h2>거래 안전을 보장하지 않습니다</h2>
+            <p>
+              사업자등록 상태나 통신판매업 정보가 정상으로 확인되어도 실제 거래 안전성을 보장하지 않습니다.
+              결제수단, 환불정책, 배송정책, 후기, 사이트 하단 정보를 함께 확인해야 합니다.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-band" id="how-to">
+        <div class="container">
+          <div class="section-intro">
+            <p class="eyebrow">How to use</p>
+            <h2>사용 흐름</h2>
+            <p>조회 기능이 연결되면 사용자는 아래 흐름으로 사업자 정보를 확인하게 됩니다.</p>
+          </div>
+          <div class="three-column">
+            <article class="step-card">
+              <span class="step-number">1</span>
+              <h3>쇼핑몰 하단 정보 확인</h3>
+              <p>사업자등록번호, 상호명, 대표자명, 통신판매업 신고번호를 먼저 확인합니다.</p>
+            </article>
+            <article class="step-card">
+              <span class="step-number">2</span>
+              <h3>공식 정보 조회</h3>
+              <p>사업자등록 상태와 통신판매업 신고 정보를 한 화면에서 확인합니다.</p>
+            </article>
+            <article class="step-card">
+              <span class="step-number">3</span>
+              <h3>입력정보 비교</h3>
+              <p>조회된 정보와 쇼핑몰에 표시된 정보가 일치하는지 직접 비교합니다.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-band muted">
+        <div class="container two-column">
+          <article class="page-card result-preview">
+            <div class="result-header">
+              <div>
+                <p class="eyebrow">Result example</p>
+                <strong class="result-title">결과 화면 예시</strong>
+              </div>
+              <span class="status-pill neutral">디자인 시안</span>
+            </div>
+            <div class="result-list">
+              <div class="result-row"><span>사업자등록 상태</span><strong>계속사업자</strong></div>
+              <div class="result-row"><span>과세유형</span><strong>일반과세자</strong></div>
+              <div class="result-row"><span>통신판매업 정보</span><strong>확인 영역</strong></div>
+              <div class="result-row"><span>상호명 비교</span><strong>일치 여부 표시</strong></div>
+            </div>
+          </article>
+          <article class="page-card">
+            <p class="eyebrow">Checklist</p>
+            <h2>거래 전 확인 항목</h2>
+            <ul class="checklist">
+              <li>사이트 하단의 사업자정보와 조회 결과를 비교하세요.</li>
+              <li>무통장입금만 요구하는지 확인하세요.</li>
+              <li>가격이 지나치게 낮은 경우 추가 확인이 필요합니다.</li>
+              <li>환불정책, 배송정책, 고객센터 정보를 함께 확인하세요.</li>
+              <li>등록정보 정상 여부는 거래 안전 보장이 아닙니다.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="content-band" id="guides">
+        <div class="container">
+          <div class="section-intro">
+            <p class="eyebrow">Guide contents</p>
+            <h2>가이드 콘텐츠 구성</h2>
+            <p>애드센스 심사와 사용자 신뢰를 위해 도구 주변에 설명 콘텐츠를 배치할 수 있도록 카드 구조를 만들었습니다.</p>
+          </div>
+          <div class="three-column">
+            <article class="guide-card">
+              <h3>사업자등록번호로 확인할 수 있는 것</h3>
+              <p>계속사업자, 휴업자, 폐업자 상태와 과세유형의 의미를 설명하는 글 영역입니다.</p>
+            </article>
+            <article class="guide-card">
+              <h3>통신판매업 신고 확인 방법</h3>
+              <p>온라인 쇼핑몰에서 통신판매업 신고 정보가 왜 중요한지 설명하는 글 영역입니다.</p>
+            </article>
+            <article class="guide-card">
+              <h3>입금 전 확인해야 할 정보</h3>
+              <p>사업자 정보, 결제수단, 환불정책, 고객센터 확인 항목을 정리하는 글 영역입니다.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-band compact muted" id="faq">
+        <div class="container">
+          <div class="section-intro">
+            <p class="eyebrow">FAQ</p>
+            <h2>자주 묻는 질문</h2>
+          </div>
+          <div class="faq-grid">
+            <article class="faq-card">
+              <h3>사업자 정보가 정상이면 안전한 쇼핑몰인가요?</h3>
+              <p>아닙니다. 정상 등록정보는 참고 자료일 뿐이며, 실제 거래 안전성을 보장하지 않습니다.</p>
+            </article>
+            <article class="faq-card">
+              <h3>한눈체크에서 사기 여부를 알려주나요?</h3>
+              <p>사기 여부를 판정하지 않습니다. 공식 등록정보 확인과 비교 체크리스트 제공에 집중합니다.</p>
+            </article>
+            <article class="faq-card">
+              <h3>계좌번호나 전화번호도 조회하나요?</h3>
+              <p>조회하지 않습니다. 개인정보와 분쟁 리스크를 줄이기 위해 사업자 정보 확인 중심으로 운영합니다.</p>
+            </article>
+            <article class="faq-card">
+              <h3>입력한 사업자번호를 저장하나요?</h3>
+              <p>서비스 구현 시에도 원칙적으로 조회 입력값을 저장하지 않는 구조를 우선 적용합니다.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div class="footer-note">
+          <strong>한눈체크</strong>
+          <p>공식 등록정보를 바탕으로 구매 전 확인 흐름을 돕는 사업자 정보 확인 도구입니다. 사기 여부 또는 거래 안전성을 보장하지 않습니다.</p>
+        </div>
+        <nav aria-label="푸터 메뉴">
+          <a href="about.html">소개</a>
+          <a href="privacy.html">개인정보처리방침</a>
+          <a href="disclaimer.html">면책 안내</a>
+          <a href="data-sources.html">데이터 출처</a>
+          <a href="contact.html">문의</a>
+        </nav>
+      </div>
+    </footer>
+    <script src="assets/js/app.js" defer></script>
+  </body>
+</html>

@@ -1,4 +1,120 @@
 (() => {
+  const TOOL_DRAWER_GROUPS = [
+    {
+      label: '사업자 정보 확인',
+      tools: [
+        ['사업자등록 상태 조회', '/tools/business-status.html', '계속·휴업·폐업 여부와 과세유형 확인'],
+        ['사업자 진위확인', '/tools/business-validate.html', '대표자명과 개업일자 일치 여부 확인'],
+        ['통신판매업 신고 조회', '/tools/mail-order.html', '온라인 판매자 공개 신고정보 확인'],
+        ['쇼핑몰 정보 비교', '/tools/store-compare.html', '사이트 하단 정보와 공식 정보 비교']
+      ]
+    },
+    {
+      label: '거래 전 점검',
+      tools: [
+        ['거래 전 체크리스트', '/tools/pre-payment-checklist.html', '입금 전 확인할 항목을 한 번에 정리'],
+        ['무통장입금 전 확인사항', '/guides/before-bank-transfer.html', '입금 전에 추가로 봐야 할 기준 설명'],
+        ['공식 정보가 정상이어도 주의할 점', '/guides/official-info-limit.html', '등록정보와 거래 안전성의 차이 설명']
+      ]
+    },
+    {
+      label: '해석 가이드',
+      tools: [
+        ['사업자등록 상태 조회 가이드', '/guides/business-registration-status.html', '상태 결과를 어떻게 읽어야 하는지 안내'],
+        ['계속·휴업·폐업자 차이', '/guides/active-closed-business.html', '상태별 의미와 추가 확인 포인트'],
+        ['통신판매업 신고정보 가이드', '/guides/mail-order-business.html', '신고정보 확인 시 주의할 점'],
+        ['쇼핑몰 하단 정보 확인법', '/guides/store-footer-info.html', '상호명·대표자명·신고번호 비교 방법']
+      ]
+    }
+  ];
+
+  initToolDrawer();
+
+
+  function initToolDrawer() {
+    if (document.querySelector('.tool-drawer')) return;
+
+    const drawerEscape = (value) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+    const drawer = document.createElement('aside');
+    drawer.className = 'tool-drawer';
+    drawer.setAttribute('aria-label', '한눈체크 주요 기능');
+    drawer.setAttribute('aria-hidden', 'true');
+    drawer.innerHTML = `
+      <div class="tool-drawer-head">
+        <div>
+          <strong>주요 기능</strong>
+          <small>필요한 확인 도구를 바로 선택하세요.</small>
+        </div>
+        <button type="button" class="tool-drawer-close" aria-label="주요 기능 닫기">×</button>
+      </div>
+      <div class="tool-search-row">
+        <span aria-hidden="true">⌕</span>
+        <input type="search" id="tool-search" placeholder="기능 검색..." autocomplete="off">
+      </div>
+      <nav class="tool-drawer-list" aria-label="한눈체크 기능 목록">
+        ${TOOL_DRAWER_GROUPS.map((group) => `
+          <section class="tool-group">
+            <h2>${drawerEscape(group.label)}</h2>
+            ${group.tools.map(([name, href, desc]) => `
+              <a href="${href}" data-tool-name="${drawerEscape((name + ' ' + desc).toLowerCase())}">
+                <strong>${drawerEscape(name)}</strong>
+                <small>${drawerEscape(desc)}</small>
+              </a>
+            `).join('')}
+          </section>
+        `).join('')}
+      </nav>
+    `;
+
+    const backdrop = document.createElement('button');
+    backdrop.className = 'drawer-backdrop';
+    backdrop.type = 'button';
+    backdrop.setAttribute('aria-label', '주요 기능 닫기');
+
+    document.body.append(drawer, backdrop);
+
+    const openDrawer = () => {
+      drawer.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('drawer-open');
+      if (!window.matchMedia('(max-width: 720px)').matches) {
+        drawer.querySelector('#tool-search')?.focus();
+      }
+    };
+
+    const closeDrawer = () => {
+      drawer.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('drawer-open');
+    };
+
+    document.addEventListener('click', (event) => {
+      if (!(event.target instanceof Element)) return;
+      const trigger = event.target.closest('[data-tool-drawer], .site-nav a[href$="#features"]');
+      if (!trigger) return;
+      event.preventDefault();
+      openDrawer();
+    });
+
+    drawer.querySelector('.tool-drawer-close')?.addEventListener('click', closeDrawer);
+    backdrop.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeDrawer();
+    });
+
+    drawer.querySelector('#tool-search')?.addEventListener('input', (event) => {
+      const query = event.target.value.trim().toLowerCase();
+      drawer.querySelectorAll('[data-tool-name]').forEach((link) => {
+        const visible = !query || link.dataset.toolName.includes(query);
+        link.hidden = !visible;
+      });
+    });
+  }
+
   const form = document.querySelector('#business-check-form');
   if (!form) return;
 

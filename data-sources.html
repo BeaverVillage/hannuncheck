@@ -22,19 +22,19 @@
       <section class="page-card">
         <p class="eyebrow">Data sources</p>
         <h1>데이터 출처 안내</h1>
-        <p>현재 파일은 디자인 시안이므로 실제 API 호출 코드는 포함되어 있지 않습니다. 다음 구현 단계에서 공식 공개 데이터 API를 연결하는 구조를 전제로 화면을 설계했습니다.</p>
+        <p>한눈체크는 국세청 사업자등록정보 API와 공정거래위원회 통신판매사업자 등록상세 API를 Cloudflare Pages Functions에서 호출하는 구조로 구현했습니다. API 키는 브라우저에 노출하지 않고 Cloudflare 환경변수로 관리합니다.</p>
       </section>
       <section class="page-card">
-        <h2>연동 예정 데이터</h2>
+        <h2>연동 데이터</h2>
         <ul class="checklist">
-          <li>국세청 사업자등록정보 상태조회 및 진위확인 API</li>
-          <li>공정거래위원회 통신판매사업자 공개 정보</li>
+          <li>국세청 사업자등록정보 진위확인 및 상태조회 서비스</li>
+          <li>공정거래위원회 통신판매사업자 등록상세 제공 서비스</li>
           <li>사용자가 입력한 쇼핑몰 하단 정보와 공식 등록정보 비교 결과</li>
         </ul>
       </section>
       <section class="page-card notice-card blue">
         <h2>표시 원칙</h2>
-        <p>조회 결과 화면에는 데이터 제공기관, 조회 시각, 데이터 반영 지연 가능성, 거래 안전을 보장하지 않는다는 안내를 함께 표시하는 방향으로 설계합니다.</p>
+        <p>조회 결과 화면에는 조회 시각, 등록정보 확인 결과, 입력정보 비교 결과, 거래 안전을 보장하지 않는다는 안내를 함께 표시합니다. 데이터 제공기관의 반영 시점에 따라 실제 상태와 차이가 있을 수 있습니다.</p>
       </section>
     </main>
     <footer class="site-footer"><div class="container footer-grid"><div class="footer-note"><strong>한눈체크</strong><p>사업자 정보 확인 도구</p></div><nav><a href="privacy.html">개인정보처리방침</a><a href="disclaimer.html">면책 안내</a><a href="contact.html">문의</a></nav></div></footer>

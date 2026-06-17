@@ -1,20 +1,51 @@
-# 한눈체크 디자인 시안
+# 한눈체크
 
-한눈계산 프로젝트의 카드형 UI, 헤더 구조, 섹션 배치를 차용해 만든 한눈체크 정적 사이트입니다.
+구매 전, 입금 전 사업자 정보를 한눈에 확인하는 정적 사이트 + Cloudflare Pages Functions 프로젝트입니다.
 
-## 이번 버전 범위
+## 구성
 
-- 계산기 HTML/JS 제거
-- 한눈체크 전용 네이비/블루 테마 적용
-- 사업자등록 상태, 통신판매업 정보, 입력정보 비교 화면 시안 구성
-- 개인정보처리방침, 면책 안내, 데이터 출처, 문의 페이지 구성
-- 광고/분석 스크립트 미포함
-- API 연동 미구현
+- 정적 페이지: `index.html`, `about.html`, `privacy.html`, `disclaimer.html`, `data-sources.html`, `contact.html`
+- 스타일: `assets/css/base.css`, `assets/css/layout.css`, `assets/css/components.css`
+- 프론트 기능: `assets/js/app.js`
+- API 라우트: `functions/api/check.js`
 
-## 다음 구현 단계 권장
+## 배포 설정
 
-1. Cloudflare Pages Functions 추가
-2. 국세청 사업자등록정보 API 연동
-3. 공정위 통신판매사업자 정보 연동
-4. Turnstile 또는 rate limit 적용
-5. 입력값 저장 금지/마스킹 원칙 적용
+Cloudflare Pages에서 GitHub 저장소를 연결한 뒤 아래처럼 설정합니다.
+
+| 항목 | 값 |
+| --- | --- |
+| Framework preset | None / No framework |
+| Build command | 비워두기 또는 `exit 0` |
+| Build output directory | `/` 또는 `.` |
+
+## 환경변수
+
+Cloudflare Pages 프로젝트의 Settings > Environment variables에 아래 값을 등록합니다.
+
+```text
+DATA_GO_KR_SERVICE_KEY=공공데이터포털 일반 인증키 Encoding 값
+```
+
+API별로 키를 나누려면 아래도 사용할 수 있습니다.
+
+```text
+NTS_SERVICE_KEY=국세청 API 키
+FTC_SERVICE_KEY=공정위 API 키
+```
+
+## 사용하는 API
+
+1. 국세청 사업자등록정보 진위확인 및 상태조회 서비스
+   - 상태조회: `https://api.odcloud.kr/api/nts-businessman/v1/status`
+   - 진위확인: `https://api.odcloud.kr/api/nts-businessman/v1/validate`
+2. 공정거래위원회 통신판매사업자 등록상세 제공 서비스
+   - 등록상세 조회: `https://apis.data.go.kr/1130000/MllBsDtl_3Service/getMllBsInfoDetail_3`
+
+## 법적/운영 원칙
+
+- 사기 여부를 판정하지 않습니다.
+- 거래 안전성을 보장하지 않습니다.
+- 계좌번호, 전화번호, 피해사례 DB를 다루지 않습니다.
+- 조회 입력값을 별도 DB에 저장하지 않는 구조입니다.
+- 결과 공유 링크에 사업자번호 원문을 넣지 않습니다.

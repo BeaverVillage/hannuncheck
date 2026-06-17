@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
-Sitemap: https://hannuncheck.com/sitemap.xml
+
+Sitemap: https://hannuncalc.com/sitemap.xml

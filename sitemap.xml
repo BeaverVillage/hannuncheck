@@ -61,11 +61,6 @@
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://hannuncheck.com/tools/nutrition-check.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
     <loc>https://hannuncheck.com/guides/business-registration-status.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

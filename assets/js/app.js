@@ -18,14 +18,6 @@
       ]
     },
     {
-      label: '식품·영양 체크',
-      tools: [
-        ['식품 영양 확인', '/tools/nutrition-check.html', '영양성분표 OCR·직접 입력·제품 비교 해석'],
-        ['영양성분표 해석', '/tools/nutrition-check.html#nutrition-tool', '열량·당류·나트륨·단백질 의미 확인'],
-        ['바코드 보조 확인', '/tools/nutrition-check.html#food-assist', '제품명·식품유형 후보 확인용 보조 기능']
-      ]
-    },
-    {
       label: '거래 전 점검 가이드',
       tools: [
         ['무통장입금 전 확인사항', '/guides/before-bank-transfer.html', '입금 전에 추가로 봐야 할 기준 설명'],
@@ -45,7 +37,6 @@
 
   initToolDrawer();
   initPcSpecTool();
-  initNutritionTool();
 
 
   function initToolDrawer() {
@@ -650,186 +641,85 @@
       showModal({ eyebrow: '직접 입력 사양', title: '직접 입력 사양 해석', body, wide: true });
     };
 
-    const normalizeOcrText = (text) => String(text || '')
-      .replace(/[０-９]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0xFEE0))
-      .replace(/[㎎]/g, 'mg')
-      .replace(/[㎉]/g, 'kcal')
-      .replace(/[，]/g, ',')
-      .replace(/[．]/g, '.')
-      .replace(/[|｜]/g, ' ')
-      .replace(/나트[륨름룹룬]/g, '나트륨')
-      .replace(/탄수화물?/g, '탄수화물')
-      .replace(/단백[질짙]/g, '단백질')
-      .replace(/포화\s*지방/g, '포화지방')
-      .replace(/트랜스\s*지방/g, '트랜스지방')
-      .replace(/콜레스테[롤를]/g, '콜레스테롤')
-      .replace(/열량|칼로리|kcal/gi, (m) => /kcal/i.test(m) ? 'kcal' : m)
-      .replace(/\s+/g, ' ')
-      .trim();
+    const normalizeOcrText = (text) => String(text || '').replace(/[|]/g, 'I').replace(/\s+/g, ' ').trim();
 
-    const compactOcrText = (text) => normalizeOcrText(text).replace(/\s+/g, '');
+    const extractSpecsFromText = (text) => {
+      const raw = normalizeOcrText(text);
+      const lower = raw.toLowerCase();
+      const lineText = String(text || '').split(/\n|\r/).map((line) => line.trim()).filter(Boolean);
+      const findLine = (keywords) => lineText.find((line) => keywords.some((word) => line.toLowerCase().includes(word)));
+      const cpuPattern = /(intel\s*)?(core\s*)?i[3579][-\s]?\d{3,5}[a-z]{0,3}|ryzen\s*[3579]\s*\d{3,5}[a-z]{0,3}|apple\s*m[1-4](\s*(pro|max|ultra))?|m[1-4](\s*(pro|max|ultra))?/i;
+      const gpuPattern = /rtx\s*\d{3,4}\s*(ti|super|laptop)?|gtx\s*\d{3,4}\s*(ti)?|radeon\s*(rx)?\s*\d{3,4}\s*[a-z]{0,3}|intel\s*(iris\s*xe|uhd\s*graphics|arc\s*[a-z0-9]+)|apple\s*m[1-4]\s*(gpu)?/i;
+      const ramPattern = /(\d{1,3})\s*(gb|기가)\s*(ram|memory|메모리)?/i;
+      const storagePattern = /((nvme\s*)?(ssd|hdd)\s*[a-z0-9\-\s]*\d+(?:\.\d+)?\s*(tb|gb)|\d+(?:\.\d+)?\s*(tb|gb)\s*(nvme\s*)?(ssd|hdd))/i;
 
-    const nutrientAlias = {
-      calories: ['열량', '칼로리', 'kcal', '에너지'],
-      sodium: ['나트륨', '나트름', 'sodium'],
-      carbs: ['탄수화물', '탄수화', 'carbohydrate', 'carb'],
-      sugar: ['당류', '당류계', 'sugars', 'sugar'],
-      fat: ['지방', '총지방', 'fat'],
-      satFat: ['포화지방', 'saturated'],
-      protein: ['단백질', 'protein']
+      let cpu = raw.match(cpuPattern)?.[0] || '';
+      const cpuLine = findLine(['cpu', 'processor', '프로세서', '칩']);
+      if (cpuLine && !cpu) cpu = cpuLine.replace(/^(cpu|processor|프로세서|칩)\s*[:：-]?\s*/i, '').slice(0, 80);
+
+      let ram = raw.match(ramPattern)?.[0] || '';
+      const ramLine = findLine(['ram', 'memory', '메모리']);
+      if (ramLine && !ram) ram = ramLine.match(/\d{1,3}\s*(gb|기가)/i)?.[0] || '';
+
+      let gpu = raw.match(gpuPattern)?.[0] || '';
+      const gpuLine = findLine(['gpu', 'graphics', '그래픽', 'vga']);
+      if (gpuLine && !gpu) gpu = gpuLine.replace(/^(gpu|graphics|그래픽|vga)\s*[:：-]?\s*/i, '').slice(0, 90);
+
+      let storage = raw.match(storagePattern)?.[0] || '';
+      const storageLine = findLine(['ssd', 'hdd', 'storage', '저장장치', '스토리지']);
+      if (storageLine && !storage) storage = storageLine.replace(/^(storage|저장장치|스토리지)\s*[:：-]?\s*/i, '').slice(0, 100);
+
+      return { cpu, ram, gpu, storage, raw, lower };
     };
 
-    const findValueByAlias = (text, aliases, unitPattern = '(?:g|mg|kcal|칼로리|그램|밀리그램)?', options = {}) => {
-      const rawLines = String(text || '').split(/\n|\r/).map((line) => line.trim()).filter(Boolean);
-      const lines = rawLines.concat(rawLines.map((line) => line.replace(/\s+/g, '')));
-      const numberUnit = '([0-9]+(?:[.,][0-9]+)?)\\s*' + unitPattern;
-      for (const line of lines) {
-        const normalizedLine = normalizeOcrText(line);
-        const compactLine = normalizedLine.replace(/\s+/g, '');
-        if (options.exclude && options.exclude.some((word) => compactLine.includes(word))) continue;
-        if (!aliases.some((alias) => compactLine.toLowerCase().includes(alias.replace(/\s+/g, '').toLowerCase()))) continue;
-        const match = normalizedLine.match(new RegExp(numberUnit, 'i')) || compactLine.match(new RegExp(numberUnit, 'i'));
-        if (match) return toNumber(match[1]);
-      }
-      const joined = normalizeOcrText(text);
-      const compact = compactOcrText(text);
-      for (const alias of aliases) {
-        const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\s\+/g, '\\s*');
-        const rx1 = new RegExp(escaped + '[^0-9]{0,35}' + numberUnit, 'i');
-        const match1 = joined.match(rx1);
-        if (match1) return toNumber(match1[1]);
-        const compactAlias = alias.replace(/\s+/g, '');
-        const rx2 = new RegExp(compactAlias + '[^0-9]{0,25}' + numberUnit, 'i');
-        const match2 = compact.match(rx2);
-        if (match2) return toNumber(match2[1]);
-      }
-      return null;
+    const fillIfFound = (selector, value) => {
+      const input = document.querySelector(selector);
+      if (input && value) input.value = value.trim();
     };
 
-    const extractNutritionFromText = (text) => {
-      const raw = String(text || '');
-      const normalized = normalizeOcrText(raw);
-      const lines = raw.split(/\n|\r/).map((line) => line.trim()).filter(Boolean);
-      const productLine = lines.find((line) => /제품명|상품명|식품명/i.test(line));
-      const servingMatch = raw.match(/(총\s*내용량|내용량|1회\s*제공량|영양정보\s*총\s*내용량|100\s*g)[^\n\r]{0,60}/i) || normalized.match(/(총\s*내용량|내용량|1회\s*제공량|100\s*g)[^ ]{0,40}/i);
-      const values = {
-        product: productLine ? productLine.replace(/^(제품명|상품명|식품명)\s*[:：-]?\s*/i, '').slice(0, 80) : '',
-        serving: servingMatch ? servingMatch[0].slice(0, 70) : '',
-        calories: findValueByAlias(raw, nutrientAlias.calories, '(?:kcal|칼로리)'),
-        sodium: findValueByAlias(raw, nutrientAlias.sodium, '(?:mg|밀리그램)'),
-        carbs: findValueByAlias(raw, nutrientAlias.carbs, '(?:g|그램)'),
-        sugar: findValueByAlias(raw, nutrientAlias.sugar, '(?:g|그램)'),
-        fat: findValueByAlias(raw, nutrientAlias.fat, '(?:g|그램)', { exclude: ['포화지방', '트랜스지방'] }),
-        satFat: findValueByAlias(raw, nutrientAlias.satFat, '(?:g|그램)'),
-        protein: findValueByAlias(raw, nutrientAlias.protein, '(?:g|그램)')
-      };
-      // 사진 OCR에서 열량 라벨을 놓치고 kcal만 읽는 경우 보완
-      if (values.calories == null) {
-        const kcal = normalized.match(/([0-9]+(?:[.,][0-9]+)?)\s*kcal/i);
-        if (kcal) values.calories = toNumber(kcal[1]);
-      }
-      // 포장지 사진에서 숫자만 가까스로 읽힌 경우를 위한 제한적 보완: 영양정보 표의 일반 순서 추정
-      const foundCount = Object.entries(values).filter(([key, value]) => !['product', 'serving'].includes(key) && value != null).length;
-      if (foundCount < 2) {
-        const compact = compactOcrText(raw);
-        const ordered = compact.match(/(?:영양정보|영양성분|nutrition)(.{0,180})/i)?.[1] || compact;
-        const nums = Array.from(ordered.matchAll(/([0-9]+(?:[.,][0-9]+)?)(?:kcal|mg|g)?/gi)).map((m) => toNumber(m[1])).filter((v) => v != null);
-        if (nums.length >= 5) {
-          // 흔한 표기 순서: 열량, 나트륨, 탄수화물, 당류, 지방, 트랜스지방, 포화지방, 콜레스테롤, 단백질
-          values.calories ??= nums.find((n) => n >= 10 && n <= 1200) ?? null;
-          values.sodium ??= nums.find((n) => n >= 5 && n <= 3000 && n !== values.calories) ?? null;
-          const small = nums.filter((n) => n >= 0 && n <= 200);
-          values.carbs ??= small[2] ?? null;
-          values.sugar ??= small[3] ?? null;
-          values.fat ??= small[4] ?? null;
-          values.satFat ??= small[6] ?? null;
-          values.protein ??= small[small.length - 1] ?? null;
-        }
-      }
-      return values;
+    const fieldTargets = {
+      cpu: { selector: '#manual-cpu', label: 'CPU', key: 'cpu' },
+      ram: { selector: '#manual-ram', label: 'RAM', key: 'ram' },
+      gpu: { selector: '#manual-gpu', label: 'GPU', key: 'gpu' },
+      storage: { selector: '#manual-storage', label: '저장장치', key: 'storage' },
+      autoGpu: { selector: '#auto-gpu-manual', label: 'GPU', key: 'gpu' }
     };
 
-    const fillNutritionFields = (values) => {
-      const map = {
-        '#nutrition-product': values.product,
-        '#nutrition-serving': values.serving,
-        '#nutrient-calories': values.calories,
-        '#nutrient-sodium': values.sodium,
-        '#nutrient-carbs': values.carbs,
-        '#nutrient-sugar': values.sugar,
-        '#nutrient-fat': values.fat,
-        '#nutrient-satfat': values.satFat,
-        '#nutrient-protein': values.protein
-      };
-      Object.entries(map).forEach(([selector, value]) => {
-        const input = document.querySelector(selector);
-        if (input && value != null && value !== '') input.value = value;
-      });
+    const extractTargetValue = (text, targetKey) => {
+      const target = fieldTargets[targetKey];
+      if (!target) return '';
+      const specs = extractSpecsFromText(text);
+      return specs[target.key] || normalizeOcrText(text).slice(0, 100);
     };
 
-    const imageFileToCanvas = async (file, mode = 'contrast') => {
-      const bitmap = await createImageBitmap(file);
-      const maxSide = 2600;
-      const scale = Math.min(3, maxSide / Math.max(bitmap.width, bitmap.height));
-      const width = Math.max(1, Math.round(bitmap.width * scale));
-      const height = Math.max(1, Math.round(bitmap.height * scale));
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      ctx.drawImage(bitmap, 0, 0, width, height);
-      const image = ctx.getImageData(0, 0, width, height);
-      const data = image.data;
-      for (let i = 0; i < data.length; i += 4) {
-        const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-        let v = gray;
-        if (mode === 'threshold') v = gray > 150 ? 255 : 0;
-        if (mode === 'contrast') v = Math.max(0, Math.min(255, (gray - 120) * 1.65 + 140));
-        if (mode === 'invert') v = 255 - gray;
-        data[i] = data[i + 1] = data[i + 2] = v;
-      }
-      ctx.putImageData(image, 0, 0);
-      return canvas;
+    const fillTargetValue = (targetKey, value) => {
+      const target = fieldTargets[targetKey];
+      if (!target || !value) return false;
+      const input = document.querySelector(target.selector);
+      if (!input) return false;
+      input.value = String(value).trim();
+      return true;
     };
 
-    const canvasToBlob = (canvas) => new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-
-    const recognizeNutritionImageText = async (file, statusElement = ocrStatus) => {
+    const recognizeImageText = async (file, statusElement = ocrStatus) => {
       if (!window.Tesseract?.recognize) throw new Error('OCR 모듈을 불러오지 못했습니다.');
-      const recognize = async (source, label) => {
-        const result = await window.Tesseract.recognize(source, 'kor+eng', {
-          tessedit_pageseg_mode: '6',
-          preserve_interword_spaces: '1',
-          logger: (message) => {
-            if (!statusElement || message.status !== 'recognizing text') return;
-            const pct = Math.round((message.progress || 0) * 100);
-            statusElement.textContent = `${label} 인식 중... ${pct}%`;
-          }
-        });
-        return result?.data?.text || '';
-      };
-      const texts = [];
-      texts.push(await recognize(file, '원본 이미지'));
-      try {
-        const contrastCanvas = await imageFileToCanvas(file, 'contrast');
-        const contrastBlob = await canvasToBlob(contrastCanvas);
-        if (contrastBlob) texts.push(await recognize(contrastBlob, '보정 이미지'));
-      } catch (_) {}
-      try {
-        const thresholdCanvas = await imageFileToCanvas(file, 'threshold');
-        const thresholdBlob = await canvasToBlob(thresholdCanvas);
-        if (thresholdBlob) texts.push(await recognize(thresholdBlob, '고대비 이미지'));
-      } catch (_) {}
-      return texts.filter(Boolean).join('\n');
+      const result = await window.Tesseract.recognize(file, 'kor+eng', {
+        logger: (message) => {
+          if (!statusElement || message.status !== 'recognizing text') return;
+          const pct = Math.round((message.progress || 0) * 100);
+          statusElement.textContent = `텍스트 인식 중... ${pct}%`;
+        }
+      });
+      return result?.data?.text || '';
     };
 
-    const readNutritionPdfText = async (file) => {
+    const readPdfText = async (file) => {
       if (!window.pdfjsLib?.getDocument) throw new Error('PDF 분석 모듈을 불러오지 못했습니다.');
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
       const data = await file.arrayBuffer();
       const pdf = await window.pdfjsLib.getDocument({ data }).promise;
+      const pageCount = Math.min(pdf.numPages, 3);
       const parts = [];
-      const pageCount = Math.min(pdf.numPages, 2);
       for (let pageNo = 1; pageNo <= pageCount; pageNo += 1) {
         const page = await pdf.getPage(pageNo);
         const textContent = await page.getTextContent();
@@ -837,181 +727,157 @@
       }
       const text = parts.join('\n').trim();
       if (text) return text;
+      if (!window.Tesseract?.recognize) return '';
       const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 1.9 });
+      const viewport = page.getViewport({ scale: 1.7 });
       const canvas = document.createElement('canvas');
       canvas.width = Math.ceil(viewport.width);
       canvas.height = Math.ceil(viewport.height);
       const context = canvas.getContext('2d');
       await page.render({ canvasContext: context, viewport }).promise;
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-      return blob ? recognizeNutritionImageText(blob) : '';
+      return blob ? recognizeImageText(blob) : '';
     };
 
-    let selectedNutritionFile = null;
-    const ocrRunButton = document.querySelector('#nutrition-ocr-run');
-    const pasteZone = document.querySelector('#nutrition-paste-zone');
-
-    const buildOcrModalBody = (values, rawText = '') => {
-      const item = {
-        product: values.product || '영양성분표 인식 제품',
-        serving: values.serving || '인식 기준량',
-        purpose: form ? String(new FormData(form).get('purpose') || 'general') : 'general',
-        calories: values.calories,
-        sodium: values.sodium,
-        carbs: values.carbs,
-        sugar: values.sugar,
-        fat: values.fat,
-        satFat: values.satFat,
-        protein: values.protein
-      };
-      const found = Object.entries(values).filter(([key, value]) => !['product', 'serving'].includes(key) && value != null && value !== '').length;
-      const preview = `<div class="result-list nutrition-ocr-preview">
-        <div class="result-row"><span>열량</span><strong>${escape(fmt(values.calories, 'kcal'))}</strong></div>
-        <div class="result-row"><span>나트륨</span><strong>${escape(fmt(values.sodium, 'mg'))}</strong></div>
-        <div class="result-row"><span>탄수화물</span><strong>${escape(fmt(values.carbs, 'g'))}</strong></div>
-        <div class="result-row"><span>당류</span><strong>${escape(fmt(values.sugar, 'g'))}</strong></div>
-        <div class="result-row"><span>지방</span><strong>${escape(fmt(values.fat, 'g'))}</strong></div>
-        <div class="result-row"><span>포화지방</span><strong>${escape(fmt(values.satFat, 'g'))}</strong></div>
-        <div class="result-row"><span>단백질</span><strong>${escape(fmt(values.protein, 'g'))}</strong></div>
-      </div>`;
-      if (found >= 2) {
-        return `<div class="pc-result-summary"><div class="summary-callout">사진에서 ${found}개 영양성분 후보를 찾았습니다. 아래 해석은 후보값 기준이므로 실제 포장지 숫자와 비교한 뒤 사용하세요.</div>${preview}${buildNutritionResultHtml(item)}</div>`;
-      }
-      const rawPreview = rawText ? `<details class="faq-accordion-item nutrition-raw-text"><summary>OCR 원문 일부 보기</summary><div class="faq-answer"><p>${escape(rawText.slice(0, 700))}</p></div></details>` : '';
-      return `<div class="pc-result-summary"><div class="summary-callout">자동으로 찾은 영양성분 후보가 적습니다. 실제 포장 사진은 반사, 곡면, 기울어짐 때문에 인식이 어려울 수 있습니다. 숫자를 직접 확인해 입력한 뒤 해석을 진행하세요.</div>${preview}${rawPreview}<p class="legal-note pc-note"><strong>안내:</strong> OCR 결과는 오인식될 수 있으며, 이미지는 한눈체크 서버 DB에 저장하지 않습니다.</p></div>`;
+    const processSpecText = (text, sourceLabel = '사양표') => {
+      const specs = extractSpecsFromText(text);
+      fillIfFound('#manual-cpu', specs.cpu);
+      fillIfFound('#manual-ram', specs.ram);
+      fillIfFound('#manual-gpu', specs.gpu);
+      fillIfFound('#manual-storage', specs.storage);
+      const found = [specs.cpu && 'CPU', specs.ram && 'RAM', specs.gpu && 'GPU', specs.storage && '저장장치'].filter(Boolean);
+      if (ocrStatus) ocrStatus.textContent = found.length ? `${found.join(', ')} 후보를 입력란에 채웠습니다. 정확한지 직접 확인해 주세요.` : '자동으로 찾은 사양 후보가 없습니다. 더 선명한 이미지·PDF를 사용하거나 직접 입력해 주세요.';
+      showModal({
+        eyebrow: '사양표 자동 인식',
+        title: `${sourceLabel} 인식 결과`,
+        wide: true,
+        body: `
+          <div class="pc-result-summary">
+            <div class="summary-callout">인식한 텍스트에서 찾은 후보를 입력란에 채웠습니다. OCR과 PDF 추출은 오인식이 있을 수 있으므로 모델명과 용량을 반드시 확인해 주세요.</div>
+            <div class="result-list">
+              <div class="result-row"><span>CPU 후보</span><strong>${escape(specs.cpu || '찾지 못함')}</strong></div>
+              <div class="result-row"><span>RAM 후보</span><strong>${escape(specs.ram || '찾지 못함')}</strong></div>
+              <div class="result-row"><span>GPU 후보</span><strong>${escape(specs.gpu || '찾지 못함')}</strong></div>
+              <div class="result-row"><span>저장장치 후보</span><strong>${escape(specs.storage || '찾지 못함')}</strong></div>
+            </div>
+            <p class="legal-note pc-note"><strong>안내:</strong> 이미지와 PDF는 브라우저에서 텍스트 인식·추출에만 사용하며, 한눈체크 서버 DB에 저장하지 않습니다.</p>
+          </div>`
+      });
     };
 
-    const processNutritionFile = async (file, sourceLabel = '파일') => {
-      if (!file) {
-        showNutritionModal({ eyebrow: '영양성분표 인식', title: '파일을 먼저 선택하세요', body: '<p>영양성분표가 보이는 사진이나 PDF를 먼저 선택하거나 붙여넣어 주세요.</p>' });
-        return;
-      }
-      try {
-        if (ocrStatus) ocrStatus.textContent = file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf') ? 'PDF에서 영양성분표 텍스트를 추출하는 중입니다.' : `${sourceLabel}에서 영양성분표를 인식하는 중입니다.`;
-        showNutritionModal({ eyebrow: '영양성분표 인식', title: '인식 중입니다', body: '<p>사진의 글자를 읽고 있습니다. 포장지가 휘어 있거나 빛이 반사된 사진은 시간이 조금 더 걸릴 수 있습니다.</p>' });
-        const isPdf = file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf');
-        const text = isPdf ? await readNutritionPdfText(file) : await recognizeNutritionImageText(file, ocrStatus);
-        const values = extractNutritionFromText(text);
-        fillNutritionFields(values);
-        const found = Object.entries(values).filter(([key, value]) => !['product', 'serving'].includes(key) && value != null && value !== '').length;
-        if (ocrStatus) ocrStatus.textContent = found ? `인식한 후보값 ${found}개를 입력란에 채웠습니다. 숫자가 맞는지 제품 포장지와 비교해 주세요.` : '자동으로 찾은 영양성분 후보가 적습니다. 숫자를 직접 확인해 입력해 주세요.';
-        updateResultPanel(buildOcrModalBody(values, text));
-        showNutritionModal({
-          eyebrow: 'OCR 인식 결과',
-          title: found >= 2 ? '영양성분표 후보값과 해석 결과' : '영양성분표 인식 결과 확인',
-          body: buildOcrModalBody(values, text)
-        });
-      } catch (error) {
-        if (ocrStatus) ocrStatus.textContent = '영양성분표 인식에 실패했습니다. 직접 입력해 주세요.';
-        showNutritionModal({ eyebrow: 'OCR 인식', title: '인식 실패', body: `<p>영양성분표 인식 중 오류가 발생했습니다. 더 선명한 사진 또는 직접 입력을 사용해 주세요.</p><p class="legal-note pc-note">${escape(error?.message || '')}</p>` });
-      }
-    };
-
-    imageInput?.addEventListener('change', async (event) => {
-      const file = event.target.files?.[0];
+    const runSpecFileExtract = async (file) => {
       if (!file) return;
-      selectedNutritionFile = file;
-      if (ocrStatus) ocrStatus.textContent = `선택됨: ${file.name || '이미지'} · PC에서는 아래 인식·해석 버튼을 누르면 팝업으로 결과를 확인할 수 있습니다.`;
-      const isSmallScreen = window.matchMedia && window.matchMedia('(max-width: 720px)').matches;
-      if (isSmallScreen) await processNutritionFile(file, '모바일 선택 이미지');
-    });
-
-    ocrRunButton?.addEventListener('click', async () => {
-      await processNutritionFile(selectedNutritionFile, '선택한 파일');
-    });
-
-    const handleNutritionPaste = async (event) => {
-      const items = Array.from(event.clipboardData?.items || []);
-      const imageItem = items.find((item) => item.type.startsWith('image/'));
-      if (!imageItem) {
-        if (ocrStatus) ocrStatus.textContent = '붙여넣은 내용에서 이미지를 찾지 못했습니다. 캡처 이미지를 복사한 뒤 다시 붙여넣어 주세요.';
-        return;
-      }
-      event.preventDefault();
-      const file = imageItem.getAsFile();
-      selectedNutritionFile = file;
-      if (ocrStatus) ocrStatus.textContent = '붙여넣은 이미지에서 영양성분표를 인식하는 중입니다.';
-      await processNutritionFile(file, '붙여넣은 이미지');
-    };
-
-    pasteZone?.addEventListener('click', () => pasteZone.focus());
-    pasteZone?.addEventListener('paste', handleNutritionPaste);
-    form?.addEventListener('submit', (event) => {
-      event.preventDefault();
-      const item = readNutritionForm(new FormData(form));
-      const htmlContent = buildNutritionResultHtml(item);
-      updateResultPanel(htmlContent);
-      showNutritionModal({ eyebrow: '영양성분표 해석', title: `${item.product} 해석 결과`, body: htmlContent });
-    });
-
-    const readCompareItem = (data, prefix) => ({
-      product: String(data.get(prefix + 'Product') || (prefix === 'a' ? '제품 A' : '제품 B')).trim(),
-      calories: toNumber(data.get(prefix + 'Calories')),
-      sugar: toNumber(data.get(prefix + 'Sugar')),
-      sodium: toNumber(data.get(prefix + 'Sodium')),
-      protein: toNumber(data.get(prefix + 'Protein'))
-    });
-
-    const compareValue = (label, a, b, unit, lowerBetter = true) => {
-      if (a == null || b == null) return `<li><strong>${escape(label)}:</strong> 두 제품 모두 값을 입력하면 비교할 수 있습니다.</li>`;
-      if (a === b) return `<li><strong>${escape(label)}:</strong> 두 제품이 ${fmt(a, unit)}로 같습니다.</li>`;
-      const better = lowerBetter ? (a < b ? 'A' : 'B') : (a > b ? 'A' : 'B');
-      const direction = lowerBetter ? '낮습니다' : '높습니다';
-      return `<li><strong>${escape(label)}:</strong> A ${fmt(a, unit)}, B ${fmt(b, unit)}입니다. ${better}가 더 ${direction}.</li>`;
-    };
-
-    compareForm?.addEventListener('submit', (event) => {
-      event.preventDefault();
-      const data = new FormData(compareForm);
-      const a = readCompareItem(data, 'a');
-      const b = readCompareItem(data, 'b');
-      const body = `
-        <div class="pc-result-summary nutrition-summary">
-          <div class="summary-callout"><strong>${escape(a.product)}</strong>와 <strong>${escape(b.product)}</strong>를 입력값 기준으로 비교했습니다. 기준량이 서로 다르면 먼저 기준량을 맞춰 해석해야 합니다.</div>
-          <ul class="info-bullet-list">
-            ${compareValue('열량', a.calories, b.calories, 'kcal', true)}
-            ${compareValue('당류', a.sugar, b.sugar, 'g', true)}
-            ${compareValue('나트륨', a.sodium, b.sodium, 'mg', true)}
-            ${compareValue('단백질', a.protein, b.protein, 'g', false)}
-          </ul>
-          <p class="legal-note pc-note"><strong>안내:</strong> 제품 비교는 입력값 기준의 참고 결과입니다. 기준량이 다르거나 OCR 값이 틀리면 비교 결과도 달라집니다.</p>
-        </div>`;
-      showNutritionModal({ eyebrow: '제품 비교', title: '두 제품 비교 결과', body });
-    });
-
-    barcodeForm?.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const barcode = String(new FormData(barcodeForm).get('barcode') || '').replace(/\D/g, '');
-      if (!/^\d{8,14}$/.test(barcode)) {
-        showNutritionModal({ eyebrow: '바코드 보조 확인', title: '바코드 번호를 확인하세요', body: '<p>바코드는 보통 숫자 8~14자리 형식입니다. 포장지의 바코드 아래 숫자를 다시 확인해 주세요.</p>' });
-        return;
-      }
+      if (ocrStatus) ocrStatus.textContent = file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf') ? 'PDF에서 사양 텍스트를 추출하는 중입니다.' : '이미지에서 텍스트를 인식하는 중입니다. 잠시만 기다려 주세요.';
       try {
-        const response = await fetch('/api/food', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode: 'barcode', barcode })
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(result.message || '바코드 보조 조회를 사용할 수 없습니다.');
-        const rows = Array.isArray(result.items) ? result.items : [];
-        const rowsHtml = rows.length ? rows.map((item) => `<div class="result-row"><span>${escape(item.productName || '제품명')}</span><strong>${escape([item.foodType, item.manufacturer].filter(Boolean).join(' · ') || '상세 정보 없음')}</strong></div>`).join('') : '<p>해당 바코드로 확인된 제품 후보가 없습니다.</p>';
-        showNutritionModal({ eyebrow: '바코드 보조 확인', title: '바코드 조회 결과', body: `<div class="pc-result-summary"><div class="summary-callout">바코드 ${escape(barcode)} 기준 제품 후보입니다. 실제 영양성분과 소비기한은 포장지를 우선 확인하세요.</div><div class="result-list">${rowsHtml}</div><p class="legal-note pc-note"><strong>최신성 안내:</strong> 일부 바코드 연계 데이터는 2018년 이후 최신화 제한 안내가 있어 최신 제품 정보가 누락될 수 있습니다.</p></div>` });
+        const isPdf = file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf');
+        const text = isPdf ? await readPdfText(file) : await recognizeImageText(file, ocrStatus);
+        processSpecText(text, isPdf ? 'PDF 사양표' : '이미지 사양표');
       } catch (error) {
-        showNutritionModal({ eyebrow: '바코드 보조 확인', title: '바코드 보조 확인 안내', body: `<p>현재 바코드 API 키가 없거나 조회가 제한되어 제품 후보를 바로 확인하지 못했습니다.</p><p>바코드는 보조 확인 수단입니다. 일부 바코드 연계 데이터는 2018년 이후 최신화 제한 안내가 있어 최신 제품이 누락될 수 있으므로, 영양성분과 소비기한은 포장지를 우선 확인하세요.</p><p class="legal-note pc-note">${escape(error?.message || '')}</p>` });
+        if (ocrStatus) ocrStatus.textContent = '텍스트 인식에 실패했습니다. 직접 입력해 주세요.';
+        showModal({ eyebrow: '사양표 자동 인식', title: '인식 실패', body: `<p>사양표 인식 중 오류가 발생했습니다. 직접 입력하거나 더 선명한 이미지·텍스트 포함 PDF로 다시 시도해 주세요.</p><p class="legal-note pc-note">${escape(error?.message || '')}</p>` });
       }
+    };
+
+    const readClipboardForTarget = async (targetKey) => {
+      const target = fieldTargets[targetKey];
+      if (!target) return;
+      try {
+        if (navigator.clipboard?.read) {
+          const items = await navigator.clipboard.read();
+          for (const item of items) {
+            const textType = item.types.find((type) => type === 'text/plain');
+            if (textType) {
+              const blob = await item.getType(textType);
+              const text = await blob.text();
+              const value = extractTargetValue(text, targetKey);
+              if (fillTargetValue(targetKey, value)) {
+                showModal({ eyebrow: '붙여넣기 인식', title: `${target.label} 값을 채웠습니다`, body: `<p>클립보드 텍스트에서 <strong>${escape(value)}</strong> 값을 추출했습니다. 정확한지 확인해 주세요.</p>` });
+                return;
+              }
+            }
+            const imageType = item.types.find((type) => type.startsWith('image/'));
+            if (imageType) {
+              const blob = await item.getType(imageType);
+              const text = await recognizeImageText(blob);
+              const value = extractTargetValue(text, targetKey);
+              if (fillTargetValue(targetKey, value)) {
+                showModal({ eyebrow: '붙여넣기 인식', title: `${target.label} 이미지 인식 결과`, body: `<p>클립보드 이미지에서 <strong>${escape(value)}</strong> 후보를 채웠습니다. OCR 결과는 반드시 확인해 주세요.</p>` });
+                return;
+              }
+            }
+          }
+        }
+        if (navigator.clipboard?.readText) {
+          const text = await navigator.clipboard.readText();
+          const value = extractTargetValue(text, targetKey);
+          if (fillTargetValue(targetKey, value)) {
+            showModal({ eyebrow: '붙여넣기 인식', title: `${target.label} 값을 채웠습니다`, body: `<p>클립보드 텍스트에서 <strong>${escape(value)}</strong> 값을 추출했습니다. 정확한지 확인해 주세요.</p>` });
+            return;
+          }
+        }
+        throw new Error('클립보드에서 인식할 수 있는 텍스트나 이미지를 찾지 못했습니다.');
+      } catch (error) {
+        showModal({ eyebrow: '붙여넣기 인식', title: '클립보드 인식이 제한되었습니다', body: `<p>브라우저 권한이나 보안 설정 때문에 클립보드 이미지를 직접 읽지 못했습니다. 해당 입력칸을 클릭한 뒤 Ctrl+V 또는 ⌘+V로 붙여넣어 보세요.</p><p class="legal-note pc-note">${escape(error?.message || '')}</p>` });
+      }
+    };
+
+    manualForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const result = interpretManual(new FormData(manualForm));
+      showManualResult(result);
     });
 
-    foodQrForm?.addEventListener('submit', (event) => {
-      event.preventDefault();
-      const value = String(new FormData(foodQrForm).get('foodQr') || '').trim();
-      showNutritionModal({
-        eyebrow: '푸드QR 보조 확인',
-        title: '푸드QR은 표시정보 보조 확인용입니다',
-        body: `<div class="pc-result-summary"><div class="summary-callout">${value ? `입력값: ${escape(value)}` : '푸드QR 링크나 식별값이 있으면 표시정보 확인의 보조 단서로 사용할 수 있습니다.'}</div><p>푸드QR이 있는 제품은 표시정보, 원재료, 영양표시, 알레르기 정보를 보조적으로 확인할 수 있습니다. 다만 모든 제품에 제공되는 것은 아니며, 실제 표시사항은 제품 포장지를 우선 확인해야 합니다.</p><p class="legal-note pc-note"><strong>안내:</strong> 이 기능은 섭취 가능 여부나 건강상 안전성을 판정하지 않습니다.</p></div>`
+    imageInput?.addEventListener('change', (event) => {
+      const file = event.target.files?.[0];
+      runSpecFileExtract(file);
+    });
+
+    Object.entries(fieldTargets).forEach(([targetKey, config]) => {
+      const input = document.querySelector(config.selector);
+      input?.addEventListener('paste', async (event) => {
+        const items = Array.from(event.clipboardData?.items || []);
+        const imageItem = items.find((item) => item.type.startsWith('image/'));
+        if (!imageItem) return;
+        event.preventDefault();
+        try {
+          const file = imageItem.getAsFile();
+          const text = await recognizeImageText(file);
+          const value = extractTargetValue(text, targetKey);
+          if (fillTargetValue(targetKey, value)) {
+            showModal({ eyebrow: '붙여넣기 인식', title: `${config.label} 이미지 인식 결과`, body: `<p>붙여넣은 이미지에서 <strong>${escape(value)}</strong> 후보를 채웠습니다. 정확한지 확인해 주세요.</p>` });
+          }
+        } catch (error) {
+          showModal({ eyebrow: '붙여넣기 인식', title: '이미지 인식 실패', body: `<p>붙여넣은 이미지에서 텍스트를 인식하지 못했습니다. 더 선명한 캡처를 사용하거나 직접 입력해 주세요.</p><p class="legal-note pc-note">${escape(error?.message || '')}</p>` });
+        }
       });
     });
+
+    document.addEventListener('click', (event) => {
+      if (!(event.target instanceof Element)) return;
+      const pasteButton = event.target.closest('[data-ocr-target]');
+      if (pasteButton) {
+        readClipboardForTarget(pasteButton.dataset.ocrTarget);
+        return;
+      }
+      const helpButton = event.target.closest('[data-help-topic]');
+      if (!helpButton) return;
+      const topic = helpContents[helpButton.dataset.helpTopic];
+      if (!topic) return;
+      showModal({ eyebrow: '확인 위치', title: topic.title, body: topic.body });
+    });
+
+    modalClose?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', (event) => {
+      if (event.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeModal();
+    });
+
+    refreshButton?.addEventListener('click', renderAutoSpecs);
+    autoSpecInterpretButton?.addEventListener('click', interpretAutoSpecs);
+    cpuTestButton?.addEventListener('click', runCpuTest);
+    renderAutoSpecs();
   }
 
 

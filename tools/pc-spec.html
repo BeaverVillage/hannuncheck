@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="naver-site-verification" content="1cf7b1f007f077b86659a324cb20becb08bf5eb7" />
+    <meta name="theme-color" content="#1e3a5f">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <meta name="description" content="내 컴퓨터의 운영체제, CPU 논리 코어, 메모리 추정값, GPU/WebGL, 화면 해상도를 브라우저에서 확인하고 간단한 CPU 테스트와 직접 입력 사양 해석을 제공하는 한눈체크 기능입니다.">
+    <title>컴퓨터 사양 확인 - 한눈체크</title>
+    <link rel="canonical" href="https://hannuncheck.com/tools/pc-spec.html">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ko_KR">
+    <meta property="og:site_name" content="한눈체크">
+    <meta property="og:title" content="컴퓨터 사양 확인 - 한눈체크">
+    <meta property="og:description" content="브라우저에서 확인 가능한 컴퓨터 정보와 직접 입력한 사양을 한눈에 정리하고 의미를 설명합니다.">
+    <meta property="og:url" content="https://hannuncheck.com/tools/pc-spec.html">
+    <link rel="stylesheet" href="/assets/css/base.css">
+    <link rel="stylesheet" href="/assets/css/layout.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/index.html" aria-label="한눈체크 홈">
+        <span class="brand-mark">한</span>
+        <span>
+          <strong>한눈체크</strong>
+          <small>체크 도구 모음</small>
+        </span>
+      </a>
+      <nav class="site-nav" aria-label="주요 메뉴">
+        <a href="/index.html#features">주요 기능</a>
+        <a href="/index.html#guides">가이드</a>
+        <a href="/index.html#safe-position">운영 원칙</a>
+        <a href="/index.html#faq">질문</a>
+        <a href="/about.html">소개</a>
+      </nav>
+    </header>
+    <main>
+      <section class="tool-hero-band">
+        <div class="container">
+          <nav class="breadcrumb" aria-label="현재 위치"><a href="/index.html">홈</a><span>/</span><span>컴퓨터 사양 확인</span></nav>
+          <div class="section-intro">
+            <p class="eyebrow">Device check</p>
+            <h1>컴퓨터 사양을 한눈에 확인하세요</h1>
+            <p>브라우저에서 확인 가능한 기기 정보를 자동으로 정리하고, 확인되지 않는 정확한 부품명은 사용자가 직접 입력해 의미를 함께 볼 수 있습니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-band tool-content-band">
+        <div class="container tool-layout pc-tool-layout" id="pc-spec-tool">
+          <article class="check-console tool-console pc-console">
+            <div class="console-header">
+              <span class="console-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+              <strong>내 컴퓨터 사양 확인</strong>
+            </div>
+            <div class="pc-auto-panel">
+              <div class="pc-action-row">
+                <button class="submit-button compact-button" type="button" id="pc-refresh-button">자동 정보 다시 확인</button>
+                <button class="secondary-action-button" type="button" id="cpu-test-button">CPU 간단 테스트 시작</button>
+              </div>
+              <p class="preview-note"><strong>안내:</strong> 웹페이지는 보안 정책상 정확한 CPU 모델명, 전체 RAM 용량, 저장장치 모델명, 메인보드 정보 등을 직접 읽을 수 없습니다. 자동 확인값은 참고용이며, 부족한 항목은 아래 직접 입력란에 채워서 해석하면 됩니다.</p>
+              <div class="spec-summary-grid" id="auto-spec-grid" aria-live="polite"></div>
+              <div class="benchmark-box" id="benchmark-box" hidden>
+                <div class="result-header slim">
+                  <div>
+                    <p class="eyebrow">CPU quick test</p>
+                    <strong class="result-title">CPU 간단 테스트 결과</strong>
+                  </div>
+                  <span class="status-pill neutral" id="cpu-test-status">대기</span>
+                </div>
+                <div class="benchmark-meter"><span id="benchmark-bar"></span></div>
+                <div class="result-list" id="benchmark-result"></div>
+                <p class="legal-note pc-note"><strong>해석:</strong> 이 테스트는 브라우저 안에서 짧게 반복 연산을 수행해 참고 점수를 보여주는 기능입니다. 전문 벤치마크가 아니며, 전원 모드·발열·백그라운드 작업·기기 설정에 따라 결과가 달라질 수 있습니다.</p>
+              </div>
+            </div>
+          </article>
+
+          <aside class="tool-sidebar">
+            <article class="notice-card blue">
+              <p class="eyebrow">Manual input</p>
+              <h2>정확한 부품명은 직접 입력하세요</h2>
+              <p>웹에서는 정확한 CPU 모델명이나 저장장치 모델을 자동으로 읽을 수 없습니다. 옆의 도움말 버튼을 눌러 확인 위치를 보고 직접 입력하면 용도별 의미를 더 잘 해석할 수 있습니다.</p>
+            </article>
+            <article class="page-card manual-spec-card">
+              <form id="manual-spec-form" novalidate>
+                <div class="form-row help-field-row">
+                  <label for="manual-cpu">CPU 모델명 <span>선택</span></label>
+                  <div class="inline-input-button">
+                    <input id="manual-cpu" name="cpu" type="text" placeholder="예: Intel i5-12400F, Ryzen 5 5600">
+                    <button type="button" class="help-button" data-help-topic="cpu">어디서 보나요?</button>
+                  </div>
+                </div>
+                <div class="form-row help-field-row">
+                  <label for="manual-ram">메모리 RAM <span>선택</span></label>
+                  <div class="inline-input-button">
+                    <input id="manual-ram" name="ram" type="text" placeholder="예: 16GB">
+                    <button type="button" class="help-button" data-help-topic="ram">어디서 보나요?</button>
+                  </div>
+                </div>
+                <div class="form-row help-field-row">
+                  <label for="manual-gpu">그래픽카드 GPU <span>선택</span></label>
+                  <div class="inline-input-button">
+                    <input id="manual-gpu" name="gpu" type="text" placeholder="예: RTX 3060, Intel Iris Xe">
+                    <button type="button" class="help-button" data-help-topic="gpu">어디서 보나요?</button>
+                  </div>
+                </div>
+                <div class="form-row help-field-row">
+                  <label for="manual-storage">저장장치 <span>선택</span></label>
+                  <div class="inline-input-button">
+                    <input id="manual-storage" name="storage" type="text" placeholder="예: NVMe SSD 512GB">
+                    <button type="button" class="help-button" data-help-topic="storage">어디서 보나요?</button>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <label for="manual-purpose">주 사용 목적 <span>선택</span></label>
+                  <select id="manual-purpose" name="purpose">
+                    <option value="">선택하지 않음</option>
+                    <option value="office">문서 작업·웹서핑·온라인 강의</option>
+                    <option value="design">간단한 이미지 편집·디자인</option>
+                    <option value="video">영상 편집</option>
+                    <option value="game">게임</option>
+                    <option value="coding">코딩·개발 작업</option>
+                  </select>
+                </div>
+                <button class="submit-button" type="submit">직접 입력 사양 해석하기</button>
+                <p class="inline-privacy-note">직접 입력한 사양은 브라우저 화면에서만 해석하며, 한눈체크 자체 DB에 저장하지 않습니다.</p>
+              </form>
+            </article>
+          </aside>
+        </div>
+      </section>
+
+      <section class="content-band muted">
+        <div class="container two-column compact-gap">
+          <article class="page-card">
+            <p class="eyebrow">Meaning</p>
+            <h2>자동 확인 결과의 의미</h2>
+            <div class="result-list" id="auto-meaning-list"></div>
+          </article>
+          <article class="page-card">
+            <p class="eyebrow">Manual result</p>
+            <h2>직접 입력 사양 해석</h2>
+            <div class="manual-result-box" id="manual-result-box">
+              <p class="muted-text">CPU, RAM, GPU, 저장장치 또는 사용 목적을 입력하면 이곳에 의미가 표시됩니다.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="content-band tool-lower-band">
+        <div class="container info-split-grid">
+          <article class="info-split-card">
+            <p class="mini-label">사용 방법</p>
+            <h2>자동으로 볼 수 있는 정보와 직접 입력해야 하는 정보를 나눠 보여줍니다.</h2>
+            <ol class="info-step-list">
+              <li><strong>자동 정보 확인</strong><br>운영체제 추정, 논리 코어 수, 메모리 추정, GPU/WebGL, 화면 해상도를 확인합니다.</li>
+              <li><strong>CPU 간단 테스트</strong><br>짧은 반복 연산으로 현재 기기의 참고 성능을 확인합니다.</li>
+              <li><strong>부족한 항목 직접 입력</strong><br>정확한 CPU 모델명, RAM, GPU, 저장장치는 사용자가 직접 입력합니다.</li>
+              <li><strong>의미 확인</strong><br>입력한 사양이 어떤 작업에 유리한지 참고 설명을 확인합니다.</li>
+            </ol>
+          </article>
+          <article class="info-split-card">
+            <p class="mini-label">한눈체크의 방향</p>
+            <h2>단순 숫자 나열이 아니라, 그 결과가 어떤 의미인지 설명합니다.</h2>
+            <p>CPU 코어 수, 메모리, GPU, 화면 해상도는 숫자만 보면 어렵습니다. 한눈체크는 확인 가능한 정보와 직접 입력한 정보를 합쳐 문서 작업, 영상 편집, 게임, 개발 작업 관점에서 어떻게 받아들이면 좋은지 설명합니다.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="content-band compact muted" id="faq">
+        <div class="container">
+          <div class="section-intro">
+            <p class="eyebrow">FAQ</p>
+            <h2>컴퓨터 사양 확인 자주 묻는 질문</h2>
+          </div>
+          <div class="faq-accordion-grid">
+            <details class="faq-accordion-item"><summary>왜 정확한 CPU 모델명이 자동으로 안 나오나요?</summary><div class="faq-answer"><p>웹브라우저는 보안과 개인정보 보호 때문에 CPU 모델명, 저장장치 모델명, 메인보드 정보 같은 하드웨어 세부 정보에 직접 접근할 수 없습니다.</p></div></details>
+            <details class="faq-accordion-item"><summary>CPU 간단 테스트는 믿을 만한가요?</summary><div class="faq-answer"><p>전문 벤치마크가 아니라 참고용입니다. 배터리 모드, 발열, 백그라운드 작업, 절전 설정에 따라 결과가 달라질 수 있습니다.</p></div></details>
+            <details class="faq-accordion-item"><summary>메모리 추정값이 실제와 다를 수 있나요?</summary><div class="faq-answer"><p>네. 일부 환경에서는 메모리 정보가 제공되지 않거나 대략적인 값으로 표시됩니다. 정확한 용량은 운영체제의 시스템 정보에서 확인하는 것이 좋습니다.</p></div></details>
+            <details class="faq-accordion-item"><summary>입력한 사양이 저장되나요?</summary><div class="faq-answer"><p>저장하지 않습니다. 직접 입력한 값은 현재 페이지에서 해석 결과를 보여주는 데만 사용됩니다.</p></div></details>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="help-modal" id="spec-help-modal" hidden role="dialog" aria-modal="true" aria-labelledby="spec-help-title">
+      <div class="help-modal-panel">
+        <button type="button" class="help-modal-close" id="spec-help-close" aria-label="도움말 닫기">×</button>
+        <p class="eyebrow">확인 위치</p>
+        <h2 id="spec-help-title">어디서 볼 수 있나요?</h2>
+        <div id="spec-help-body"></div>
+      </div>
+    </div>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div class="footer-note">
+          <strong>한눈체크</strong>
+          <p>확인 가능한 정보를 한눈에 정리하고 의미를 설명하는 체크 도구 모음입니다. 조회·측정 결과는 참고용이며, 실제 판단을 보장하지 않습니다.</p>
+        </div>
+        <nav aria-label="푸터 메뉴">
+          <a href="/about.html">소개</a>
+          <a href="/privacy.html">개인정보처리방침</a>
+          <a href="/disclaimer.html">면책 안내</a>
+          <a href="/data-sources.html">데이터 출처</a>
+          <a href="/contact.html">문의·정정 요청</a>
+        </nav>
+      </div>
+    </footer>
+    <script src="/assets/js/app.js" defer></script>
+  </body>
+</html>

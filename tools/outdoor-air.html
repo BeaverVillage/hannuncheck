@@ -36,11 +36,11 @@
         <div class="container outdoor-layout" id="outdoor-air-tool">
           <article class="check-console tool-console outdoor-console">
             <div class="console-header"><span class="console-dots" aria-hidden="true"><span></span><span></span><span></span></span><strong>외출 전 확인</strong></div>
-            <form class="outdoor-form" id="outdoor-air-form">
-              <div class="outdoor-form-grid">
-                <div class="form-row"><label for="air-sido">지역</label><select id="air-sido"><option>서울</option><option>부산</option><option>대구</option><option>인천</option><option>광주</option><option>대전</option><option>울산</option><option>세종</option><option>경기</option><option>강원</option><option>충북</option><option>충남</option><option>전북</option><option>전남</option><option>경북</option><option>경남</option><option>제주</option></select></div>
-                <div class="form-row"><label for="air-place-query">장소 검색 <span>선택</span></label><div class="inline-input-button"><input id="air-place-query" type="search" placeholder="예: 강남역, 수원역, 해운대"><button type="button" class="secondary-action-button" id="air-place-search">지역 찾기</button></div><small>장소를 검색하면 주소의 시·도를 자동으로 맞춥니다.</small></div>
-                <div class="form-row"><label for="air-purpose">확인 목적</label><select id="air-purpose"><option value="commute">출근·등교</option><option value="child">아이 외출</option><option value="exercise">운동</option><option value="walk" selected>산책</option><option value="drive">운전</option></select></div>
+            <form class="outdoor-form outdoor-form-v19" id="outdoor-air-form">
+              <div class="outdoor-search-panel">
+                <div class="form-row air-region-field"><label for="air-sido">지역</label><select id="air-sido"><option>서울</option><option>부산</option><option>대구</option><option>인천</option><option>광주</option><option>대전</option><option>울산</option><option>세종</option><option>경기</option><option>강원</option><option>충북</option><option>충남</option><option>전북</option><option>전남</option><option>경북</option><option>경남</option><option>제주</option></select></div>
+                <div class="form-row air-place-field"><label for="air-place-query">장소 검색</label><div class="inline-input-button air-search-box"><input id="air-place-query" type="search" placeholder="예: 한밭대, 강남역, 해운대"><button type="button" class="secondary-action-button" id="air-place-search">지역 찾기</button></div><small>카카오 장소 검색 결과에서 후보를 선택하면 주소의 시·도를 자동으로 맞춥니다.</small></div>
+                <div class="form-row air-purpose-field"><label for="air-purpose">확인 목적</label><select id="air-purpose"><option value="commute">출근·등교</option><option value="child">아이 외출</option><option value="exercise">운동</option><option value="walk" selected>산책</option><option value="drive">운전</option></select></div>
               </div>
               <div class="pc-action-row outdoor-actions"><button class="submit-button" type="submit">외출 체크하기</button><button class="secondary-action-button" type="button" id="air-current-location">현재 위치로 확인</button></div>
               <p class="preview-note" id="air-status" aria-live="polite">지역을 선택하고 외출 체크하기를 누르면 에어코리아 대기질 정보와 기상특보를 함께 확인합니다.</p>

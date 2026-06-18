@@ -72,7 +72,7 @@ function normalizePlace(item) {
   const address = item.road_address_name || item.address_name || item.address?.address_name || '';
   const lat = Number(item.y || item.address?.y);
   const lng = Number(item.x || item.address?.x);
-  const region1 = inferRegion1(address);
+  const parts = inferRegionParts(address);
   return {
     id: item.id || `${lng},${lat}`,
     name: item.place_name || item.address_name || address || '검색 결과',
@@ -82,16 +82,19 @@ function normalizePlace(item) {
     phone: item.phone || '',
     lat,
     lng,
-    region1
+    region1: parts.region1,
+    region2: parts.region2,
+    region3: parts.region3
   };
 }
 
-function inferRegion1(address) {
-  const token = String(address || '').trim().split(/\s+/)[0] || '';
+function inferRegionParts(address) {
+  const parts = String(address || '').trim().split(/\s+/).filter(Boolean);
+  const token = parts[0] || '';
   const aliases = {
     서울특별시: '서울', 서울: '서울', 부산광역시: '부산', 부산: '부산', 대구광역시: '대구', 대구: '대구', 인천광역시: '인천', 인천: '인천', 광주광역시: '광주', 광주: '광주', 대전광역시: '대전', 대전: '대전', 울산광역시: '울산', 울산: '울산', 세종특별자치시: '세종', 세종: '세종', 경기도: '경기', 경기: '경기', 강원특별자치도: '강원', 강원도: '강원', 강원: '강원', 충청북도: '충북', 충북: '충북', 충청남도: '충남', 충남: '충남', 전북특별자치도: '전북', 전라북도: '전북', 전북: '전북', 전라남도: '전남', 전남: '전남', 경상북도: '경북', 경북: '경북', 경상남도: '경남', 경남: '경남', 제주특별자치도: '제주', 제주도: '제주', 제주: '제주'
   };
-  return aliases[token] || token;
+  return { region1: aliases[token] || token, region2: parts[1] || '', region3: parts[2] || '' };
 }
 
 function clean(value, max) {

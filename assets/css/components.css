@@ -1816,3 +1816,79 @@ body.drawer-open {
     padding: 18px;
   }
 }
+
+
+/* v14 nutrition UX fixes: row steps, paste OCR, real-package photo guidance */
+.nutrition-mode-grid {
+  grid-template-columns: 1fr !important;
+}
+
+.nutrition-input-card {
+  grid-template-columns: minmax(220px, 0.38fr) minmax(0, 0.62fr);
+  align-items: start;
+  column-gap: 24px;
+}
+
+.nutrition-input-card > .eyebrow {
+  grid-column: 1 / -1;
+}
+
+.nutrition-input-card > h2,
+.nutrition-input-card > p {
+  grid-column: 1;
+}
+
+.nutrition-input-card > .ocr-upload-box,
+.nutrition-input-card > .nutrition-form {
+  grid-column: 2;
+  grid-row: 2 / span 3;
+}
+
+.nutrition-paste-zone {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 14px;
+  color: var(--check-primary);
+  background: #f8fbff;
+  border: 1px dashed rgba(37, 99, 235, 0.38);
+  border-radius: 16px;
+  cursor: text;
+}
+
+.nutrition-paste-zone:focus {
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+  border-color: var(--check-blue);
+}
+
+.nutrition-paste-zone small {
+  color: #64748b;
+  line-height: 1.55;
+}
+
+.nutrition-ocr-run {
+  margin-top: 14px;
+}
+
+.nutrition-ocr-preview {
+  margin: 14px 0;
+}
+
+.nutrition-raw-text {
+  margin-top: 14px;
+}
+
+@media (max-width: 900px) {
+  .nutrition-input-card {
+    grid-template-columns: 1fr;
+  }
+  .nutrition-input-card > .eyebrow,
+  .nutrition-input-card > h2,
+  .nutrition-input-card > p,
+  .nutrition-input-card > .ocr-upload-box,
+  .nutrition-input-card > .nutrition-form {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}

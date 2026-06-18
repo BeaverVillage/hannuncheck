@@ -1318,3 +1318,97 @@ body.drawer-open {
     width: 100%;
   }
 }
+
+
+/* v9 PC result modal, OCR, and utility positioning refinements */
+.hero-title-main {
+  display: inline-block;
+  white-space: nowrap;
+  color: var(--check-primary) !important;
+}
+
+.auto-manual-box {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  background: #f8fbff;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 20px;
+}
+
+.ocr-upload-box {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  background: #f8fbff;
+  border: 1px dashed rgba(37, 99, 235, 0.38);
+  border-radius: 18px;
+}
+
+.ocr-upload-box label {
+  display: grid;
+  gap: 4px;
+  color: var(--check-primary);
+  font-weight: 900;
+}
+
+.ocr-upload-box label small {
+  color: var(--check-muted);
+  font-weight: 500;
+}
+
+.ocr-upload-box input[type="file"] {
+  width: 100%;
+  padding: 12px;
+  color: var(--check-text);
+  background: #fff;
+  border: 1px solid var(--check-border);
+  border-radius: 14px;
+}
+
+.pc-result-summary {
+  display: grid;
+  gap: 14px;
+}
+
+.pc-result-summary .summary-callout {
+  padding: 18px;
+  color: var(--check-primary);
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 18px;
+  font-weight: 850;
+  line-height: 1.7;
+}
+
+.cpu-compare-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  background: #f8fafc;
+  border: 1px solid var(--check-border);
+  border-radius: 18px;
+}
+
+.cpu-compare-card strong {
+  color: var(--check-primary);
+  font-size: 1.08rem;
+}
+
+.help-modal-panel.wide-result {
+  width: min(780px, 100%);
+}
+
+.help-modal-panel .result-list {
+  margin-top: 12px;
+}
+
+.help-modal-panel .legal-note {
+  margin: 14px 0 0;
+}
+
+@media (max-width: 720px) {
+  .hero-title-main {
+    white-space: normal;
+  }
+}

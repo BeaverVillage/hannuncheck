@@ -137,19 +137,25 @@
       .replace(/'/g, '&#039;');
 
     const autoGrid = document.querySelector('#auto-spec-grid');
-    const meaningList = document.querySelector('#auto-meaning-list');
     const refreshButton = document.querySelector('#pc-refresh-button');
+    const autoGpuInput = document.querySelector('#auto-gpu-manual');
+    const autoSpecInterpretButton = document.querySelector('#auto-spec-interpret-button');
     const cpuTestButton = document.querySelector('#cpu-test-button');
     const benchmarkBox = document.querySelector('#benchmark-box');
     const benchmarkBar = document.querySelector('#benchmark-bar');
     const benchmarkResult = document.querySelector('#benchmark-result');
     const cpuTestStatus = document.querySelector('#cpu-test-status');
     const manualForm = document.querySelector('#manual-spec-form');
-    const manualResultBox = document.querySelector('#manual-result-box');
+    const imageInput = document.querySelector('#spec-image-input');
+    const ocrStatus = document.querySelector('#ocr-status');
     const modal = document.querySelector('#spec-help-modal');
+    const modalPanel = modal?.querySelector('.help-modal-panel');
+    const modalEyebrow = document.querySelector('#spec-help-eyebrow');
     const modalTitle = document.querySelector('#spec-help-title');
     const modalBody = document.querySelector('#spec-help-body');
     const modalClose = document.querySelector('#spec-help-close');
+
+    let lastAutoSpecs = null;
 
     const helpContents = {
       cpu: {
@@ -176,18 +182,35 @@
           <ul class="info-bullet-list">
             <li><strong>Windows:</strong> 작업 관리자 → 성능 → GPU에서 이름을 확인합니다. 장치 관리자 → 디스플레이 어댑터에서도 볼 수 있습니다.</li>
             <li><strong>macOS:</strong>  메뉴 → 이 Mac에 관하여에서 그래픽 또는 칩 항목을 확인합니다.</li>
-            <li><strong>상품 페이지:</strong> 그래픽, GPU, VGA 항목에 표시된 모델명을 입력합니다.</li>
+            <li><strong>상품 페이지:</strong> 그래픽, GPU, VGA, Graphics 항목에 표시된 모델명을 입력합니다.</li>
           </ul>`
       },
       storage: {
         title: '저장장치는 어디서 보나요?',
         body: `
           <ul class="info-bullet-list">
-            <li><strong>Windows:</strong> 작업 관리자 → 성능 → 디스크에서 SSD/HDD 여부와 용량을 확인합니다.</li>
+            <li><strong>Windows:</strong> 작업 관리자 → 성능 → 디스크에서 SSD/HDD 여부와 용량을 확인합니다. 장치 관리자나 디스크 관리에서도 볼 수 있습니다.</li>
             <li><strong>macOS:</strong> 시스템 설정 → 일반 → 저장 공간에서 용량을 확인합니다.</li>
             <li><strong>상품 페이지:</strong> 저장장치, SSD, HDD, Storage 항목의 종류와 용량을 입력합니다.</li>
           </ul>`
       }
+    };
+
+    const showModal = ({ eyebrow = '확인 결과', title, body, wide = false }) => {
+      if (!modal || !modalTitle || !modalBody) return;
+      if (modalEyebrow) modalEyebrow.textContent = eyebrow;
+      modalTitle.textContent = title;
+      modalBody.innerHTML = body;
+      modal.hidden = false;
+      modalPanel?.classList.toggle('wide-result', Boolean(wide));
+      document.body.classList.add('modal-open');
+    };
+
+    const closeModal = () => {
+      if (!modal) return;
+      modal.hidden = true;
+      modalPanel?.classList.remove('wide-result');
+      document.body.classList.remove('modal-open');
     };
 
     const getOsName = () => {
@@ -205,13 +228,13 @@
       try {
         const canvas = document.createElement('canvas');
         const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        if (!gl) return { value: 'WebGL 확인 불가', detail: '그래픽 정보 접근이 제한되었거나 WebGL을 사용할 수 없습니다.' };
+        if (!gl) return { value: '직접 입력 권장', detail: 'WebGL 확인이 제한되어 GPU 모델명을 직접 입력하는 것이 좋습니다.' };
         const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-        if (!debugInfo) return { value: 'WebGL 지원', detail: 'GPU 모델명은 보안 설정상 표시되지 않습니다.' };
+        if (!debugInfo) return { value: '직접 입력 권장', detail: 'WebGL은 지원하지만 GPU 모델명은 보안 설정상 표시되지 않습니다.' };
         const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-        return { value: renderer || 'WebGL 지원', detail: renderer ? 'WebGL 렌더러 기준의 그래픽 정보입니다.' : 'GPU 모델명은 표시되지 않습니다.' };
+        return { value: '직접 입력 권장', detail: renderer ? `참고 WebGL 렌더러: ${renderer}` : 'GPU 모델명은 직접 입력해야 더 정확합니다.', raw: renderer || '' };
       } catch {
-        return { value: '확인 제한', detail: '그래픽 정보를 확인할 수 없습니다.' };
+        return { value: '직접 입력 권장', detail: '그래픽 정보를 확인할 수 없어 직접 입력이 필요합니다.' };
       }
     };
 
@@ -246,41 +269,75 @@
 
     const renderAutoSpecs = () => {
       const specs = collectAutoSpecs();
+      lastAutoSpecs = specs;
       const cards = [
         { label: '운영체제 추정', value: specs.os, desc: '사용자 환경 문자열을 바탕으로 추정한 값입니다.' },
         { label: 'CPU 논리 코어', value: specs.cores ? `${specs.cores}개` : '확인 제한', desc: specs.cores ? '동시에 처리 가능한 논리 프로세서 수입니다.' : '현재 환경에서 제공되지 않습니다.', tone: specs.cores >= 8 ? 'success' : 'neutral' },
         { label: '메모리 추정', value: specs.memory ? `약 ${specs.memory}GB` : '확인 제한', desc: specs.memory ? '브라우저가 제공하는 대략적인 메모리 값입니다.' : '정확한 RAM은 직접 입력해 주세요.', tone: specs.memory >= 8 ? 'success' : 'neutral' },
-        { label: 'GPU/WebGL', value: specs.gpu.value, desc: specs.gpu.detail },
+        { label: 'GPU 자동 확인', value: specs.gpu.value, desc: specs.gpu.detail, tone: 'warning' },
         { label: '화면 해상도', value: specs.screen, desc: `픽셀 비율 ${specs.pixelRatio} 기준으로 표시됩니다.` },
-        { label: '정확한 부품명', value: '직접 입력 필요', desc: 'CPU 모델명, RAM, GPU, 저장장치는 아래 입력란을 활용하세요.', tone: 'warning' }
+        { label: '정확한 부품명', value: '직접 입력 필요', desc: 'CPU 모델명, GPU 모델, 저장장치 모델은 직접 입력이 더 정확합니다.', tone: 'warning' }
       ];
       autoGrid.innerHTML = cards.map(renderSpecCard).join('');
-      meaningList.innerHTML = buildAutoMeanings(specs).map((row) => `
-        <div class="result-row"><span>${escape(row.label)}</span><strong>${escape(row.text)}</strong></div>
-      `).join('');
     };
 
-    const buildAutoMeanings = (specs) => {
+    const buildAutoInterpretationRows = (specs, manualGpu) => {
       const rows = [];
+      rows.push({ label: '운영체제', text: `${specs.os}로 추정됩니다. 브라우저 환경 문자열 기준이라 실제 OS 세부 버전은 표시하지 않습니다.` });
       if (specs.cores) {
-        rows.push({ label: 'CPU 코어 의미', text: specs.cores >= 8 ? '여러 프로그램을 동시에 쓰는 작업에 비교적 유리한 편입니다.' : specs.cores >= 4 ? '문서 작업과 웹 사용에는 대체로 무난한 편입니다.' : '동시 작업이 많으면 체감이 답답할 수 있습니다.' });
+        rows.push({ label: 'CPU 논리 코어', text: specs.cores >= 12 ? `${specs.cores}개로 표시됩니다. 멀티태스킹, 개발 도구, 가벼운 편집 작업에 비교적 여유가 있는 편입니다.` : specs.cores >= 8 ? `${specs.cores}개로 표시됩니다. 일반 작업과 여러 프로그램 동시 사용에 무난한 편입니다.` : specs.cores >= 4 ? `${specs.cores}개로 표시됩니다. 문서·웹 사용은 가능하지만 무거운 작업은 직접 CPU 모델 확인이 필요합니다.` : `${specs.cores}개로 표시됩니다. 동시 작업이 많으면 체감이 답답할 수 있습니다.` });
       } else {
-        rows.push({ label: 'CPU 코어 의미', text: '자동 확인이 제한되어 직접 CPU 모델명을 입력하는 것이 좋습니다.' });
+        rows.push({ label: 'CPU 논리 코어', text: '자동 확인이 제한되어 CPU 모델명을 직접 입력하는 것이 좋습니다.' });
       }
       if (specs.memory) {
-        rows.push({ label: '메모리 의미', text: specs.memory >= 16 ? '여러 탭, 문서 작업, 가벼운 편집 작업에 여유가 있는 편입니다.' : specs.memory >= 8 ? '일반 작업에는 무난하지만 무거운 편집 작업은 부족할 수 있습니다.' : '여러 프로그램을 동시에 켜면 부족할 가능성이 있습니다.' });
+        rows.push({ label: '메모리 추정', text: specs.memory >= 16 ? `약 ${specs.memory}GB로 표시됩니다. 여러 탭, 문서 작업, 가벼운 편집 작업에는 여유가 있는 편입니다.` : specs.memory >= 8 ? `약 ${specs.memory}GB로 표시됩니다. 일반 작업은 무난하지만 영상 편집·게임·개발 작업은 여유가 제한될 수 있습니다.` : `약 ${specs.memory}GB로 표시됩니다. 여러 프로그램을 동시에 쓰면 부족할 가능성이 있습니다.` });
       } else {
-        rows.push({ label: '메모리 의미', text: '브라우저에서 RAM 값을 제공하지 않아 직접 입력이 필요합니다.' });
+        rows.push({ label: '메모리 추정', text: '브라우저에서 RAM 값을 제공하지 않았습니다. 정확한 용량은 직접 입력해 주세요.' });
       }
-      rows.push({ label: 'GPU 의미', text: specs.gpu.value.includes('확인') ? '그래픽 성능 판단은 GPU 모델명을 직접 입력해야 더 정확합니다.' : 'WebGL 렌더러 정보는 참고용이며 실제 그래픽카드 모델명과 다르게 보일 수 있습니다.' });
-      rows.push({ label: '화면 의미', text: '해상도는 작업 공간과 선명도에 영향을 주며, 모니터 크기와 배율 설정에 따라 체감이 달라집니다.' });
+      rows.push({ label: 'GPU', text: manualGpu ? `${manualGpu}로 직접 입력되었습니다. 게임·그래픽 작업 판단은 이 모델명을 기준으로 보는 것이 자동 WebGL 값보다 더 좋습니다.` : 'GPU 모델명이 직접 입력되지 않았습니다. 자동 WebGL 렌더러는 참고용이라 실제 그래픽카드 이름과 다를 수 있습니다.' });
+      rows.push({ label: '화면 해상도', text: `${specs.screen}로 표시됩니다. 해상도는 작업 공간과 선명도에 영향을 주지만, 체감은 모니터 크기와 배율 설정에 따라 달라집니다.` });
       return rows;
     };
 
+    const interpretAutoSpecs = () => {
+      const specs = lastAutoSpecs || collectAutoSpecs();
+      const manualGpu = autoGpuInput?.value.trim() || '';
+      const rows = buildAutoInterpretationRows(specs, manualGpu);
+      const body = `
+        <div class="pc-result-summary">
+          <div class="summary-callout">자동 확인값은 브라우저가 제공하는 범위 안에서만 표시됩니다. 정확한 CPU 모델명, GPU 모델명, 저장장치 모델은 직접 입력 결과를 함께 보는 것이 좋습니다.</div>
+          <div class="result-list">
+            ${rows.map((row) => `<div class="result-row"><span>${escape(row.label)}</span><strong>${escape(row.text)}</strong></div>`).join('')}
+          </div>
+          <p class="legal-note pc-note"><strong>안내:</strong> 이 해석은 자동 확인값과 직접 입력한 GPU명을 바탕으로 한 참고 설명입니다. 실제 성능은 정확한 모델명, 전력 제한, 발열, 드라이버, 작업 종류에 따라 달라집니다.</p>
+        </div>`;
+      showModal({ eyebrow: '자동 사양 해석', title: '자동 확인 사양 결과', body, wide: true });
+    };
+
     const classifyCpuScore = (score) => {
-      if (score >= 90000000) return { label: '높음', tone: 'success', width: '92%', text: '짧은 반복 연산 기준으로 비교적 높은 처리량입니다.' };
-      if (score >= 45000000) return { label: '보통', tone: 'neutral', width: '62%', text: '일반적인 작업에는 무난한 참고 처리량입니다.' };
-      return { label: '낮음', tone: 'warning', width: '34%', text: '현재 환경에서는 처리량이 낮게 측정되었습니다. 절전 모드나 백그라운드 작업을 확인해 보세요.' };
+      if (score >= 135000000) return { label: '매우 높음', tone: 'success', width: '98%', range: '고성능 데스크톱 i7/Ryzen 7급 이상 가능 범위', text: '짧은 반복 연산 기준으로 매우 높은 처리량입니다. 단, 브라우저 테스트라 실제 CPU 순위와 일치하지 않을 수 있습니다.' };
+      if (score >= 90000000) return { label: '높음', tone: 'success', width: '86%', range: '고성능 노트북 i5·i7 H급 또는 데스크톱 i5급 사이로 볼 수 있는 범위', text: '일반 작업, 개발, 가벼운 편집, 멀티태스킹에 비교적 유리한 처리량입니다.' };
+      if (score >= 55000000) return { label: '보통 이상', tone: 'neutral', width: '66%', range: '일반 노트북 i5/Ryzen 5 U급과 일부 데스크톱 보급형 CPU 사이로 볼 수 있는 범위', text: '문서 작업, 웹 사용, 온라인 강의, 가벼운 작업에는 무난한 참고 처리량입니다.' };
+      if (score >= 25000000) return { label: '보통', tone: 'neutral', width: '46%', range: '보급형 노트북 i3·Ryzen 3급 또는 구형 i5급 사이로 볼 수 있는 범위', text: '일반 작업은 가능하지만 여러 프로그램을 동시에 쓰거나 무거운 작업에서는 체감 차이가 날 수 있습니다.' };
+      return { label: '낮음', tone: 'warning', width: '28%', range: '저전력·입문형 CPU, Intel N100 또는 구형 모바일 CPU에 가까운 범위', text: '현재 환경에서는 처리량이 낮게 측정되었습니다. 절전 모드, 발열, 백그라운드 작업을 확인해 보세요.' };
+    };
+
+    const openCpuResultModal = (score, elapsed, grade) => {
+      const body = `
+        <div class="pc-result-summary">
+          <div class="summary-callout">참고 점수는 <strong>${escape(score.toLocaleString('ko-KR'))} ops/sec</strong>입니다. 현재 측정값은 <strong>${escape(grade.range)}</strong>로 이해하면 됩니다.</div>
+          <div class="cpu-compare-card">
+            <strong>${escape(grade.label)} · ${escape(grade.range)}</strong>
+            <p>${escape(grade.text)}</p>
+          </div>
+          <div class="result-list">
+            <div class="result-row"><span>참고 점수</span><strong>${escape(score.toLocaleString('ko-KR'))} ops/sec</strong></div>
+            <div class="result-row"><span>측정 시간</span><strong>약 ${escape(Math.round(elapsed))}ms</strong></div>
+            <div class="result-row"><span>주의할 점</span><strong>브라우저, 전원 모드, 발열, 백그라운드 작업에 따라 점수가 달라질 수 있습니다.</strong></div>
+          </div>
+          <p class="legal-note pc-note"><strong>안내:</strong> 이 비교군은 체감 이해를 돕기 위한 참고 설명입니다. 실제 CPU 벤치마크 순위나 제품 성능을 보장하지 않습니다.</p>
+        </div>`;
+      showModal({ eyebrow: 'CPU 간단 테스트', title: 'CPU 간단 테스트 결과', body, wide: true });
     };
 
     const runCpuTest = () => {
@@ -318,11 +375,12 @@
         cpuTestStatus.className = `status-pill ${grade.tone}`;
         benchmarkResult.innerHTML = `
           <div class="result-row"><span>참고 점수</span><strong>${escape(score.toLocaleString('ko-KR'))} ops/sec</strong></div>
-          <div class="result-row"><span>해석</span><strong>${escape(grade.text)}</strong></div>
+          <div class="result-row"><span>비교 범위</span><strong>${escape(grade.range)}</strong></div>
           <div class="result-row"><span>측정 시간</span><strong>약 ${escape(Math.round(elapsed))}ms</strong></div>
         `;
         cpuTestButton.disabled = false;
         cpuTestButton.textContent = 'CPU 간단 테스트 다시 시작';
+        openCpuResultModal(score, elapsed, grade);
         worker.terminate();
       };
       worker.onerror = () => {
@@ -331,6 +389,7 @@
         benchmarkResult.innerHTML = '<div class="result-row"><span>오류</span><strong>CPU 테스트를 실행할 수 없습니다.</strong></div>';
         cpuTestButton.disabled = false;
         cpuTestButton.textContent = 'CPU 간단 테스트 시작';
+        showModal({ eyebrow: 'CPU 간단 테스트', title: 'CPU 테스트 실행 오류', body: '<p>현재 브라우저 환경에서 CPU 간단 테스트를 실행할 수 없습니다. 새로고침 후 다시 시도해 주세요.</p>' });
         worker.terminate();
       };
       worker.postMessage({});
@@ -348,9 +407,9 @@
       const storageLower = storage.toLowerCase();
       const rows = [];
 
-      rows.push({ label: 'CPU', text: cpu ? (/(i7|i9|ryzen\s*7|ryzen\s*9|m[1-4]\s*(pro|max|ultra)?)/i.test(cpuLower) ? '무거운 작업에 비교적 유리한 CPU로 볼 수 있습니다.' : /(i5|ryzen\s*5|m[1-4])/i.test(cpuLower) ? '일반 작업과 중간 수준 작업에 무난한 CPU로 볼 수 있습니다.' : '모델 세부 성능 확인이 필요합니다.') : 'CPU 모델명을 입력하면 더 구체적으로 해석할 수 있습니다.' });
+      rows.push({ label: 'CPU', text: cpu ? (/(i7|i9|ryzen\s*7|ryzen\s*9|m[1-4]\s*(pro|max|ultra)?)/i.test(cpuLower) ? '무거운 작업에 비교적 유리한 CPU로 볼 수 있습니다. 다만 노트북은 전력 제한과 발열에 따라 체감 차이가 큽니다.' : /(i5|ryzen\s*5|m[1-4])/i.test(cpuLower) ? '일반 작업과 중간 수준 작업에 무난한 CPU로 볼 수 있습니다.' : /(i3|ryzen\s*3|n100|celeron|pentium)/i.test(cpuLower) ? '문서·웹 중심의 보급형 작업에 맞는 CPU로 볼 수 있습니다.' : '모델 세부 성능 확인이 필요합니다.') : 'CPU 모델명을 입력하면 더 구체적으로 해석할 수 있습니다.' });
       rows.push({ label: 'RAM', text: ramGb ? (ramGb >= 32 ? '영상 편집, 개발, 멀티태스킹에 여유가 큰 편입니다.' : ramGb >= 16 ? '일반 작업과 가벼운 편집, 개발 작업에 무난한 편입니다.' : ramGb >= 8 ? '일반 작업은 가능하지만 무거운 작업은 부족할 수 있습니다.' : '메모리가 부족해 여러 작업에서 답답할 수 있습니다.') : 'RAM 용량을 입력하면 작업 여유를 더 잘 판단할 수 있습니다.' });
-      rows.push({ label: 'GPU', text: gpu ? (/(rtx|gtx|radeon\s*rx|arc)/i.test(gpuLower) ? '별도 그래픽카드로 보이며 게임·그래픽 작업에 더 유리합니다.' : /(iris|uhd|vega|integrated|내장)/i.test(gpuLower) ? '내장 그래픽 계열로 보이며 문서·웹·가벼운 작업 중심에 적합합니다.' : 'GPU 모델명을 기준으로 추가 확인이 필요합니다.') : 'GPU 모델명을 입력하면 게임·그래픽 작업 가능성을 더 잘 볼 수 있습니다.' });
+      rows.push({ label: 'GPU', text: gpu ? (/(rtx\s*40|rtx\s*30|rtx\s*20|gtx|radeon\s*rx|arc)/i.test(gpuLower) ? '별도 그래픽카드로 보이며 게임·그래픽 작업에 더 유리합니다.' : /(iris|uhd|vega|integrated|내장|apple\s*m)/i.test(gpuLower) ? '내장 또는 통합 그래픽 계열로 보이며 문서·웹·가벼운 작업 중심에 적합합니다.' : 'GPU 모델명을 기준으로 추가 확인이 필요합니다.') : 'GPU 모델명을 입력하면 게임·그래픽 작업 가능성을 더 잘 볼 수 있습니다.' });
       rows.push({ label: '저장장치', text: storage ? (/nvme|ssd/i.test(storageLower) ? 'SSD 계열로 보이며 부팅과 프로그램 실행 체감에 유리합니다.' : /hdd/i.test(storageLower) ? 'HDD 계열은 대용량 보관에는 좋지만 체감 속도는 SSD보다 느릴 수 있습니다.' : '종류와 용량을 함께 확인하면 더 좋습니다.') : '저장장치 종류와 용량을 입력하면 체감 속도와 저장 여유를 판단하기 쉽습니다.' });
 
       const purposeText = {
@@ -365,12 +424,108 @@
       return rows;
     };
 
+    const showManualResult = (rows) => {
+      const body = `
+        <div class="pc-result-summary">
+          <div class="summary-callout">직접 입력한 CPU·RAM·GPU·저장장치 정보를 기준으로 용도별 의미를 정리했습니다.</div>
+          <div class="result-list">
+            ${rows.map((row) => `<div class="result-row"><span>${escape(row.label)}</span><strong>${escape(row.text)}</strong></div>`).join('')}
+          </div>
+          <p class="legal-note pc-note"><strong>안내:</strong> 이 해석은 입력한 텍스트와 일반적인 사양 기준을 바탕으로 한 참고 설명입니다. 정확한 성능은 실제 모델명, 전력 제한, 발열, 작업 종류에 따라 달라집니다.</p>
+        </div>`;
+      showModal({ eyebrow: '직접 입력 사양', title: '직접 입력 사양 해석', body, wide: true });
+    };
+
+    const normalizeOcrText = (text) => String(text || '').replace(/[|]/g, 'I').replace(/\s+/g, ' ').trim();
+
+    const extractSpecsFromText = (text) => {
+      const raw = normalizeOcrText(text);
+      const lower = raw.toLowerCase();
+      const lineText = String(text || '').split(/\n|\r/).map((line) => line.trim()).filter(Boolean);
+      const findLine = (keywords) => lineText.find((line) => keywords.some((word) => line.toLowerCase().includes(word)));
+      const cpuPattern = /(intel\s*)?(core\s*)?i[3579][-\s]?\d{3,5}[a-z]{0,3}|ryzen\s*[3579]\s*\d{3,5}[a-z]{0,3}|apple\s*m[1-4](\s*(pro|max|ultra))?|m[1-4](\s*(pro|max|ultra))?/i;
+      const gpuPattern = /rtx\s*\d{3,4}\s*(ti|super|laptop)?|gtx\s*\d{3,4}\s*(ti)?|radeon\s*(rx)?\s*\d{3,4}\s*[a-z]{0,3}|intel\s*(iris\s*xe|uhd\s*graphics|arc\s*[a-z0-9]+)|apple\s*m[1-4]\s*(gpu)?/i;
+      const ramPattern = /(\d{1,3})\s*(gb|기가)\s*(ram|memory|메모리)?/i;
+      const storagePattern = /((nvme\s*)?(ssd|hdd)\s*[a-z0-9\-\s]*\d+(?:\.\d+)?\s*(tb|gb)|\d+(?:\.\d+)?\s*(tb|gb)\s*(nvme\s*)?(ssd|hdd))/i;
+
+      let cpu = raw.match(cpuPattern)?.[0] || '';
+      const cpuLine = findLine(['cpu', 'processor', '프로세서', '칩']);
+      if (cpuLine && !cpu) cpu = cpuLine.replace(/^(cpu|processor|프로세서|칩)\s*[:：-]?\s*/i, '').slice(0, 80);
+
+      let ram = raw.match(ramPattern)?.[0] || '';
+      const ramLine = findLine(['ram', 'memory', '메모리']);
+      if (ramLine && !ram) ram = ramLine.match(/\d{1,3}\s*(gb|기가)/i)?.[0] || '';
+
+      let gpu = raw.match(gpuPattern)?.[0] || '';
+      const gpuLine = findLine(['gpu', 'graphics', '그래픽', 'vga']);
+      if (gpuLine && !gpu) gpu = gpuLine.replace(/^(gpu|graphics|그래픽|vga)\s*[:：-]?\s*/i, '').slice(0, 90);
+
+      let storage = raw.match(storagePattern)?.[0] || '';
+      const storageLine = findLine(['ssd', 'hdd', 'storage', '저장장치', '스토리지']);
+      if (storageLine && !storage) storage = storageLine.replace(/^(storage|저장장치|스토리지)\s*[:：-]?\s*/i, '').slice(0, 100);
+
+      return { cpu, ram, gpu, storage, raw, lower };
+    };
+
+    const fillIfFound = (selector, value) => {
+      const input = document.querySelector(selector);
+      if (input && value) input.value = value.trim();
+    };
+
+    const runOcr = async (file) => {
+      if (!file) return;
+      if (!window.Tesseract?.recognize) {
+        showModal({ eyebrow: '이미지 텍스트 인식', title: 'OCR 모듈을 불러오지 못했습니다', body: '<p>텍스트 인식 스크립트를 불러오지 못했습니다. 네트워크 상태를 확인하거나 직접 입력해 주세요.</p>' });
+        return;
+      }
+      if (ocrStatus) ocrStatus.textContent = '이미지에서 텍스트를 인식하는 중입니다. 잠시만 기다려 주세요.';
+      try {
+        const result = await window.Tesseract.recognize(file, 'kor+eng', {
+          logger: (message) => {
+            if (!ocrStatus || message.status !== 'recognizing text') return;
+            const pct = Math.round((message.progress || 0) * 100);
+            ocrStatus.textContent = `텍스트 인식 중... ${pct}%`;
+          }
+        });
+        const text = result?.data?.text || '';
+        const specs = extractSpecsFromText(text);
+        fillIfFound('#manual-cpu', specs.cpu);
+        fillIfFound('#manual-ram', specs.ram);
+        fillIfFound('#manual-gpu', specs.gpu);
+        fillIfFound('#manual-storage', specs.storage);
+        const found = [specs.cpu && 'CPU', specs.ram && 'RAM', specs.gpu && 'GPU', specs.storage && '저장장치'].filter(Boolean);
+        if (ocrStatus) ocrStatus.textContent = found.length ? `${found.join(', ')} 후보를 입력란에 채웠습니다. 정확한지 직접 확인해 주세요.` : '자동으로 찾은 사양 후보가 없습니다. 이미지를 더 선명하게 캡처하거나 직접 입력해 주세요.';
+        showModal({
+          eyebrow: '이미지 텍스트 인식',
+          title: '사양표 캡처 인식 결과',
+          wide: true,
+          body: `
+            <div class="pc-result-summary">
+              <div class="summary-callout">이미지에서 찾은 후보를 입력란에 채웠습니다. OCR은 오인식이 있을 수 있으므로 모델명과 용량을 반드시 확인해 주세요.</div>
+              <div class="result-list">
+                <div class="result-row"><span>CPU 후보</span><strong>${escape(specs.cpu || '찾지 못함')}</strong></div>
+                <div class="result-row"><span>RAM 후보</span><strong>${escape(specs.ram || '찾지 못함')}</strong></div>
+                <div class="result-row"><span>GPU 후보</span><strong>${escape(specs.gpu || '찾지 못함')}</strong></div>
+                <div class="result-row"><span>저장장치 후보</span><strong>${escape(specs.storage || '찾지 못함')}</strong></div>
+              </div>
+              <p class="legal-note pc-note"><strong>안내:</strong> 이미지는 브라우저에서 텍스트 인식에만 사용하며, 한눈체크 서버 DB에 저장하지 않습니다.</p>
+            </div>`
+        });
+      } catch (error) {
+        if (ocrStatus) ocrStatus.textContent = '텍스트 인식에 실패했습니다. 직접 입력해 주세요.';
+        showModal({ eyebrow: '이미지 텍스트 인식', title: 'OCR 실패', body: `<p>이미지 텍스트 인식 중 오류가 발생했습니다. 직접 입력하거나 더 선명한 이미지로 다시 시도해 주세요.</p><p class="legal-note pc-note">${escape(error?.message || '')}</p>` });
+      }
+    };
+
     manualForm?.addEventListener('submit', (event) => {
       event.preventDefault();
       const rows = interpretManual(new FormData(manualForm));
-      manualResultBox.innerHTML = '<div class="result-list">' + rows.map((row) => `
-        <div class="result-row"><span>${escape(row.label)}</span><strong>${escape(row.text)}</strong></div>
-      `).join('') + '</div><p class="legal-note pc-note"><strong>안내:</strong> 이 해석은 입력한 텍스트와 일반적인 사양 기준을 바탕으로 한 참고 설명입니다. 정확한 성능은 실제 모델명, 전력 제한, 발열, 작업 종류에 따라 달라집니다.</p>';
+      showManualResult(rows);
+    });
+
+    imageInput?.addEventListener('change', (event) => {
+      const file = event.target.files?.[0];
+      runOcr(file);
     });
 
     document.addEventListener('click', (event) => {
@@ -378,18 +533,10 @@
       const helpButton = event.target.closest('[data-help-topic]');
       if (!helpButton) return;
       const topic = helpContents[helpButton.dataset.helpTopic];
-      if (!topic || !modal || !modalTitle || !modalBody) return;
-      modalTitle.textContent = topic.title;
-      modalBody.innerHTML = topic.body;
-      modal.hidden = false;
-      document.body.classList.add('modal-open');
+      if (!topic) return;
+      showModal({ eyebrow: '확인 위치', title: topic.title, body: topic.body });
     });
 
-    const closeModal = () => {
-      if (!modal) return;
-      modal.hidden = true;
-      document.body.classList.remove('modal-open');
-    };
     modalClose?.addEventListener('click', closeModal);
     modal?.addEventListener('click', (event) => {
       if (event.target === modal) closeModal();
@@ -399,9 +546,11 @@
     });
 
     refreshButton?.addEventListener('click', renderAutoSpecs);
+    autoSpecInterpretButton?.addEventListener('click', interpretAutoSpecs);
     cpuTestButton?.addEventListener('click', runCpuTest);
     renderAutoSpecs();
   }
+
 
   const form = document.querySelector('#business-check-form');
   if (!form) return;

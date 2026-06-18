@@ -73,3 +73,5 @@ FTC_SERVICE_KEY=공정위 API 키
 ## 추가 기능
 
 - `/tools/pc-spec.html`: 브라우저에서 확인 가능한 컴퓨터 사양, 직접 입력 사양 해석, CPU 간단 테스트를 제공합니다.
+
+- `/tools/nutrition-check.html`: 영양성분표 OCR·직접 입력·제품 비교·바코드/푸드QR 보조 확인을 제공합니다.

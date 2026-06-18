@@ -1580,3 +1580,239 @@ body.drawer-open {
     max-width: 100%;
   }
 }
+
+/* v12 semantic PC guide and homepage refinements */
+.modal-benchmark-meter {
+  height: 14px;
+  overflow: hidden;
+  background: #eef4fb;
+  border-radius: 999px;
+}
+
+.modal-benchmark-meter span {
+  display: block;
+  height: 100%;
+  background: var(--check-blue);
+  border-radius: inherit;
+  transition: width 0.32s ease;
+}
+
+.hero-title {
+  font-size: clamp(2rem, 3.65vw, 3.05rem);
+  line-height: 1.08;
+}
+
+.feature-hero-grid.hero-grid {
+  grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+  gap: 28px;
+}
+
+.hero-copy {
+  min-width: 0;
+}
+
+.hero-panel.feature-panel.hero-window-panel {
+  min-width: 0;
+}
+
+.tool-card-grid {
+  grid-template-columns: repeat(6, minmax(112px, 1fr));
+  gap: 12px;
+}
+
+.big-tool-card {
+  min-height: 220px;
+  padding: 16px 14px;
+}
+
+.big-tool-card h3 {
+  font-size: 1rem;
+}
+
+.big-tool-card p {
+  font-size: 0.88rem;
+}
+
+.info-split-card .article-callout {
+  margin-top: 6px;
+}
+
+@media (max-width: 940px) {
+  .feature-hero-grid.hero-grid {
+    grid-template-columns: 1fr;
+  }
+  .tool-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .tool-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* v13 nutrition label checker */
+.nutrition-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.nutrition-tool-body {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+
+.nutrition-mode-grid,
+.compare-products-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.nutrition-input-card,
+.compare-product-card,
+.food-assist-card {
+  display: grid;
+  gap: 14px;
+}
+
+.nutrition-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nutrition-field-grid label,
+.compare-product-card label,
+.assist-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--check-primary);
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.nutrition-field-grid input,
+.nutrition-field-grid select,
+.compare-product-card input,
+.assist-form input {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 13px;
+  color: var(--check-text);
+  background: #f8fafc;
+  border: 1px solid var(--check-border);
+  border-radius: 14px;
+  outline: 0;
+}
+
+.nutrition-field-grid input:focus,
+.nutrition-field-grid select:focus,
+.compare-product-card input:focus,
+.assist-form input:focus {
+  border-color: var(--check-blue);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.nutrition-result-panel {
+  padding: 18px;
+  background: #f8fafc;
+  border: 1px solid var(--check-border);
+  border-radius: 22px;
+}
+
+.nutrition-result-panel[hidden] {
+  display: none;
+}
+
+.nutrition-result-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nutrition-result-card {
+  display: grid;
+  gap: 8px;
+  min-height: 170px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--check-border);
+  border-radius: 18px;
+}
+
+.nutrition-result-card span {
+  color: var(--check-muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.nutrition-result-card strong {
+  color: var(--check-primary);
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+
+.nutrition-result-card em {
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.nutrition-result-card p {
+  color: #475569;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.nutrition-result-card.success em { color: var(--check-success); background: var(--check-success-soft); }
+.nutrition-result-card.neutral em { color: #475569; background: #f1f5f9; }
+.nutrition-result-card.warning em { color: var(--check-warning); background: var(--check-warning-soft); }
+
+.nutrition-purpose-note {
+  margin-top: 0;
+}
+
+.compare-form,
+.assist-form {
+  display: grid;
+  gap: 14px;
+}
+
+.compare-submit {
+  max-width: 360px;
+  justify-self: center;
+}
+
+.nutrition-upload-box {
+  background: #fff;
+}
+
+@media (max-width: 1080px) {
+  .nutrition-layout,
+  .nutrition-mode-grid,
+  .compare-products-grid {
+    grid-template-columns: 1fr;
+  }
+  .nutrition-result-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .nutrition-field-grid,
+  .nutrition-result-grid {
+    grid-template-columns: 1fr;
+  }
+  .nutrition-tool-body {
+    padding: 18px;
+  }
+}

@@ -18,6 +18,14 @@
       ]
     },
     {
+      label: '식품·영양 체크',
+      tools: [
+        ['식품 영양 확인', '/tools/nutrition-check.html', '영양성분표 OCR·직접 입력·제품 비교 해석'],
+        ['영양성분표 해석', '/tools/nutrition-check.html#nutrition-tool', '열량·당류·나트륨·단백질 의미 확인'],
+        ['바코드 보조 확인', '/tools/nutrition-check.html#food-assist', '제품명·식품유형 후보 확인용 보조 기능']
+      ]
+    },
+    {
       label: '거래 전 점검 가이드',
       tools: [
         ['무통장입금 전 확인사항', '/guides/before-bank-transfer.html', '입금 전에 추가로 봐야 할 기준 설명'],
@@ -37,6 +45,7 @@
 
   initToolDrawer();
   initPcSpecTool();
+  initNutritionTool();
 
 
   function initToolDrawer() {
@@ -281,35 +290,98 @@
       autoGrid.innerHTML = cards.map(renderSpecCard).join('');
     };
 
+    const describeNvidiaSeries = (series) => {
+      if (series >= 50) return 'RTX 50 시리즈는 최신 세대에 가까운 그래픽 계열입니다. 같은 50 시리즈 안에서도 5060·5070·5080·5090처럼 뒤 두 자리 등급에 따라 체감 성능 차이가 큽니다.';
+      if (series >= 40) return 'RTX 40 시리즈는 최근 세대 외장 그래픽 계열입니다. DLSS 3 계열 기능과 전력 효율이 장점인 편이며, 노트북은 전력 제한에 따라 성능 차이가 큽니다.';
+      if (series >= 30) return 'RTX 30 시리즈는 아직 FHD 게임과 일반 그래픽 작업에 많이 쓰이는 외장 그래픽 계열입니다. 최신 기능과 전력 효율은 40·50 시리즈보다 제한될 수 있습니다.';
+      if (series >= 20) return 'RTX 20 시리즈는 레이트레이싱을 지원하는 구형 RTX 계열입니다. 최신 게임에서는 옵션 조정이 필요할 수 있습니다.';
+      return 'GTX 계열은 RTX 기능은 제한적이지만, 모델에 따라 FHD 게임과 일반 그래픽 작업에 활용할 수 있습니다.';
+    };
+
     const classifyGpuText = (gpuText) => {
       const original = String(gpuText || '').trim();
       const text = original.toLowerCase();
-      if (/rtx\s*4060\s*laptop/i.test(original)) return { label: '중상급 노트북 외장 GPU', score: 2.15, text: 'RTX 4060 Laptop 계열로 보입니다. FHD 게임과 GPU 가속이 들어가는 그래픽 작업에 유리하며, 노트북 제품은 전력 한계(TGP)와 발열 설계에 따라 같은 RTX 4060이라도 체감 차이가 큽니다.' };
-      if (/(rtx\s*40(8|9)|rtx\s*50|rx\s*79|rx\s*78)/i.test(text)) return { label: '상급 외장 GPU', score: 2.4, text: '고해상도 게임, 그래픽 작업, GPU 가속 작업에 유리한 상급 그래픽 계열로 볼 수 있습니다.' };
-      if (/(rtx\s*40(5|6|7)|rtx\s*30(6|7|8)|rx\s*6[67]|rx\s*77|arc\s*a7)/i.test(text)) return { label: '중상급 외장 GPU', score: 2, text: 'FHD 게임, 그래픽 작업, 영상 편집 보조에 비교적 유리한 그래픽 계열로 볼 수 있습니다.' };
-      if (/(rtx\s*20|rtx\s*30(5)|gtx\s*16|gtx\s*10|rx\s*5|rx\s*6|arc)/i.test(text)) return { label: '외장 GPU', score: 1.4, text: '내장 그래픽보다 그래픽 작업에 유리하지만, 모델별 성능 차이가 큽니다.' };
-      if (/(iris|uhd|vega|integrated|내장|apple\s*m|radeon\s*graphics)/i.test(text)) return { label: '내장·통합 GPU', score: 0.6, text: '문서, 웹, 영상 시청, 가벼운 그래픽 작업 중심에 적합한 그래픽 계열로 볼 수 있습니다.' };
-      return { label: 'GPU 확인 필요', score: 0, text: 'GPU 모델명이 명확하지 않아 게임·그래픽 작업 판단은 직접 입력값 확인이 필요합니다.' };
+      if (!original) return { label: 'GPU 확인 필요', score: 0, text: 'GPU 모델명이 명확하지 않아 게임·그래픽 작업 판단은 직접 입력값 확인이 필요합니다.' };
+
+      const rtx = text.match(/rtx\s*(\d{2})(\d{2})\s*(ti|super)?\s*(laptop|mobile)?/i);
+      if (rtx) {
+        const series = Number(rtx[1]);
+        const classNum = Number(rtx[2]);
+        const hasLaptop = /laptop|mobile/i.test(text);
+        const suffix = rtx[3] ? ` ${rtx[3].toUpperCase()}` : '';
+        let label = '외장 GPU';
+        let score = 1.4;
+        let useCase = '내장 그래픽보다 게임·그래픽 작업에 유리합니다.';
+        if (classNum >= 90) { label = '최상급 외장 GPU'; score = 3.1; useCase = '4K 게임, 고해상도 영상 편집, GPU 가속 작업까지 강한 계열입니다.'; }
+        else if (classNum >= 80) { label = '상급 외장 GPU'; score = 2.7; useCase = 'QHD~4K 게임, 영상 편집, 그래픽 작업에 유리한 계열입니다.'; }
+        else if (classNum >= 70) { label = '중상급 외장 GPU'; score = 2.35; useCase = 'FHD~QHD 게임과 그래픽 작업에 비교적 유리한 계열입니다.'; }
+        else if (classNum >= 60) { label = '메인스트림 외장 GPU'; score = 2.05; useCase = 'FHD 게임, 일반 그래픽 작업, 영상 편집 보조에 무난한 계열입니다.'; }
+        else if (classNum >= 50) { label = '보급형 외장 GPU'; score = 1.55; useCase = '가벼운 게임과 GPU 가속 보조에는 도움이 되지만, 고해상도 게임은 옵션 조정이 필요합니다.'; }
+        const laptopNote = hasLaptop || /laptop/i.test(original) ? ' 노트북용 GPU는 같은 모델명이라도 TGP, 냉각 설계, 전원 모드에 따라 성능 차이가 큽니다.' : '';
+        return { label, score, text: `${original}는 NVIDIA RTX ${series} 시리즈 ${classNum}급${suffix} 그래픽카드로 보입니다. ${describeNvidiaSeries(series)} 뒤 두 자리 ${classNum}은 대략적인 등급을 보는 데 쓰이며, 숫자가 클수록 같은 세대 안에서 상위 제품군에 가깝습니다. ${useCase}${laptopNote}` };
+      }
+
+      const gtx = text.match(/gtx\s*(\d{2})(\d{2})\s*(ti)?/i);
+      if (gtx) {
+        const series = Number(gtx[1]);
+        const classNum = Number(gtx[2]);
+        const score = classNum >= 60 ? 1.35 : 1.05;
+        return { label: classNum >= 60 ? '구형 메인스트림 외장 GPU' : '구형 보급형 외장 GPU', score, text: `${original}는 NVIDIA GTX ${series} 시리즈 ${classNum}급 그래픽카드로 보입니다. RTX 계열의 최신 AI 프레임 생성·레이트레이싱 기능은 제한적이지만, 모델에 따라 FHD 게임과 일반 그래픽 작업에는 사용할 수 있습니다.` };
+      }
+
+      const rx = text.match(/(?:radeon\s*)?rx\s*(\d)(\d)(\d{2})\s*(xt|gre)?/i);
+      if (rx) {
+        const generation = Number(rx[1]);
+        const classDigit = Number(rx[2]);
+        let label = 'Radeon 외장 GPU';
+        let score = 1.45;
+        if (classDigit >= 9) { label = '상급 Radeon 외장 GPU'; score = 2.65; }
+        else if (classDigit >= 8) { label = '중상급 Radeon 외장 GPU'; score = 2.25; }
+        else if (classDigit >= 7) { label = '메인스트림 Radeon 외장 GPU'; score = 1.85; }
+        else if (classDigit >= 6) { label = '보급형 Radeon 외장 GPU'; score = 1.35; }
+        return { label, score, text: `${original}는 AMD Radeon RX ${generation}000번대 계열로 보입니다. 앞자리 ${generation}은 세대, 다음 숫자 ${classDigit}은 같은 세대 안의 대략적인 등급을 보는 데 도움이 됩니다. 게임 성능은 모델 등급, VRAM, 드라이버, 해상도에 따라 차이가 큽니다.` };
+      }
+
+      const mobileRadeon = text.match(/radeon\s*(7[68]0m|8[89]0m|graphics)/i);
+      if (mobileRadeon) {
+        return { label: '고성능 내장·통합 GPU', score: /780m|880m|890m/i.test(text) ? 1.15 : 0.75, text: `${original}는 AMD 내장·통합 그래픽 계열로 보입니다. Radeon 780M·880M처럼 성능이 좋은 내장 GPU는 가벼운 FHD 게임과 그래픽 가속에 쓸 수 있지만, RTX·RX 외장 GPU와는 급이 다릅니다. 메모리 듀얼채널 구성도 체감에 영향을 줍니다.` };
+      }
+
+      if (/intel\s*arc\s*(a?\d{3}|b?\d{3})|arc\s*(a?\d{3}|b?\d{3})/i.test(text)) {
+        return { label: 'Intel Arc 외장·고성능 GPU', score: /770|750|580|b[57]/i.test(text) ? 1.75 : 1.2, text: `${original}는 Intel Arc 그래픽 계열로 보입니다. 게임과 그래픽 작업에 활용할 수 있지만, 체감은 드라이버와 게임별 최적화 영향을 비교적 크게 받습니다.` };
+      }
+
+      if (/iris\s*xe|intel\s*uhd|uhd\s*graphics|integrated|내장/i.test(text)) {
+        return { label: '내장 GPU', score: /iris/i.test(text) ? 0.75 : 0.45, text: `${original}는 내장 그래픽 계열로 보입니다. 문서, 웹, 영상 시청, 온라인 강의에는 충분한 경우가 많지만, 최신 게임·3D 작업·무거운 영상 편집은 제한될 수 있습니다.` };
+      }
+
+      if (/apple\s*m[1-4]|m[1-4]\s*(pro|max|ultra)?\s*gpu/i.test(text)) {
+        return { label: 'Apple 통합 GPU', score: /max|ultra/i.test(text) ? 2.25 : /pro/i.test(text) ? 1.85 : 1.25, text: `${original}는 Apple Silicon 통합 GPU 계열로 보입니다. 영상 편집과 디자인 앱에서 전력 효율이 좋은 편이며, Pro·Max·Ultra 여부와 통합 메모리 용량에 따라 전문 작업 체감이 크게 달라집니다.` };
+      }
+
+      return { label: 'GPU 세부 확인 필요', score: 0.4, text: `${original}는 자동 규칙으로 그래픽 등급을 확정하기 어렵습니다. 제조사 사양표에서 정확한 GPU 모델명과 VRAM, 노트북이면 TGP를 함께 확인하는 것이 좋습니다.` };
     };
 
     const summarizeAutoGrade = (specs, manualGpu) => {
       const gpuText = manualGpu || specs.gpu.raw || '';
       const gpuGrade = classifyGpuText(gpuText);
       let score = 0;
-      if (specs.cores >= 16) score += 3;
+      if (specs.cores >= 20) score += 3.4;
+      else if (specs.cores >= 16) score += 3;
       else if (specs.cores >= 12) score += 2.5;
       else if (specs.cores >= 8) score += 2;
       else if (specs.cores >= 4) score += 1;
-      if (specs.memory >= 32) score += 2;
+      if (specs.memory >= 64) score += 2.4;
+      else if (specs.memory >= 32) score += 2;
       else if (specs.memory >= 16) score += 1.6;
       else if (specs.memory >= 8) score += 1;
       else if (specs.memory) score += 0.4;
       score += gpuGrade.score;
 
-      if (score >= 6) return { label: '고성능 작업용·게이밍 PC급으로 볼 수 있는 구성', detail: '멀티태스킹, 개발, FHD~QHD 게임, 가벼운 영상 편집까지 비교적 여유가 있는 쪽입니다.', gpuGrade };
-      if (score >= 4.5) return { label: '중상급 생산성·FHD 게임 가능급으로 볼 수 있는 구성', detail: '문서·웹·개발·가벼운 편집에는 여유가 있고, GPU 모델에 따라 게임 체감도 기대할 수 있습니다.', gpuGrade };
-      if (score >= 3) return { label: '일반 업무·학습용 이상으로 볼 수 있는 구성', detail: '웹서핑, 문서 작업, 온라인 강의, 여러 탭 사용은 대체로 무난하며 무거운 게임·편집은 추가 확인이 필요합니다.', gpuGrade };
-      if (score >= 1.5) return { label: '기본 업무·웹 사용 중심 구성으로 볼 수 있습니다', detail: '가벼운 작업에는 사용할 수 있지만, 멀티태스킹이나 무거운 프로그램은 체감이 제한될 수 있습니다.', gpuGrade };
+      if (score >= 7.3) return { label: '고성능 작업용·게이밍 PC급으로 볼 수 있는 구성', detail: '멀티태스킹, 개발, FHD~QHD 게임, 영상 편집 보조까지 여유가 있는 쪽입니다.', gpuGrade };
+      if (score >= 5.8) return { label: '중상급 생산성·FHD 게임 가능급으로 볼 수 있는 구성', detail: '문서·웹·개발·가벼운 편집에는 여유가 있고, GPU 모델에 따라 게임 체감도 기대할 수 있습니다.', gpuGrade };
+      if (score >= 3.8) return { label: '일반 업무·학습용 이상으로 볼 수 있는 구성', detail: '웹서핑, 문서 작업, 온라인 강의, 여러 탭 사용은 대체로 무난하며 무거운 게임·편집은 추가 확인이 필요합니다.', gpuGrade };
+      if (score >= 1.8) return { label: '기본 업무·웹 사용 중심 구성으로 볼 수 있습니다', detail: '가벼운 작업에는 사용할 수 있지만, 멀티태스킹이나 무거운 프로그램은 체감이 제한될 수 있습니다.', gpuGrade };
       return { label: '자동 확인값만으로는 등급 판단이 제한됩니다', detail: 'CPU 모델명, RAM, GPU, 저장장치를 직접 입력하면 더 정확하게 해석할 수 있습니다.', gpuGrade };
     };
 
@@ -322,12 +394,12 @@
       rows.push({ label: '종합 추정', text: `${coreText}, ${memoryText}, ${gpuText} 기준으로 ${grade.label}입니다. ${grade.detail}` });
       rows.push({ label: '운영체제', text: `${specs.os}로 추정됩니다. 웹페이지는 보안 정책상 Windows 세부 버전, 설치된 프로그램, 장치 드라이버 상태까지 직접 확인하지는 않습니다.` });
       if (specs.cores) {
-        rows.push({ label: 'CPU 논리 코어', text: specs.cores >= 16 ? `${specs.cores}개로 표시됩니다. 이 정도 논리 코어 수는 고성능 노트북 H급 CPU나 데스크톱 중급 이상 CPU에서 자주 보이는 범위라 멀티태스킹, 개발 도구, 가벼운 영상 편집에 유리한 편입니다. 단, 정확한 CPU 모델명은 직접 입력해야 합니다.` : specs.cores >= 12 ? `${specs.cores}개로 표시됩니다. 일반 노트북보다 작업 여유가 있는 편이며, 여러 프로그램을 동시에 쓰는 환경에 비교적 적합합니다.` : specs.cores >= 8 ? `${specs.cores}개로 표시됩니다. 문서·웹·온라인 강의와 일반 멀티태스킹에는 무난한 편입니다.` : specs.cores >= 4 ? `${specs.cores}개로 표시됩니다. 기본 작업은 가능하지만 개발·편집·게임은 CPU 모델 확인이 필요합니다.` : `${specs.cores}개로 표시됩니다. 동시 작업이 많으면 체감이 제한될 수 있습니다.` });
+        rows.push({ label: 'CPU 논리 코어', text: specs.cores >= 20 ? `${specs.cores}개로 표시됩니다. 고성능 데스크톱이나 상급 노트북에서 자주 보이는 범위라 개발·편집·동시 작업에 유리한 편입니다. 정확한 CPU 모델명은 직접 입력해야 합니다.` : specs.cores >= 16 ? `${specs.cores}개로 표시됩니다. 고성능 노트북 H급 CPU나 데스크톱 중급 이상 CPU에서 자주 보이는 범위라 멀티태스킹, 개발 도구, 가벼운 영상 편집에 유리한 편입니다.` : specs.cores >= 12 ? `${specs.cores}개로 표시됩니다. 일반 노트북보다 작업 여유가 있는 편이며, 여러 프로그램을 동시에 쓰는 환경에 비교적 적합합니다.` : specs.cores >= 8 ? `${specs.cores}개로 표시됩니다. 문서·웹·온라인 강의와 일반 멀티태스킹에는 무난한 편입니다.` : specs.cores >= 4 ? `${specs.cores}개로 표시됩니다. 기본 작업은 가능하지만 개발·편집·게임은 CPU 모델 확인이 필요합니다.` : `${specs.cores}개로 표시됩니다. 동시 작업이 많으면 체감이 제한될 수 있습니다.` });
       } else {
         rows.push({ label: 'CPU 논리 코어', text: '자동 확인이 제한되었습니다. CPU 모델명을 직접 입력하면 용도별 판단이 더 정확해집니다.' });
       }
       if (specs.memory) {
-        rows.push({ label: '메모리 추정', text: specs.memory >= 32 ? `약 ${specs.memory}GB로 표시됩니다. 대형 프로젝트, 영상 편집, 개발 도구와 브라우저 탭을 많이 여는 작업에 여유가 큰 편입니다.` : specs.memory >= 16 ? `약 ${specs.memory}GB로 표시됩니다. 현재 일반 노트북·PC 기준으로 표준 이상에 가까운 용량이며, 문서·웹·개발·FHD 게임에는 대체로 무난합니다. 영상 편집이나 가상머신은 32GB가 더 안정적입니다.` : specs.memory >= 8 ? `약 ${specs.memory}GB로 표시됩니다. 기본 작업은 가능하지만 여러 프로그램을 동시에 쓰거나 게임·편집을 하면 부족할 수 있습니다.` : `약 ${specs.memory}GB로 표시됩니다. 여러 프로그램을 동시에 쓰기에는 부족할 수 있습니다.` });
+        rows.push({ label: '메모리 추정', text: specs.memory >= 64 ? `약 ${specs.memory}GB로 표시됩니다. 대형 영상 편집, 개발 서버, 가상머신, 대형 파일 작업까지 여유가 큰 범위입니다.` : specs.memory >= 32 ? `약 ${specs.memory}GB로 표시됩니다. 개발, 영상 편집, 여러 프로그램 동시 실행에 안정적인 편입니다.` : specs.memory >= 16 ? `약 ${specs.memory}GB로 표시됩니다. 현재 일반 노트북·PC 기준으로 표준 이상에 가까운 용량이며, 문서·웹·개발·FHD 게임에는 대체로 무난합니다. 영상 편집이나 가상머신은 32GB가 더 안정적입니다.` : specs.memory >= 8 ? `약 ${specs.memory}GB로 표시됩니다. 기본 작업은 가능하지만 여러 프로그램을 동시에 쓰거나 게임·편집을 하면 부족할 수 있습니다.` : `약 ${specs.memory}GB로 표시됩니다. 여러 프로그램을 동시에 쓰기에는 부족할 수 있습니다.` });
       } else {
         rows.push({ label: '메모리 추정', text: '브라우저가 RAM 추정값을 제공하지 않았습니다. 실제 용량을 직접 입력하는 것이 좋습니다.' });
       }
@@ -363,6 +435,7 @@
       const body = `
         <div class="pc-result-summary">
           <div class="summary-callout">참고 점수는 <strong>${escape(score.toLocaleString('ko-KR'))} ops/sec</strong>입니다. 현재 측정값은 <strong>${escape(grade.range)}</strong>로 이해하면 됩니다.</div>
+          <div class="modal-benchmark-meter" aria-label="CPU 간단 테스트 상대 위치"><span style="width: ${escape(grade.width)}"></span></div>
           <div class="cpu-compare-card">
             <strong>${escape(grade.label)} · ${escape(grade.range)}</strong>
             <p>${escape(grade.text)}</p>
@@ -421,38 +494,69 @@
       const value = String(cpu || '').trim();
       const text = value.toLowerCase();
       if (!value) return { score: 0, tier: 'CPU 미입력', text: 'CPU 모델명을 입력하면 작업 성격에 맞는 해석이 더 구체적입니다.' };
-      const intel = text.match(/i([3579])[-\s]?(\d{4,5})?\s*([a-z]{0,3})/i);
+
+      const ultra = text.match(/core\s*ultra\s*([579])\s*([0-9]{3}[a-z]*)?/i);
+      if (ultra) {
+        const grade = Number(ultra[1]);
+        const model = ultra[2] || '';
+        const score = grade >= 9 ? 3.5 : grade >= 7 ? 3.05 : 2.45;
+        const tier = `Intel Core Ultra ${grade}${model ? ` ${model}` : ''} 계열`;
+        const textOut = `${value}는 Intel Core Ultra ${grade} 계열로 보입니다. Core Ultra는 AI/NPU와 전력 효율을 강조한 비교적 최신 모바일 CPU 라인입니다. 숫자 5·7·9는 대략적인 제품 등급을 뜻하며, 9가 가장 상위에 가깝습니다. 문서·개발·멀티태스킹에는 유리하고, 게임·영상 편집은 GPU와 전력 설정도 함께 봐야 합니다.`;
+        return { score, tier, text: textOut };
+      }
+
+      const intel = text.match(/(?:intel\s*)?(?:core\s*)?i([3579])[-\s]?(\d{3,5})?\s*([a-z]{0,3})/i);
+      const ryzenAi = text.match(/ryzen\s*ai\s*(?:([3579])\s*)?(?:hx\s*)?(\d{3})?/i);
       const ryzen = text.match(/ryzen\s*([3579])\s*(\d{4,5})?\s*([a-z]{0,3})/i);
-      const apple = text.match(/m([1-4])\s*(pro|max|ultra)?/i);
+      const apple = text.match(/(?:apple\s*)?m([1-4])\s*(pro|max|ultra)?/i);
+
       if (intel) {
         const grade = Number(intel[1]);
         const num = intel[2] || '';
         const suffix = (intel[3] || '').toUpperCase();
         const generation = num.length >= 5 ? Number(num.slice(0, 2)) : num.length >= 4 ? Number(num.slice(0, 1)) : null;
-        const isLaptopHigh = /HX|HK|H/.test(suffix);
-        const isLowPower = /U|Y/.test(suffix);
-        const family = `Intel Core i${grade}${generation ? ` ${generation}세대` : ''}${suffix ? ` ${suffix}급` : ''}`;
-        if (grade >= 7 && isLaptopHigh) return { score: 3.4, tier: `${family} 고성능 노트북 CPU`, text: `${value}는 ${family}으로 보입니다. 고성능 노트북 라인에 가까워 게임, 개발 도구, 멀티태스킹, FHD 영상 편집에 유리한 편입니다. 다만 노트북 CPU는 전력 설정과 발열 설계에 따라 같은 모델도 성능 차이가 큽니다.` };
-        if (grade >= 7) return { score: 3.1, tier: `${family} 상급 CPU`, text: `${value}는 상급 CPU 계열로 볼 수 있습니다. 무거운 문서 작업, 개발, 가벼운 편집과 여러 프로그램 동시 사용에 여유가 있는 편입니다.` };
-        if (grade === 5) return { score: 2.4, tier: `${family} 중급 CPU`, text: `${value}는 중급 CPU 계열로 볼 수 있습니다. 일반 작업과 FHD 게임, 가벼운 개발 작업에 무난하며, 고해상도 편집은 RAM과 GPU도 함께 봐야 합니다.` };
-        if (grade <= 3 || isLowPower) return { score: 1.3, tier: `${family} 보급·저전력 CPU`, text: `${value}는 기본 작업 중심의 CPU로 보는 것이 안전합니다. 문서·웹·강의는 가능하지만 무거운 편집이나 최신 게임은 제한될 수 있습니다.` };
+        const className = grade >= 9 ? '최상급' : grade >= 7 ? '상급' : grade >= 5 ? '중급' : '보급형';
+        const suffixDesc = /HX/.test(suffix) ? 'HX는 고성능 노트북용 최상위 전력대에 가까운 표기입니다.' : /H|HK/.test(suffix) ? 'H는 고성능 노트북용 CPU에서 자주 쓰이는 표기입니다.' : /P/.test(suffix) ? 'P는 휴대성과 성능 사이의 모바일 라인에서 자주 보입니다.' : /U|Y/.test(suffix) ? 'U·Y는 저전력 노트북용 표기로 배터리 효율을 중시하는 경우가 많습니다.' : /K/.test(suffix) ? 'K는 데스크톱에서 오버클럭 가능 계열에 붙는 표기입니다.' : /F/.test(suffix) ? 'F는 보통 내장 그래픽이 빠진 데스크톱 CPU 표기입니다.' : '접미사가 없거나 명확하지 않으면 데스크톱/노트북 여부를 사양표에서 함께 보는 것이 좋습니다.';
+        const genDesc = generation ? `${num}에서 앞의 ${generation}은 세대를 보는 핵심 숫자입니다. 같은 i5·i7이라도 세대가 높을수록 효율과 기능이 좋아지는 경향이 있습니다.` : '세대 숫자를 확인하면 오래된 CPU인지 최근 CPU인지 판단하기 쉬워집니다.';
+        let score = grade >= 9 ? 3.75 : grade >= 7 ? 3.05 : grade >= 5 ? 2.35 : 1.25;
+        if (/HX|H|HK/.test(suffix)) score += 0.35;
+        if (/U|Y/.test(suffix)) score -= 0.25;
+        const tier = `Intel Core i${grade}${generation ? ` ${generation}세대` : ''} ${className} CPU`;
+        const use = grade >= 7 ? '게임, 개발 도구, 멀티태스킹, FHD 영상 편집에 비교적 유리합니다' : grade === 5 ? '문서·웹·개발 입문·FHD 게임 보조에 무난한 중간급으로 볼 수 있습니다' : '문서·웹·온라인 강의 중심의 기본 작업에 맞는 쪽으로 보는 것이 안전합니다';
+        return { score, tier, text: `${value}는 ${tier}로 보입니다. i3·i5·i7·i9에서 숫자는 제품 등급을 뜻하며, i3는 보급형, i5는 중급, i7은 상급, i9는 최상급에 가깝습니다. ${genDesc} ${suffixDesc} 이 CPU는 ${use}.` };
       }
+
+      if (ryzenAi) {
+        const grade = Number(ryzenAi[1] || 9);
+        const model = ryzenAi[2] || '';
+        const score = grade >= 9 ? 3.55 : grade >= 7 ? 3.05 : 2.45;
+        return { score, tier: `Ryzen AI ${grade}${model ? ` ${model}` : ''} 계열`, text: `${value}는 Ryzen AI 계열로 보입니다. AI/NPU와 전력 효율을 강조한 최신 모바일 CPU 라인에 가깝고, 문서·개발·멀티태스킹·콘텐츠 작업에 유리한 편입니다. 게임과 그래픽 작업은 내장 GPU인지 외장 GPU인지에 따라 체감 차이가 큽니다.` };
+      }
+
       if (ryzen) {
         const grade = Number(ryzen[1]);
         const num = ryzen[2] || '';
         const suffix = (ryzen[3] || '').toUpperCase();
-        const generation = num ? `${num[0]}000번대` : '';
-        if (grade >= 7) return { score: 3.2, tier: `Ryzen ${grade} ${generation} 상급 CPU`, text: `${value}는 Ryzen ${grade} 계열로 보입니다. 멀티태스킹, 개발, 편집 작업에 비교적 유리하며 노트북은 전력 제한을 함께 봐야 합니다.` };
-        if (grade === 5) return { score: 2.4, tier: `Ryzen ${grade} ${generation} 중급 CPU`, text: `${value}는 중급 CPU 계열로 볼 수 있습니다. 일반 작업, 개발 입문, FHD 게임 보조에는 무난한 편입니다.` };
-        return { score: 1.3, tier: `Ryzen ${grade} 보급형 CPU`, text: `${value}는 기본 작업 중심으로 보는 것이 좋습니다. 무거운 프로그램은 세부 모델과 RAM을 함께 확인해야 합니다.` };
+        const series = num ? Number(num[0]) : null;
+        const className = grade >= 9 ? '최상급' : grade >= 7 ? '상급' : grade >= 5 ? '중급' : '보급형';
+        const suffixDesc = /HX/.test(suffix) ? 'HX는 고성능 노트북용 상위 전력대 표기입니다.' : /HS/.test(suffix) ? 'HS는 고성능과 휴대성 균형을 노린 노트북용 표기입니다.' : /H/.test(suffix) ? 'H는 고성능 노트북용 CPU에서 자주 쓰입니다.' : /U/.test(suffix) ? 'U는 저전력 노트북용 표기로 배터리 효율을 중시하는 경우가 많습니다.' : /X/.test(suffix) ? 'X는 데스크톱 고성능 계열에서 자주 보이는 표기입니다.' : '접미사는 데스크톱/노트북 라인과 전력 특성을 볼 때 참고합니다.';
+        let score = grade >= 9 ? 3.6 : grade >= 7 ? 3.1 : grade >= 5 ? 2.35 : 1.25;
+        if (/HX|HS|H|X/.test(suffix)) score += 0.25;
+        if (/U/.test(suffix)) score -= 0.2;
+        return { score, tier: `Ryzen ${grade}${series ? ` ${series}000번대` : ''} ${className} CPU`, text: `${value}는 Ryzen ${grade} 계열로 보입니다. Ryzen 3·5·7·9의 숫자는 제품 등급을 뜻하며, 5는 중급, 7은 상급, 9는 최상급에 가깝습니다. ${num ? `${num}의 첫 숫자 ${num[0]}은 제품 세대를 보는 데 도움이 됩니다.` : '모델 숫자를 알면 세대와 등급을 더 구체적으로 볼 수 있습니다.'} ${suffixDesc} 멀티태스킹과 개발·편집 작업은 RAM 용량과 저장장치 속도도 함께 봐야 합니다.` };
       }
+
       if (apple) {
-        const chip = `Apple M${apple[1]}${apple[2] ? ' ' + apple[2].toUpperCase() : ''}`;
-        const score = apple[2] ? 3.4 : 2.5;
-        return { score, tier: `${chip} 계열`, text: `${value}는 ${chip} 계열로 보입니다. 문서·웹·개발·콘텐츠 작업에서 전력 효율이 좋은 편이며, Pro/Max/Ultra 여부와 메모리 용량에 따라 전문 작업 체감이 달라집니다.` };
+        const gen = Number(apple[1]);
+        const suffix = apple[2] ? apple[2].toUpperCase() : '';
+        const score = suffix === 'ULTRA' ? 3.8 : suffix === 'MAX' ? 3.55 : suffix === 'PRO' ? 3.15 : 2.35 + gen * 0.08;
+        const tier = `Apple M${gen}${suffix ? ` ${suffix}` : ''} 계열`;
+        const desc = suffix ? `${suffix}는 기본 M칩보다 GPU와 메모리 대역폭, 전문 작업 여유가 큰 상위 라인입니다.` : '기본 M칩은 전력 효율과 일상·개발·콘텐츠 작업 균형이 좋은 편입니다.';
+        return { score, tier, text: `${value}는 ${tier}로 보입니다. Apple M 시리즈는 CPU와 GPU, 메모리를 통합한 구조라 전력 효율이 좋습니다. ${desc} 영상 편집과 디자인 작업은 메모리 용량과 Pro/Max/Ultra 여부를 함께 확인해야 합니다.` };
       }
-      if (/n100|celeron|pentium|athlon/i.test(text)) return { score: 0.9, tier: '입문형 CPU', text: `${value}는 입문형 또는 저전력 CPU 계열로 보입니다. 웹서핑, 문서, 영상 시청 중심으로 보는 것이 좋습니다.` };
-      return { score: 1.8, tier: '세부 확인 필요 CPU', text: `${value}는 자동 규칙으로 세대와 등급을 확정하기 어렵습니다. 제조사 사양표나 벤치마크 자료를 함께 확인하는 것이 좋습니다.` };
+
+      if (/n100|n200|celeron|pentium|athlon/i.test(text)) return { score: 0.9, tier: '입문형·저전력 CPU', text: `${value}는 입문형 또는 저전력 CPU 계열로 보입니다. 웹서핑, 문서, 영상 시청 중심으로 보는 것이 좋고, 개발·게임·편집 같은 무거운 작업에는 제한이 큽니다.` };
+      return { score: 1.8, tier: '세부 확인 필요 CPU', text: `${value}는 자동 규칙으로 세대와 등급을 확정하기 어렵습니다. 제조사 사양표에서 정확한 CPU 라인, 세대, 접미사, 코어 수를 함께 확인하는 것이 좋습니다.` };
     };
 
     const analyzeRamValue = (ram) => {
@@ -469,7 +573,7 @@
       const value = String(gpu || '').trim();
       if (!value) return { score: 0, tier: 'GPU 미입력', text: 'GPU 모델명을 입력하면 게임, 그래픽 작업, 영상 편집 보조 성능을 더 잘 판단할 수 있습니다.' };
       const grade = classifyGpuText(value);
-      return { score: grade.score, tier: `${value} · ${grade.label}`, text: `${value}는 ${grade.text}` };
+      return { score: grade.score, tier: `${value} · ${grade.label}`, text: grade.text };
     };
 
     const analyzeStorageValue = (storage) => {
@@ -478,10 +582,13 @@
       if (!value) return { score: 0, tier: '저장장치 미입력', text: '저장장치 종류와 용량을 입력하면 체감 속도와 저장 여유를 판단하기 쉽습니다.' };
       const capacity = value.match(/(\d+(?:\.\d+)?)\s*(tb|gb)/i);
       const capText = capacity ? `${capacity[1]}${capacity[2].toUpperCase()}` : '용량 미표시';
+      if (/gen\s*5|pcie\s*5/i.test(text)) return { score: 2.05, tier: `PCIe 5.0 NVMe SSD · ${capText}`, text: `${value}는 PCIe 5.0 NVMe SSD 계열로 보입니다. 대용량 파일 이동과 전문 작업에서 빠른 편이지만, 일반 사용 체감은 발열·컨트롤러·용량에 따라 달라집니다.` };
+      if (/gen\s*4|pcie\s*4|sn850|990\s*pro|980\s*pro|p41|sn770|sn740/i.test(text)) return { score: 1.9, tier: `PCIe 4.0 NVMe SSD · ${capText}`, text: `${value}는 PCIe 4.0급 NVMe SSD 계열로 보입니다. 부팅, 프로그램 실행, 게임 로딩, 대용량 파일 작업 체감에 유리합니다. 입력값에 용량이 없다면 실제 저장 공간은 따로 확인하세요.` };
       if (/wd\s*pc\s*sn740|sn740/i.test(text)) return { score: 1.8, tier: `NVMe SSD · WD PC SN740 계열 · ${capText}`, text: `${value}는 WD PC SN740 계열의 NVMe SSD로 보입니다. 부팅, 프로그램 실행, 게임 로딩 체감에 유리한 저장장치입니다. 다만 입력값에 용량이 보이지 않으므로 실제 저장 공간은 별도로 확인하는 것이 좋습니다.` };
       if (/nvme|pcie/i.test(text)) return { score: 1.7, tier: `NVMe SSD · ${capText}`, text: `${value}는 NVMe SSD 계열로 보입니다. 일반 SATA SSD보다 빠른 편이라 부팅, 프로그램 실행, 대용량 파일 작업 체감에 유리합니다.` };
-      if (/ssd/i.test(text)) return { score: 1.4, tier: `SSD · ${capText}`, text: `${value}는 SSD 계열로 보입니다. HDD보다 부팅과 프로그램 실행 체감이 확실히 좋습니다.` };
+      if (/sata.*ssd|ssd/i.test(text)) return { score: 1.35, tier: `SATA/일반 SSD · ${capText}`, text: `${value}는 SSD 계열로 보입니다. HDD보다 부팅과 프로그램 실행 체감이 확실히 좋지만, NVMe SSD보다 대용량 전송 속도는 낮을 수 있습니다.` };
       if (/hdd/i.test(text)) return { score: 0.6, tier: `HDD · ${capText}`, text: `${value}는 HDD 계열로 보입니다. 대용량 보관에는 유리하지만 운영체제와 프로그램 실행 체감은 SSD보다 느릴 수 있습니다.` };
+      if (/emmc/i.test(text)) return { score: 0.35, tier: `eMMC 저장장치 · ${capText}`, text: `${value}는 eMMC 계열로 보입니다. 저가형 노트북·태블릿에서 자주 보이며, 일반 SSD보다 체감 속도가 낮을 수 있습니다.` };
       return { score: 0.8, tier: `저장장치 세부 확인 필요 · ${capText}`, text: `${value}는 저장장치 종류를 확정하기 어렵습니다. SSD/NVMe/HDD 여부와 용량을 함께 확인하는 것이 좋습니다.` };
     };
 
@@ -495,12 +602,12 @@
 
     const buildPurposeComment = ({ purpose, cpuInfo, ramInfo, gpuInfo, storageInfo }) => {
       if (purpose === 'game') {
-        return `게임 기준으로는 GPU 비중이 큽니다. ${gpuInfo.tier}라면 FHD 게임에 비교적 유리한 편으로 볼 수 있고, ${cpuInfo.tier}와 ${ramInfo.tier} 조합이면 일반적인 게임·디스코드·브라우저 동시 사용도 무난한 편입니다. QHD 이상 해상도나 최신 AAA 게임은 옵션 조정과 노트북 전력 제한을 함께 확인해야 합니다.`;
+        return `게임 기준으로는 GPU 비중이 큽니다. ${gpuInfo.tier}이면 그래픽 옵션과 해상도에 따라 체감이 달라지고, ${cpuInfo.tier}와 ${ramInfo.tier} 조합은 프레임 유지와 백그라운드 프로그램 실행에 영향을 줍니다. QHD 이상 해상도나 최신 AAA 게임은 GPU 등급, VRAM, 노트북 TGP를 함께 확인해야 합니다.`;
       }
-      if (purpose === 'video') return `영상 편집은 CPU, RAM, 저장장치, GPU가 모두 영향을 줍니다. ${ramInfo.tier} 기준으로 FHD 편집은 가능성이 있지만, 4K·고비트레이트·효과가 많은 프로젝트는 32GB RAM과 더 높은 GPU 여유가 체감됩니다.`;
-      if (purpose === 'coding') return `개발 작업은 CPU 코어, RAM, SSD 체감이 중요합니다. ${cpuInfo.tier}, ${ramInfo.tier}, ${storageInfo.tier} 조합이면 일반 개발과 멀티태스킹은 비교적 무난하며, Docker·가상머신을 많이 쓰면 RAM 여유를 더 보는 것이 좋습니다.`;
-      if (purpose === 'design') return `이미지 편집·디자인은 RAM과 저장장치 체감이 큽니다. ${ramInfo.tier}, ${storageInfo.tier} 조합이면 일반 편집은 무난한 편이며, 대용량 파일과 GPU 가속 기능은 그래픽카드 모델에 따라 달라집니다.`;
-      if (purpose === 'office') return `문서·웹·온라인 강의 기준으로는 충분히 여유가 있는 편으로 보입니다. 브라우저 탭을 많이 열거나 화상회의와 문서 작업을 동시에 해도 ${ramInfo.tier}이면 일반적인 사용에는 무난합니다.`;
+      if (purpose === 'video') return `영상 편집은 CPU, RAM, 저장장치, GPU가 모두 영향을 줍니다. ${cpuInfo.tier}, ${ramInfo.tier}, ${storageInfo.tier} 기준으로 FHD 편집은 가능성이 있지만, 4K·고비트레이트·효과가 많은 프로젝트는 32GB 이상 RAM과 더 높은 GPU 여유가 체감됩니다.`;
+      if (purpose === 'coding') return `개발 작업은 CPU 코어, RAM, SSD 체감이 중요합니다. ${cpuInfo.tier}, ${ramInfo.tier}, ${storageInfo.tier} 조합이면 일반 개발과 멀티태스킹은 비교적 무난하며, Docker·가상머신·로컬 서버를 많이 쓰면 RAM과 SSD 여유를 더 보는 것이 좋습니다.`;
+      if (purpose === 'design') return `이미지 편집·디자인은 RAM과 저장장치 체감이 큽니다. ${ramInfo.tier}, ${storageInfo.tier} 조합이면 일반 편집은 무난한 편이며, 대용량 파일과 GPU 가속 기능은 ${gpuInfo.tier}에 따라 달라집니다.`;
+      if (purpose === 'office') return `문서·웹·온라인 강의 기준으로는 CPU보다 RAM과 저장장치 체감도 중요합니다. ${ramInfo.tier}, ${storageInfo.tier}라면 일반적인 사용에는 무난하며, 화상회의와 브라우저 탭을 많이 열면 RAM 여유가 중요합니다.`;
       return '사용 목적을 선택하면 이 사양이 어떤 작업에 더 적합한지 더 구체적으로 해석할 수 있습니다.';
     };
 
@@ -515,7 +622,7 @@
       const gpuInfo = analyzeGpuModel(gpu);
       const storageInfo = analyzeStorageValue(storage);
       const score = cpuInfo.score + ramInfo.score + gpuInfo.score + storageInfo.score;
-      const profile = score >= 8 ? '고성능 노트북·게이밍/작업용 PC급으로 볼 수 있는 구성' : score >= 6.2 ? '중상급 노트북·FHD 게임/개발 작업에 적합한 구성' : score >= 4.4 ? '일반 업무와 학습, 가벼운 편집에 무난한 구성' : score >= 2.6 ? '기본 작업 중심 구성' : '입력 정보가 부족하거나 보급형 중심 구성';
+      const profile = score >= 9 ? '고성능 게이밍·작업용 PC급으로 볼 수 있는 구성' : score >= 7.2 ? '중상급 노트북·FHD/QHD 게임·개발 작업에 적합한 구성' : score >= 5.2 ? '일반 업무와 학습, 개발 입문, 가벼운 편집에 무난한 구성' : score >= 3 ? '기본 작업 중심 구성' : '입력 정보가 부족하거나 보급형 중심 구성';
       const summary = `${[cpuInfo.tier, ramInfo.tier, gpuInfo.tier, storageInfo.tier].filter(Boolean).join(' / ')} 기준으로 ${profile}입니다.`;
       return {
         profile,
@@ -780,6 +887,367 @@
     autoSpecInterpretButton?.addEventListener('click', interpretAutoSpecs);
     cpuTestButton?.addEventListener('click', runCpuTest);
     renderAutoSpecs();
+  }
+
+
+
+  function initNutritionTool() {
+    const root = document.querySelector('#nutrition-tool');
+    if (!root) return;
+
+    const escape = (value) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+    const form = document.querySelector('#nutrition-form');
+    const compareForm = document.querySelector('#nutrition-compare-form');
+    const resultPanel = document.querySelector('#nutrition-result-panel');
+    const imageInput = document.querySelector('#nutrition-image-input');
+    const ocrStatus = document.querySelector('#nutrition-ocr-status');
+    const barcodeForm = document.querySelector('#food-barcode-form');
+    const foodQrForm = document.querySelector('#food-qr-form');
+    const modal = document.querySelector('#nutrition-modal');
+    const modalTitle = document.querySelector('#nutrition-modal-title');
+    const modalBody = document.querySelector('#nutrition-modal-body');
+    const modalEyebrow = document.querySelector('#nutrition-modal-eyebrow');
+    const modalClose = document.querySelector('#nutrition-modal-close');
+
+    const showNutritionModal = ({ eyebrow = '확인 결과', title = '영양성분표 해석', body = '' }) => {
+      if (!modal || !modalTitle || !modalBody) return;
+      if (modalEyebrow) modalEyebrow.textContent = eyebrow;
+      modalTitle.textContent = title;
+      modalBody.innerHTML = body;
+      modal.hidden = false;
+      document.body.classList.add('modal-open');
+    };
+
+    const closeNutritionModal = () => {
+      if (!modal) return;
+      modal.hidden = true;
+      document.body.classList.remove('modal-open');
+    };
+
+    modalClose?.addEventListener('click', closeNutritionModal);
+    modal?.addEventListener('click', (event) => {
+      if (event.target === modal) closeNutritionModal();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && modal && !modal.hidden) closeNutritionModal();
+    });
+
+    const toNumber = (value) => {
+      const text = String(value ?? '').replace(',', '.').replace(/[^0-9.]/g, '');
+      if (!text) return null;
+      const number = Number(text);
+      return Number.isFinite(number) ? number : null;
+    };
+
+    const fmt = (value, unit = '') => value == null ? '입력 없음' : `${Number(value.toFixed ? value.toFixed(1) : value).toLocaleString('ko-KR').replace(/\.0$/, '')}${unit}`;
+
+    const readNutritionForm = (data) => ({
+      product: String(data.get('product') || '').trim() || '입력 제품',
+      serving: String(data.get('serving') || '').trim() || '입력 기준량',
+      purpose: String(data.get('purpose') || 'general'),
+      calories: toNumber(data.get('calories')),
+      sodium: toNumber(data.get('sodium')),
+      carbs: toNumber(data.get('carbs')),
+      sugar: toNumber(data.get('sugar')),
+      fat: toNumber(data.get('fat')),
+      satFat: toNumber(data.get('satFat')),
+      protein: toNumber(data.get('protein'))
+    });
+
+    const level = (value, cuts, labels) => {
+      if (value == null) return { tone: 'neutral', label: '입력 없음', desc: '값을 입력하면 해석을 더 구체화할 수 있습니다.' };
+      if (value <= cuts[0]) return labels[0];
+      if (value <= cuts[1]) return labels[1];
+      return labels[2];
+    };
+
+    const interpretNutrition = (item) => {
+      const calorie = level(item.calories, [150, 300], [
+        { tone: 'success', label: '가벼운 열량', desc: '간식 기준으로 비교적 부담이 낮은 편으로 볼 수 있습니다.' },
+        { tone: 'neutral', label: '중간 열량', desc: '간식이나 식사 구성에 따라 체감이 달라질 수 있는 수준입니다.' },
+        { tone: 'warning', label: '열량 확인 필요', desc: '한 번에 먹는 양이 많으면 식사에 가까운 열량이 될 수 있습니다.' }
+      ]);
+      const sugar = level(item.sugar, [5, 15], [
+        { tone: 'success', label: '당류 낮은 편', desc: '당류를 줄이고 싶은 목적이라면 비교적 보기 편한 수치입니다.' },
+        { tone: 'neutral', label: '당류 확인', desc: '디저트, 음료, 과자류와 함께 먹으면 총 당류가 늘 수 있습니다.' },
+        { tone: 'warning', label: '당류 눈여겨보기', desc: '단맛이 있는 제품군이라면 섭취량과 다른 간식을 함께 확인하는 것이 좋습니다.' }
+      ]);
+      const sodium = level(item.sodium, [140, 600], [
+        { tone: 'success', label: '나트륨 낮은 편', desc: '나트륨을 줄이고 싶을 때 비교적 부담이 낮은 쪽으로 볼 수 있습니다.' },
+        { tone: 'neutral', label: '나트륨 확인', desc: '한 끼 식사나 국물·소스와 함께 먹는 경우 총량을 함께 봐야 합니다.' },
+        { tone: 'warning', label: '나트륨 눈여겨보기', desc: '즉석식품, 국물류, 가공육과 같이 먹으면 하루 총 나트륨 섭취가 늘 수 있습니다.' }
+      ]);
+      const protein = item.protein == null
+        ? { tone: 'neutral', label: '입력 없음', desc: '단백질 값을 입력하면 보충 목적에 맞는지 더 잘 볼 수 있습니다.' }
+        : item.protein >= 15
+          ? { tone: 'success', label: '단백질 높은 편', desc: '단백질 보충 목적에서 눈여겨볼 수 있는 수치입니다.' }
+          : item.protein >= 7
+            ? { tone: 'neutral', label: '단백질 보통', desc: '일반 간식보다 단백질이 있는 편일 수 있으나, 보충 목적이면 다른 제품과 비교해 보세요.' }
+            : { tone: 'warning', label: '단백질 낮은 편', desc: '단백질 보충 목적보다는 일반 간식이나 식품에 가까운 수치입니다.' };
+      const satFat = item.satFat == null
+        ? { tone: 'neutral', label: '입력 없음', desc: '포화지방 값이 있으면 지방 구성도 함께 볼 수 있습니다.' }
+        : item.satFat <= 2
+          ? { tone: 'success', label: '포화지방 낮은 편', desc: '포화지방 수치가 비교적 낮은 편입니다.' }
+          : item.satFat <= 5
+            ? { tone: 'neutral', label: '포화지방 확인', desc: '초콜릿, 크림, 튀김류에서는 포화지방도 함께 확인하세요.' }
+            : { tone: 'warning', label: '포화지방 눈여겨보기', desc: '포화지방을 줄이고 싶은 경우 같은 제품군끼리 비교하는 것이 좋습니다.' };
+
+      const purposeNotes = {
+        general: '일반 간식 기준에서는 열량, 당류, 나트륨을 함께 보는 것이 좋습니다. 한 번에 먹는 양이 기준량보다 많으면 실제 섭취량도 함께 늘어납니다.',
+        diet: '다이어트 참고 목적이라면 열량만 보지 말고 당류, 단백질, 포만감에 영향을 주는 구성도 함께 보세요. 특정 제품이 체중 감량에 효과가 있다고 단정할 수는 없습니다.',
+        protein: '운동 후 단백질 확인 목적이라면 단백질 g 수와 함께 전체 열량, 당류, 지방도 같이 확인하는 것이 좋습니다.',
+        sugar: '당류를 줄이고 싶다면 당류 g 수를 먼저 보고, 음료·디저트·과자류를 같은 날 여러 개 먹는지 함께 확인하세요.',
+        sodium: '나트륨을 확인하는 목적이라면 제품 하나만 보지 말고 국물, 소스, 반찬, 가공식품을 함께 먹는지 같이 봐야 합니다.',
+        kids: '아이 간식으로 볼 때는 당류, 나트륨, 1회 섭취량을 함께 확인하세요. 아이에게 적합한지 여부는 연령, 식습관, 알레르기 등에 따라 달라질 수 있습니다.'
+      };
+
+      const values = [item.calories, item.sugar, item.sodium, item.protein].filter((v) => v != null).length;
+      const headline = values < 2
+        ? '입력값이 적어 제한적인 해석입니다. 열량, 당류, 나트륨, 단백질을 더 입력하면 결과가 구체화됩니다.'
+        : item.protein != null && item.protein >= 15
+          ? '단백질 수치가 눈에 띄는 제품입니다. 다만 열량, 당류, 지방도 함께 봐야 합니다.'
+          : item.sugar != null && item.sugar > 15
+            ? '당류를 눈여겨볼 필요가 있는 구성입니다. 같은 날 먹는 음료나 간식까지 함께 확인하세요.'
+            : item.sodium != null && item.sodium > 600
+              ? '나트륨을 눈여겨볼 필요가 있는 구성입니다. 국물·소스류와 함께 먹는 경우 총량을 확인하세요.'
+              : '입력한 수치 기준으로 특별히 한 항목만 단정하기보다 열량, 당류, 나트륨, 단백질을 함께 보는 것이 좋습니다.';
+
+      return { calorie, sugar, sodium, protein, satFat, headline, purposeNote: purposeNotes[item.purpose] || purposeNotes.general };
+    };
+
+    const nutrientCard = (title, value, unit, info) => `
+      <article class="nutrition-result-card ${info.tone}">
+        <span>${escape(title)}</span>
+        <strong>${escape(fmt(value, unit))}</strong>
+        <em>${escape(info.label)}</em>
+        <p>${escape(info.desc)}</p>
+      </article>`;
+
+    const buildNutritionResultHtml = (item) => {
+      const result = interpretNutrition(item);
+      return `
+        <div class="pc-result-summary nutrition-summary">
+          <div class="summary-callout">
+            <strong>${escape(item.product)}</strong> · ${escape(item.serving)} 기준<br>
+            ${escape(result.headline)}
+          </div>
+          <div class="nutrition-result-grid">
+            ${nutrientCard('열량', item.calories, 'kcal', result.calorie)}
+            ${nutrientCard('당류', item.sugar, 'g', result.sugar)}
+            ${nutrientCard('나트륨', item.sodium, 'mg', result.sodium)}
+            ${nutrientCard('단백질', item.protein, 'g', result.protein)}
+            ${nutrientCard('포화지방', item.satFat, 'g', result.satFat)}
+          </div>
+          <article class="article-callout nutrition-purpose-note"><strong>목적별 해석:</strong> ${escape(result.purposeNote)}</article>
+          <p class="legal-note pc-note"><strong>안내:</strong> 이 결과는 영양성분표 숫자의 참고 해석입니다. 실제 표시사항은 제품 포장지를 우선 확인하고, 질환·알레르기·복용 약물과 관련된 섭취 판단은 전문가에게 확인하세요.</p>
+        </div>`;
+    };
+
+    const updateResultPanel = (htmlContent) => {
+      if (!resultPanel) return;
+      resultPanel.hidden = false;
+      resultPanel.innerHTML = htmlContent;
+    };
+
+    const normalizeOcrText = (text) => String(text || '').replace(/\s+/g, ' ').trim();
+
+    const findValue = (text, labels, unitPattern) => {
+      const lines = String(text || '').split(/\n|\r/).map((line) => line.trim()).filter(Boolean);
+      const unit = unitPattern || '(?:g|mg|kcal|칼로리)';
+      for (const line of lines) {
+        const lower = line.toLowerCase();
+        if (!labels.some((label) => lower.includes(label.toLowerCase()))) continue;
+        const match = line.match(new RegExp('([0-9]+(?:[.,][0-9]+)?)\\s*' + unit, 'i')) || line.match(/([0-9]+(?:[.,][0-9]+)?)/);
+        if (match) return toNumber(match[1]);
+      }
+      const joined = normalizeOcrText(text);
+      for (const label of labels) {
+        const rx = new RegExp(label + '[^0-9]{0,20}([0-9]+(?:[.,][0-9]+)?)\\s*' + unit, 'i');
+        const match = joined.match(rx);
+        if (match) return toNumber(match[1]);
+      }
+      return null;
+    };
+
+    const extractNutritionFromText = (text) => {
+      const raw = String(text || '');
+      const productLine = raw.split(/\n|\r/).map((line) => line.trim()).find((line) => /제품명|상품명|식품명/i.test(line));
+      return {
+        product: productLine ? productLine.replace(/^(제품명|상품명|식품명)\s*[:：-]?\s*/i, '').slice(0, 60) : '',
+        serving: (raw.match(/(1회\s*제공량|총\s*내용량|100\s*g|1\s*봉지)[^\n\r]{0,40}/i)?.[0] || '').slice(0, 50),
+        calories: findValue(raw, ['열량', '칼로리', 'energy'], '(?:kcal|칼로리)'),
+        sodium: findValue(raw, ['나트륨', 'sodium'], '(?:mg|밀리그램)'),
+        carbs: findValue(raw, ['탄수화물', 'carbohydrate'], '(?:g|그램)'),
+        sugar: findValue(raw, ['당류', 'sugars', 'sugar'], '(?:g|그램)'),
+        fat: findValue(raw, ['지방', 'fat'], '(?:g|그램)'),
+        satFat: findValue(raw, ['포화지방', 'saturated'], '(?:g|그램)'),
+        protein: findValue(raw, ['단백질', 'protein'], '(?:g|그램)')
+      };
+    };
+
+    const fillNutritionFields = (values) => {
+      const map = {
+        '#nutrition-product': values.product,
+        '#nutrition-serving': values.serving,
+        '#nutrient-calories': values.calories,
+        '#nutrient-sodium': values.sodium,
+        '#nutrient-carbs': values.carbs,
+        '#nutrient-sugar': values.sugar,
+        '#nutrient-fat': values.fat,
+        '#nutrient-satfat': values.satFat,
+        '#nutrient-protein': values.protein
+      };
+      Object.entries(map).forEach(([selector, value]) => {
+        const input = document.querySelector(selector);
+        if (input && value != null && value !== '') input.value = value;
+      });
+    };
+
+    const recognizeNutritionImageText = async (file, statusElement = ocrStatus) => {
+      if (!window.Tesseract?.recognize) throw new Error('OCR 모듈을 불러오지 못했습니다.');
+      const result = await window.Tesseract.recognize(file, 'kor+eng', {
+        logger: (message) => {
+          if (!statusElement || message.status !== 'recognizing text') return;
+          const pct = Math.round((message.progress || 0) * 100);
+          statusElement.textContent = `영양성분표 인식 중... ${pct}%`;
+        }
+      });
+      return result?.data?.text || '';
+    };
+
+    const readNutritionPdfText = async (file) => {
+      if (!window.pdfjsLib?.getDocument) throw new Error('PDF 분석 모듈을 불러오지 못했습니다.');
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+      const data = await file.arrayBuffer();
+      const pdf = await window.pdfjsLib.getDocument({ data }).promise;
+      const parts = [];
+      const pageCount = Math.min(pdf.numPages, 2);
+      for (let pageNo = 1; pageNo <= pageCount; pageNo += 1) {
+        const page = await pdf.getPage(pageNo);
+        const textContent = await page.getTextContent();
+        parts.push(textContent.items.map((item) => item.str || '').join(' '));
+      }
+      const text = parts.join('\n').trim();
+      if (text) return text;
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 1.7 });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      const context = canvas.getContext('2d');
+      await page.render({ canvasContext: context, viewport }).promise;
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      return blob ? recognizeNutritionImageText(blob) : '';
+    };
+
+    imageInput?.addEventListener('change', async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      try {
+        if (ocrStatus) ocrStatus.textContent = file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf') ? 'PDF에서 영양성분표 텍스트를 추출하는 중입니다.' : '이미지에서 영양성분표를 인식하는 중입니다.';
+        const isPdf = file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf');
+        const text = isPdf ? await readNutritionPdfText(file) : await recognizeNutritionImageText(file, ocrStatus);
+        const values = extractNutritionFromText(text);
+        fillNutritionFields(values);
+        const found = Object.entries(values).filter(([, value]) => value != null && value !== '').map(([key]) => key).length;
+        if (ocrStatus) ocrStatus.textContent = found ? '인식한 후보값을 입력란에 채웠습니다. 숫자가 맞는지 제품 포장지와 비교해 주세요.' : '자동으로 찾은 영양성분 후보가 적습니다. 더 선명한 사진을 사용하거나 직접 입력해 주세요.';
+        showNutritionModal({
+          eyebrow: 'OCR 인식 결과',
+          title: '영양성분표 후보값을 채웠습니다',
+          body: `<div class="pc-result-summary"><div class="summary-callout">자동 인식값은 후보입니다. 해석하기 전에 열량, 당류, 나트륨, 단백질 숫자를 반드시 확인해 주세요.</div><div class="result-list">
+            <div class="result-row"><span>열량</span><strong>${escape(fmt(values.calories, 'kcal'))}</strong></div>
+            <div class="result-row"><span>당류</span><strong>${escape(fmt(values.sugar, 'g'))}</strong></div>
+            <div class="result-row"><span>나트륨</span><strong>${escape(fmt(values.sodium, 'mg'))}</strong></div>
+            <div class="result-row"><span>단백질</span><strong>${escape(fmt(values.protein, 'g'))}</strong></div>
+          </div><p class="legal-note pc-note"><strong>안내:</strong> OCR 결과는 오인식될 수 있으며, 이미지는 한눈체크 서버 DB에 저장하지 않습니다.</p></div>`
+        });
+      } catch (error) {
+        if (ocrStatus) ocrStatus.textContent = '영양성분표 인식에 실패했습니다. 직접 입력해 주세요.';
+        showNutritionModal({ eyebrow: 'OCR 인식', title: '인식 실패', body: `<p>영양성분표 인식 중 오류가 발생했습니다. 더 선명한 사진 또는 직접 입력을 사용해 주세요.</p><p class="legal-note pc-note">${escape(error?.message || '')}</p>` });
+      }
+    });
+
+    form?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const item = readNutritionForm(new FormData(form));
+      const htmlContent = buildNutritionResultHtml(item);
+      updateResultPanel(htmlContent);
+      showNutritionModal({ eyebrow: '영양성분표 해석', title: `${item.product} 해석 결과`, body: htmlContent });
+    });
+
+    const readCompareItem = (data, prefix) => ({
+      product: String(data.get(prefix + 'Product') || (prefix === 'a' ? '제품 A' : '제품 B')).trim(),
+      calories: toNumber(data.get(prefix + 'Calories')),
+      sugar: toNumber(data.get(prefix + 'Sugar')),
+      sodium: toNumber(data.get(prefix + 'Sodium')),
+      protein: toNumber(data.get(prefix + 'Protein'))
+    });
+
+    const compareValue = (label, a, b, unit, lowerBetter = true) => {
+      if (a == null || b == null) return `<li><strong>${escape(label)}:</strong> 두 제품 모두 값을 입력하면 비교할 수 있습니다.</li>`;
+      if (a === b) return `<li><strong>${escape(label)}:</strong> 두 제품이 ${fmt(a, unit)}로 같습니다.</li>`;
+      const better = lowerBetter ? (a < b ? 'A' : 'B') : (a > b ? 'A' : 'B');
+      const direction = lowerBetter ? '낮습니다' : '높습니다';
+      return `<li><strong>${escape(label)}:</strong> A ${fmt(a, unit)}, B ${fmt(b, unit)}입니다. ${better}가 더 ${direction}.</li>`;
+    };
+
+    compareForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const data = new FormData(compareForm);
+      const a = readCompareItem(data, 'a');
+      const b = readCompareItem(data, 'b');
+      const body = `
+        <div class="pc-result-summary nutrition-summary">
+          <div class="summary-callout"><strong>${escape(a.product)}</strong>와 <strong>${escape(b.product)}</strong>를 입력값 기준으로 비교했습니다. 기준량이 서로 다르면 먼저 기준량을 맞춰 해석해야 합니다.</div>
+          <ul class="info-bullet-list">
+            ${compareValue('열량', a.calories, b.calories, 'kcal', true)}
+            ${compareValue('당류', a.sugar, b.sugar, 'g', true)}
+            ${compareValue('나트륨', a.sodium, b.sodium, 'mg', true)}
+            ${compareValue('단백질', a.protein, b.protein, 'g', false)}
+          </ul>
+          <p class="legal-note pc-note"><strong>안내:</strong> 제품 비교는 입력값 기준의 참고 결과입니다. 기준량이 다르거나 OCR 값이 틀리면 비교 결과도 달라집니다.</p>
+        </div>`;
+      showNutritionModal({ eyebrow: '제품 비교', title: '두 제품 비교 결과', body });
+    });
+
+    barcodeForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const barcode = String(new FormData(barcodeForm).get('barcode') || '').replace(/\D/g, '');
+      if (!/^\d{8,14}$/.test(barcode)) {
+        showNutritionModal({ eyebrow: '바코드 보조 확인', title: '바코드 번호를 확인하세요', body: '<p>바코드는 보통 숫자 8~14자리 형식입니다. 포장지의 바코드 아래 숫자를 다시 확인해 주세요.</p>' });
+        return;
+      }
+      try {
+        const response = await fetch('/api/food', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'barcode', barcode })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.message || '바코드 보조 조회를 사용할 수 없습니다.');
+        const rows = Array.isArray(result.items) ? result.items : [];
+        const rowsHtml = rows.length ? rows.map((item) => `<div class="result-row"><span>${escape(item.productName || '제품명')}</span><strong>${escape([item.foodType, item.manufacturer].filter(Boolean).join(' · ') || '상세 정보 없음')}</strong></div>`).join('') : '<p>해당 바코드로 확인된 제품 후보가 없습니다.</p>';
+        showNutritionModal({ eyebrow: '바코드 보조 확인', title: '바코드 조회 결과', body: `<div class="pc-result-summary"><div class="summary-callout">바코드 ${escape(barcode)} 기준 제품 후보입니다. 실제 영양성분과 소비기한은 포장지를 우선 확인하세요.</div><div class="result-list">${rowsHtml}</div><p class="legal-note pc-note"><strong>최신성 안내:</strong> 일부 바코드 연계 데이터는 2018년 이후 최신화 제한 안내가 있어 최신 제품 정보가 누락될 수 있습니다.</p></div>` });
+      } catch (error) {
+        showNutritionModal({ eyebrow: '바코드 보조 확인', title: '바코드 보조 확인 안내', body: `<p>현재 바코드 API 키가 없거나 조회가 제한되어 제품 후보를 바로 확인하지 못했습니다.</p><p>바코드는 보조 확인 수단입니다. 일부 바코드 연계 데이터는 2018년 이후 최신화 제한 안내가 있어 최신 제품이 누락될 수 있으므로, 영양성분과 소비기한은 포장지를 우선 확인하세요.</p><p class="legal-note pc-note">${escape(error?.message || '')}</p>` });
+      }
+    });
+
+    foodQrForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const value = String(new FormData(foodQrForm).get('foodQr') || '').trim();
+      showNutritionModal({
+        eyebrow: '푸드QR 보조 확인',
+        title: '푸드QR은 표시정보 보조 확인용입니다',
+        body: `<div class="pc-result-summary"><div class="summary-callout">${value ? `입력값: ${escape(value)}` : '푸드QR 링크나 식별값이 있으면 표시정보 확인의 보조 단서로 사용할 수 있습니다.'}</div><p>푸드QR이 있는 제품은 표시정보, 원재료, 영양표시, 알레르기 정보를 보조적으로 확인할 수 있습니다. 다만 모든 제품에 제공되는 것은 아니며, 실제 표시사항은 제품 포장지를 우선 확인해야 합니다.</p><p class="legal-note pc-note"><strong>안내:</strong> 이 기능은 섭취 가능 여부나 건강상 안전성을 판정하지 않습니다.</p></div>`
+      });
+    });
   }
 
 

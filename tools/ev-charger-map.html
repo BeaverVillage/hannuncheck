@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="naver-site-verification" content="1cf7b1f007f077b86659a324cb20becb08bf5eb7" />
+    <meta name="theme-color" content="#1e3a5f">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <meta name="description" content="목적지 주변 전기차 충전소를 지도에서 확인하고, 충전기 상태·급속/완속·거리·주차료·이용 제한을 바탕으로 사용 가능성을 비교합니다.">
+    <title>전기차 충전소 지도 - 한눈체크</title>
+    <link rel="canonical" href="https://hannuncheck.com/tools/ev-charger-map.html">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ko_KR">
+    <meta property="og:site_name" content="한눈체크">
+    <meta property="og:title" content="전기차 충전소 지도 - 한눈체크">
+    <meta property="og:description" content="목적지 주변 전기차 충전소의 상태, 충전 타입, 거리, 주차료, 이용 제한을 지도와 카드로 확인합니다.">
+    <meta property="og:url" content="https://hannuncheck.com/tools/ev-charger-map.html">
+    <link rel="stylesheet" href="/assets/css/base.css">
+    <link rel="stylesheet" href="/assets/css/layout.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/index.html" aria-label="한눈체크 홈">
+        <span class="brand-mark">한</span>
+        <span><strong>한눈체크</strong><small>생활 확인 도구</small></span>
+      </a>
+      <nav class="site-nav" aria-label="주요 메뉴">
+        <a href="/index.html#features" data-tool-drawer>주요 기능</a>
+        <a href="/index.html#guides">가이드</a>
+        <a href="/index.html#safe-position">운영 원칙</a>
+        <a href="/index.html#faq">질문</a>
+        <a href="/about.html">소개</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="tool-hero-band ev-hero-band">
+        <div class="container">
+          <nav class="breadcrumb" aria-label="현재 위치"><a href="/index.html">홈</a><span>/</span><span>전기차 충전소 지도</span></nav>
+          <div class="section-intro">
+            <p class="eyebrow">EV charger map</p>
+            <h1>전기차 충전소 지도</h1>
+            <p>목적지 주변 충전소를 지도와 카드로 확인하고, 충전기 상태·충전 타입·거리·주차료·이용 제한을 함께 비교합니다.</p>
+            <p class="fine-print strong-note">사용 가능성은 제공기관 데이터 기준의 참고 정보이며, 실제 현장 상황과 도착 시점에 따라 달라질 수 있습니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-band tool-content-band">
+        <div class="container ev-app-shell" data-ev-charger-map>
+          <div class="parking-dashboard check-map-dashboard ev-dashboard">
+            <div class="parking-dashboard__controls">
+              <div class="parking-left-panel parking-control-column">
+                <form class="tool-panel parking-input-panel" id="ev-search-form">
+                  <div class="parking-control-card">
+                    <div class="step-label">1단계 · 어디에서 충전하나요?</div>
+                    <div class="field">
+                      <label for="ev-destination">목적지</label>
+                      <div class="parking-inline-search">
+                        <input id="ev-destination" type="search" autocomplete="off" placeholder="예: 강남역, 코엑스, 서울역" value="강남역">
+                        <button class="primary-button" type="submit">검색</button>
+                      </div>
+                      <p class="fine-print" id="ev-search-status" aria-live="polite">목적지를 검색하면 주변 충전소 후보를 지도와 목록에 표시합니다.</p>
+                    </div>
+                    <div class="ev-action-row">
+                      <button class="secondary-action-button" type="button" id="ev-current-location">현재 위치 사용</button>
+                      <button class="secondary-action-button" type="button" id="ev-demo-location">강남역 예시 보기</button>
+                    </div>
+                    <div id="ev-place-results" class="parking-place-results" aria-label="목적지 검색 결과"></div>
+                  </div>
+
+                  <div class="parking-control-card">
+                    <div class="step-label">2단계 · 어떤 충전소를 볼까요?</div>
+                    <div class="field-row parking-date-grid">
+                      <div class="field">
+                        <label for="ev-radius">검색 반경</label>
+                        <select id="ev-radius">
+                          <option value="1000">1km</option>
+                          <option value="3000" selected>3km</option>
+                          <option value="5000">5km</option>
+                          <option value="10000">10km</option>
+                        </select>
+                      </div>
+                      <div class="field">
+                        <label for="ev-speed">충전 속도</label>
+                        <select id="ev-speed">
+                          <option value="all" selected>전체</option>
+                          <option value="rapid">급속 우선</option>
+                          <option value="slow">완속 우선</option>
+                        </select>
+                      </div>
+                      <div class="field">
+                        <label for="ev-type">충전 타입</label>
+                        <select id="ev-type">
+                          <option value="">전체</option>
+                          <option value="04">DC콤보</option>
+                          <option value="02">AC완속</option>
+                          <option value="01">DC차데모</option>
+                          <option value="07">AC3상</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="parking-filter-row" aria-label="충전소 필터">
+                      <label><input id="ev-filter-available" type="checkbox" checked> 사용 가능 우선</label>
+                      <label><input id="ev-filter-free-parking" type="checkbox"> 주차료 무료</label>
+                      <label><input id="ev-filter-no-limit" type="checkbox"> 이용자 제한 없음</label>
+                    </div>
+                    <div class="parking-preference-panel">
+                      <div class="parking-preference-head"><strong>정렬 기준</strong><span>지도 마커와 추천 카드 순서가 함께 바뀝니다.</span></div>
+                      <div class="parking-preference-grid" role="group" aria-label="정렬 기준 선택">
+                        <button class="parking-preference-card active" data-ev-sort="recommended" type="button"><strong>사용 가능성순</strong><span>상태·거리·타입을 함께 봅니다.</span></button>
+                        <button class="parking-preference-card" data-ev-sort="nearby" type="button"><strong>가까운순</strong><span>목적지에서 가까운 순서입니다.</span></button>
+                        <button class="parking-preference-card" data-ev-sort="rapid" type="button"><strong>급속 우선</strong><span>급속 충전기가 많은 곳을 봅니다.</span></button>
+                        <button class="parking-preference-card" data-ev-sort="available" type="button"><strong>사용 가능 대수</strong><span>대기 상태 충전기를 우선합니다.</span></button>
+                      </div>
+                    </div>
+                    <button class="primary-button wide-button" type="button" id="ev-search-button">충전소 찾기</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <div class="parking-dashboard__main">
+              <section class="parking-dashboard__results parking-results-panel tool-panel" aria-label="전기차 충전소 추천 결과">
+                <div class="parking-panel-head"><span>3단계 · 추천 결과</span><strong>충전소 사용 가능성 비교</strong></div>
+                <div class="parking-summary-bar"><strong id="ev-summary-title">목적지를 검색해 주세요</strong><span id="ev-summary-subtitle">충전소 상태와 거리를 함께 확인합니다.</span></div>
+                <div class="status-message" id="ev-status" aria-live="polite"></div>
+                <div class="parking-data-badges" id="ev-data-badges" aria-label="조회 데이터 상태"></div>
+                <div class="parking-result-sort-tabs" role="group" aria-label="결과 정렬">
+                  <button class="active" data-ev-sort="recommended" type="button">사용 가능성순</button>
+                  <button data-ev-sort="nearby" type="button">가까운순</button>
+                  <button data-ev-sort="rapid" type="button">급속 우선</button>
+                  <button data-ev-sort="available" type="button">사용 가능 대수</button>
+                </div>
+                <section class="parking-result-list ev-result-list" id="ev-result-list" aria-label="충전소 목록"></section>
+              </section>
+
+              <div class="parking-dashboard__map parking-map-column parking-map-panel">
+                <div class="parking-panel-head"><span>지도</span><strong>목적지 주변 충전소</strong></div>
+                <section class="parking-map-card ev-map-card" aria-label="전기차 충전소 지도">
+                  <div class="parking-map ev-map is-fallback" id="ev-map" role="img" aria-label="목적지 주변 전기차 충전소 지도">
+                    <div class="parking-map-fallback"><strong>지도 준비 중</strong><span>카카오맵 키와 도메인 설정이 완료되면 실제 지도가 표시됩니다.</span></div>
+                    <div class="parking-map-legend ev-map-legend" aria-hidden="true"><span class="dot good"></span>사용 가능 <span class="dot busy"></span>충전 중 <span class="dot bad"></span>고장·점검 <span class="dot unknown"></span>확인 필요</div>
+                  </div>
+                  <div class="parking-map-markers" id="ev-map-markers" aria-hidden="true"></div>
+                  <button class="parking-map-research-button" id="ev-map-research-button" type="button" hidden>현재 지도에서 충전소 다시 찾기</button>
+                </section>
+                <div class="parking-legal-note parking-map-legal">
+                  <p>충전기 상태는 한국환경공단 전기자동차 충전소 정보 등 제공기관 데이터 기준이며 실제 현장 상황과 차이가 있을 수 있습니다.</p>
+                  <p>사용 가능으로 표시되더라도 도착 시점에는 충전 중이거나 고장 상태일 수 있습니다. 방문 전 운영기관 안내와 현장 표시를 함께 확인해 주세요.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-band muted">
+        <div class="container calculator-guide parking-guide parking-content-guide">
+          <p class="eyebrow">전기차 충전소 확인 가이드</p>
+          <h2>전기차 충전소 지도는 이렇게 활용하세요.</h2>
+          <p class="section-lead">충전소는 위치만 가까운 곳보다, 충전 타입·사용 가능 상태·이용 제한·주차료·상태 갱신 시점을 함께 보는 것이 중요합니다.</p>
+          <div class="guide-grid parking-guide-grid">
+            <article><h3>사용 가능성은 무엇을 보나요?</h3><p>사용 가능 상태의 충전기 수, 충전 중 여부, 고장·점검 상태, 거리, 급속/완속 여부, 주차료와 이용자 제한 정보를 함께 참고합니다.</p></article>
+            <article><h3>DC콤보와 AC완속 차이</h3><p>DC콤보는 급속 충전에 주로 쓰이고, AC완속은 장시간 주차 중 충전에 적합합니다. 차량이 지원하는 충전 타입을 먼저 확인해야 합니다.</p></article>
+            <article><h3>상태 정보의 한계</h3><p>충전기 상태는 데이터 갱신 시각과 실제 현장 도착 시점 사이에 달라질 수 있습니다. 사용 가능 표시는 예약이나 이용 가능 보장을 의미하지 않습니다.</p></article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer"><div class="container footer-grid"><div class="footer-note"><strong>한눈체크</strong><p>생활 속에서 확인이 필요한 정보를 한눈에 정리하고, 결과의 의미와 한계를 함께 설명하는 생활 확인 도구입니다.</p></div><nav aria-label="푸터 메뉴"><a href="/about.html">소개</a><a href="/privacy.html">개인정보처리방침</a><a href="/disclaimer.html">면책 안내</a><a href="/data-sources.html">데이터 출처</a><a href="/contact.html">문의·정정 요청</a></nav></div></footer>
+    <script src="/assets/js/app.js"></script>
+    <script src="/assets/js/ev-charger-map.js" defer></script>
+  </body>
+</html>

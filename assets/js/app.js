@@ -14,7 +14,14 @@
       label: '기기·환경 체크',
       tools: [
         ['컴퓨터 사양 확인', '/tools/pc-spec.html', '운영체제·CPU 코어·메모리·GPU·화면 정보 확인'],
-        ['CPU 간단 테스트', '/tools/pc-spec.html#pc-spec-tool', '브라우저 안에서 짧은 반복 연산으로 참고 성능 확인']
+        ['CPU 간단 테스트', '/tools/pc-spec.html#pc-spec-tool', '브라우저 안에서 짧은 반복 연산으로 참고 성능 확인'],
+        ['미세먼지·외출 체크', '/tools/outdoor-air.html', '대기질·오존·기상특보와 외출 목적별 참고']
+      ]
+    },
+    {
+      label: '이동·생활 체크',
+      tools: [
+        ['전기차 충전소 지도', '/tools/ev-charger-map.html', '목적지 주변 충전소 상태와 사용 가능성 확인']
       ]
     },
     {

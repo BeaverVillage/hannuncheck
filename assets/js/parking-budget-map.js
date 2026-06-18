@@ -977,8 +977,8 @@ async function selectPlaceFromPopup(index, els) {
   syncDesktopMapToolbar(els);
   closePlacePopup(els);
   els.searchStatus.textContent = state.lastPlaceSearchUsedSampleFallback
-    ? `목적지 검색 API를 사용할 수 없어 ${place.name} 샘플 위치 기준으로 확인합니다.`
-    : `${place.name} 기준으로 주변 주차장을 확인했습니다.`;
+    ? `목적지 검색 API를 사용할 수 없어 ${place.name} 샘플 위치 기준으로 계산합니다.`
+    : `${place.name} 기준으로 주변 주차장을 계산했습니다.`;
   await calculateAndRender(els);
 }
 
@@ -1050,7 +1050,7 @@ async function calculateAndRender(els) {
     els.status.textContent = "출차 시간이 입차 시간보다 늦어야 합니다.";
     return;
   }
-  els.status.textContent = "현재 조건으로 주차장 정보를 확인하고 있습니다.";
+  els.status.textContent = "현재 조건으로 추천 결과를 계산하고 있습니다.";
   let rows;
   const cacheKey = buildRecommendCacheKey(input);
   const cached = state.recommendCache.get(cacheKey);
@@ -1080,7 +1080,7 @@ async function calculateAndRender(els) {
     state.lastRealtimeMode = "sample-fallback";
     state.lastRealtimeNote = "샘플 실시간 데이터를 사용합니다.";
     state.lastHolidayContext = buildClientHolidayContext(input.arrivalAt);
-    state.lastFallbackReason = "API 호출이 실패해 로컬 샘플 주차장 데이터로 확인합니다.";
+    state.lastFallbackReason = "API 호출이 실패해 로컬 샘플 주차장 데이터로 계산합니다.";
     state.lastStats = null;
   }
   state.results = rows;
@@ -1297,10 +1297,10 @@ function renderResults(els, input) {
   if (els.mobileSheetSubtitle) els.mobileSheetSubtitle.textContent = els.summarySubtitle.textContent;
   updateMobileListToggle(els);
   syncMobileSortButtons(els);
-  els.status.textContent = state.results.length ? "추천 결과입니다." : "이 주변에서 확인 가능한 주차장을 찾지 못했습니다. 검색 반경을 넓히거나 필터를 줄여보세요.";
+  els.status.textContent = state.results.length ? "추천 결과입니다." : "이 주변에서 계산 가능한 주차장을 찾지 못했습니다. 검색 반경을 넓히거나 필터를 줄여보세요.";
   renderDataBadges(els, input);
   if (state.lastFallbackReason) console.info("[parking-map] data fallback/status", { mode: state.lastDataMode, reason: state.lastFallbackReason, stats: state.lastStats });
-  const html = state.results.map((row) => renderResultCard(row)).join("") || `<article class="parking-result-card"><strong>확인 가능한 주차장을 찾지 못했습니다.</strong><p>이 주변에서 확인 가능한 주차장을 찾지 못했습니다. 검색 반경을 넓히거나 필터를 줄여보세요.</p></article>`;
+  const html = state.results.map((row) => renderResultCard(row)).join("") || `<article class="parking-result-card"><strong>계산 가능한 주차장을 찾지 못했습니다.</strong><p>이 주변에서 계산 가능한 주차장을 찾지 못했습니다. 검색 반경을 넓히거나 필터를 줄여보세요.</p></article>`;
   els.resultList.innerHTML = html;
   if (els.mobileResults && els.mobileResults !== els.resultList) els.mobileResults.innerHTML = html;
   [els.resultList, els.mobileResults].filter(Boolean).forEach((container, index, arr) => { if (arr.indexOf(container) === index) bindResultCardEvents(container, els); });
@@ -1487,13 +1487,13 @@ async function loadKakaoMap(els) {
     state.mapMode = "fallback";
     els.map.classList.add("is-fallback");
     if (error?.message) console.info(`[parking-map] Kakao map fallback: ${error.message}`);
-    updateMapFallbackNotice(els, "샘플 지도 확인 모드", "카카오맵을 불러오지 못해 샘플 지도에서 예상 주차비를 표시합니다.");
+    updateMapFallbackNotice(els, "샘플 지도 계산 모드", "카카오맵을 불러오지 못해 샘플 지도에서 예상 주차비를 표시합니다.");
     renderMap(els);
   }
 }
 
 async function resolveKakaoMapKey() {
-  const fromWindow = window.HANNUNCHECK_CONFIG?.KAKAO_MAP_JS_KEY || window.KAKAO_MAP_JS_KEY;
+  const fromWindow = window.HANNUNCALC_CONFIG?.KAKAO_MAP_JS_KEY || window.KAKAO_MAP_JS_KEY;
   if (fromWindow) return fromWindow;
   const meta = document.querySelector('meta[name="kakao-map-js-key"]')?.content?.trim();
   if (meta) return meta;

@@ -1,4 +1,4 @@
-import { mockPlaces } from './_lib/mock-data.js';
+﻿import { mockPlaces } from './_lib/mock-data.js';
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), { status: init.status || 200, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': init.cacheControl || 'public, max-age=60' } });
 }

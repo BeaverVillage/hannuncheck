@@ -66,6 +66,11 @@
     <priority>0.85</priority>
   </url>
   <url>
+    <loc>https://hannuncheck.com/tools/parking-fee-check.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
     <loc>https://hannuncheck.com/tools/outdoor-air.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
@@ -99,10 +104,5 @@
     <loc>https://hannuncheck.com/guides/official-info-limit.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://hannuncheck.com/tools/parking-fee-check.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
   </url>
 </urlset>

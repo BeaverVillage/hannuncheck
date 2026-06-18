@@ -11063,3 +11063,33 @@ body {
     text-align: left;
   }
 }
+
+/* EV charger map: reuse parking map UI exactly, only status colors and labels are adapted. */
+.ev-map-label.is-status-good,
+.parking-map-label.ev-map-label.is-best {
+  border-color: #1d4ed8;
+}
+.ev-map-label.is-status-busy {
+  border-color: #f97316;
+  color: #92400e;
+}
+.ev-map-label.is-status-bad {
+  border-color: #dc2626;
+  color: #991b1b;
+}
+.ev-map-label.is-status-unknown {
+  border-color: #94a3b8;
+  color: #475569;
+}
+.parking-result-card.good .parking-price-row strong,
+.parking-result-card.good .parking-list-summary strong {
+  color: #1d4ed8;
+}
+.parking-result-card.busy .parking-price-row strong,
+.parking-result-card.busy .parking-list-summary strong {
+  color: #b45309;
+}
+.parking-result-card.bad .parking-price-row strong,
+.parking-result-card.bad .parking-list-summary strong {
+  color: #b91c1c;
+}

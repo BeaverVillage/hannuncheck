@@ -107,7 +107,7 @@
   height: 36px;
   color: var(--green);
   background: var(--green-soft);
-  border: 1px solid #c6e7dc;
+  border: 1px solid #bfdbfe;
   border-radius: 6px;
   font-size: 1.2rem;
   line-height: 1;
@@ -145,8 +145,8 @@
   padding: 8px 12px;
   color: var(--green);
   background: var(--green-soft);
-  border-top: 1px solid #c6e7dc;
-  border-bottom: 1px solid #c6e7dc;
+  border-top: 1px solid #bfdbfe;
+  border-bottom: 1px solid #bfdbfe;
   font-size: 0.86rem;
 }
 
@@ -356,7 +356,7 @@ body.drawer-open .tool-drawer {
   padding: 4px 9px;
   color: var(--green);
   background: var(--green-soft);
-  border: 1px solid #c6e7dc;
+  border: 1px solid #bfdbfe;
   border-radius: 999px;
   font-size: 0.76rem;
   font-weight: 900;
@@ -409,7 +409,7 @@ body.drawer-open .tool-drawer {
 
 .calculator-screen {
   padding: 12px;
-  background: #dfece8;
+  background: #dbeafe;
   border: 8px solid #24304e;
   border-radius: 10px;
   box-shadow: inset 0 0 0 2px #59647c;
@@ -433,7 +433,7 @@ body.drawer-open .tool-drawer {
   padding: 8px;
   overflow-x: auto;
   color: #111827;
-  background: #f8fff9;
+  background: #f8fbff;
   border: 2px solid #111827;
   font-family: "Times New Roman", Cambria, Georgia, serif;
   font-size: clamp(1.3rem, 3vw, 1.75rem);
@@ -752,7 +752,7 @@ textarea {
 }
 
 .primary-button:hover {
-  background: #0d6a57;
+  background: #1d4ed8;
 }
 
 .button-row {
@@ -768,7 +768,7 @@ textarea {
   padding: 8px 11px;
   color: var(--green);
   background: var(--green-soft);
-  border: 1px solid #c6e7dc;
+  border: 1px solid #bfdbfe;
 }
 
 .keypad {
@@ -1002,7 +1002,7 @@ textarea {
 
 .auto-extracted {
   border-color: rgba(31, 122, 101, 0.42);
-  background: #fbfffd;
+  background: #f8fbff;
 }
 
 .needs-review {
@@ -1200,7 +1200,7 @@ textarea {
   height: 14px;
   overflow: hidden;
   background: var(--green-soft);
-  border: 1px solid #c6e7dc;
+  border: 1px solid #bfdbfe;
   border-radius: 999px;
 }
 
@@ -1294,7 +1294,7 @@ textarea {
   gap: 18px;
   padding: 22px;
   color: var(--ink);
-  background: linear-gradient(180deg, #ffffff, #f7fbf9);
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
 }
@@ -1359,7 +1359,7 @@ textarea {
 }
 
 .bmi-track .normal {
-  background: #35c486;
+  background: #3b82f6;
 }
 
 .bmi-track .watch {
@@ -5190,7 +5190,7 @@ body {
   padding: 4px 9px;
   color: var(--green);
   background: var(--green-soft);
-  border: 1px solid #c6e7dc;
+  border: 1px solid #bfdbfe;
   border-radius: 999px;
   font-family: inherit;
   font-size: 0.76rem;
@@ -6005,7 +6005,7 @@ body {
   border: 1px solid rgba(37, 99, 235, 0.22);
   border-radius: 12px;
   background: rgba(37, 99, 235, 0.08);
-  color: #0f594f;
+  color: #1e3a5f;
   font-weight: 700;
 }
 .parking-app-shell {
@@ -6069,8 +6069,8 @@ body {
 .quick-duration-row button.active,
 .parking-place-chip.active {
   border-color: #2563eb;
-  background: #e7f5f1;
-  color: #0f594f;
+  background: #eff6ff;
+  color: #1e3a5f;
 }
 .parking-filter-row label {
   display: inline-flex;
@@ -6119,7 +6119,7 @@ body {
   position: absolute;
   inset: 0;
   min-height: 420px;
-  background: linear-gradient(135deg, #e7f5f1 0%, #eef4ff 55%, #f7fafc 100%);
+  background: linear-gradient(135deg, #eff6ff 0%, #eef4ff 55%, #f7fafc 100%);
 }
 .parking-map::before,
 .parking-map::after {
@@ -6165,7 +6165,7 @@ body {
   border-radius: 999px;
   background: #fff;
   box-shadow: 0 8px 18px rgba(15, 35, 55, 0.18);
-  color: #0f594f;
+  color: #1e3a5f;
   font-size: 0.82rem;
   font-weight: 900;
   text-align: center;
@@ -6212,8 +6212,8 @@ body {
   width: fit-content;
   padding: 0.25rem 0.55rem;
   border-radius: 999px;
-  background: #e7f5f1;
-  color: #0f594f;
+  background: #eff6ff;
+  color: #1e3a5f;
   font-size: 0.8rem;
   font-weight: 800;
 }
@@ -6410,7 +6410,7 @@ body {
   background:
     radial-gradient(circle at 18% 22%, rgba(37, 99, 235, 0.12), transparent 26%),
     radial-gradient(circle at 78% 70%, rgba(49, 130, 206, 0.12), transparent 28%),
-    linear-gradient(135deg, #e8f5f0 0%, #eef4ff 48%, #f8fafc 100%);
+    linear-gradient(135deg, #eff6ff 0%, #eef4ff 48%, #f8fafc 100%);
 }
 
 .parking-map.is-fallback::before {
@@ -6788,7 +6788,7 @@ body {
 /* Parking 2차 MVP refinements */
 .parking-filter-note {
   margin-top: -4px;
-  color: #5f6f68;
+  color: #64748b;
 }
 .parking-result-card .parking-card-metrics span:nth-child(2) {
   font-weight: 700;
@@ -6821,7 +6821,7 @@ body {
   padding: 0.85rem;
   border: 1px solid rgba(37, 99, 235, 0.16);
   border-radius: 16px;
-  background: #f7fbfa;
+  background: #f8fbff;
 }
 .parking-preference-head {
   display: grid;
@@ -6871,7 +6871,7 @@ body {
 }
 .parking-preference-card.active {
   border-color: #2563eb;
-  background: #e7f5f1;
+  background: #eff6ff;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 .parking-preference-card.active strong::before {
@@ -6938,7 +6938,7 @@ body {
 }
 .parking-result-card.is-pinned {
   border-color: #1d4ed8;
-  background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 60%);
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 60%);
   box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.14), 0 18px 34px rgba(15, 35, 55, 0.12);
 }
 .parking-pin-badge {
@@ -7090,7 +7090,7 @@ body {
 
 .parking-result-card.is-pinned {
   border-color: #1d4ed8;
-  background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 60%);
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 60%);
 }
 
 @media (max-width: 1024px) {
@@ -7514,7 +7514,7 @@ body {
   margin: 0;
   padding: 0.62rem 0.75rem;
   border-radius: 12px;
-  background: #f5faf8;
+  background: #f8fbff;
   color: #2563eb;
   font-weight: 850;
 }
@@ -7533,8 +7533,8 @@ body {
   padding: 0.28rem 0.55rem;
   border: 1px solid rgba(37, 99, 235, 0.18);
   border-radius: 999px;
-  background: #f7fbfa;
-  color: #365e57;
+  background: #f8fbff;
+  color: #64748b;
   font-size: 0.76rem;
   font-weight: 850;
 }
@@ -7769,7 +7769,7 @@ body {
 .parking-price-row {
   padding: 0.7rem 0.78rem;
   border-radius: 14px;
-  background: linear-gradient(180deg, #f2fbf8 0%, #ffffff 100%);
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
 }
 
 .parking-price-row strong {
@@ -7810,15 +7810,15 @@ body {
 }
 
 .metric-availability {
-  background: #eefaf2 !important;
-  border-color: #c9efd8 !important;
-  color: #17633a !important;
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #1e3a5f !important;
 }
 
 .metric-risk-low {
-  background: #effaf5 !important;
-  border-color: #c7ecd8 !important;
-  color: #16633d !important;
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #1e3a5f !important;
 }
 
 .metric-risk-medium {
@@ -7834,8 +7834,8 @@ body {
 }
 
 .metric-confidence-high {
-  background: #ecfdf5 !important;
-  border-color: #c7f1df !important;
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
   color: #2563eb !important;
 }
 
@@ -8148,7 +8148,7 @@ body {
   min-width: 40px;
   min-height: 28px;
   border-radius: 999px;
-  background: #e8f7f3;
+  background: #eff6ff;
   color: #1d4ed8;
   font-weight: 900;
 }
@@ -8427,7 +8427,7 @@ body {
 .parking-place-popup__item:hover,
 .parking-place-popup__item:focus-visible {
   border-color: #2563eb;
-  background: #f0fdfa;
+  background: #eff6ff;
   outline: none;
 }
 
@@ -8464,7 +8464,7 @@ body {
 .parking-map-label.is-best:not(.is-selected) {
   border-color: #2563eb !important;
   background: #fff !important;
-  color: #0f594f !important;
+  color: #1e3a5f !important;
   box-shadow: 0 8px 18px rgba(15, 35, 55, 0.18) !important;
   transform: translate(-50%, -50%) !important;
 }
@@ -8514,10 +8514,10 @@ body {
   align-items: center;
   gap: 0.35rem;
   padding: 0.32rem 0.62rem;
-  border: 1px solid #10b981;
+  border: 1px solid #2563eb;
   border-radius: 999px;
-  background: #ecfdf5;
-  color: #065f46 !important;
+  background: #eff6ff;
+  color: #1e3a5f !important;
   font-weight: 900;
   line-height: 1.25;
 }
@@ -9189,7 +9189,7 @@ body {
   margin: 0.66rem 0 0.35rem;
   padding: 0.52rem 0.68rem;
   border-radius: 14px;
-  background: linear-gradient(180deg, #f2fbf8 0%, #ffffff 100%);
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
 }
 
 .parking-map-popup__price-row strong {
@@ -9263,7 +9263,7 @@ body {
 
   .parking-dashboard__results .parking-result-card.is-pinned {
     border-color: #1d4ed8 !important;
-    background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%) !important;
+    background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%) !important;
   }
 
   .parking-dashboard__results .parking-card-head {
@@ -9501,8 +9501,8 @@ body {
 
   .parking-mobile-sheet-sort button.active {
     border-color: #2563eb;
-    background: #e7f5f1;
-    color: #0f594f;
+    background: #eff6ff;
+    color: #1e3a5f;
   }
 
   .parking-mobile-results {
@@ -9799,7 +9799,7 @@ body {
     min-width: 44px !important;
     min-height: 44px !important;
     border-radius: 999px !important;
-    background: #e7f5f1 !important;
+    background: #eff6ff !important;
     color: #1d4ed8 !important;
     font-size: 1rem !important;
   }
@@ -10950,9 +10950,9 @@ body {
 
   .parking-mobile-action-sheet__quick-grid button.active,
   .parking-mobile-action-sheet__sort-list button.active {
-    border-color: #177565;
-    background: #eaf8f3;
-    color: #11604f;
+    border-color: #2563eb;
+    background: #eff6ff;
+    color: #1e3a5f;
   }
 
   .parking-mobile-action-sheet__details {
@@ -10965,7 +10965,7 @@ body {
 
   .parking-mobile-action-sheet__details summary {
     cursor: pointer;
-    color: #11604f;
+    color: #1e3a5f;
     font-weight: 900;
   }
 

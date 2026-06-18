@@ -57,7 +57,7 @@
       <div class="tool-drawer-head">
         <div>
           <strong>주요 기능</strong>
-          <small>필요한 확인 도구를 바로 선택하세요.</small>
+          <small>필요한 확인 기능을 바로 선택하세요.</small>
         </div>
         <button type="button" class="tool-drawer-close" aria-label="주요 기능 닫기">×</button>
       </div>
@@ -282,8 +282,10 @@
     };
 
     const classifyGpuText = (gpuText) => {
-      const text = String(gpuText || '').toLowerCase();
-      if (/(rtx\s*40(8|9)|rtx\s*50|rx\s*79|rx\s*78)/i.test(text)) return { label: '상급 외장 GPU', score: 2.4, text: '고해상도 게임, 그래픽 작업, GPU 가속 작업에 유리한 그래픽 계열로 볼 수 있습니다.' };
+      const original = String(gpuText || '').trim();
+      const text = original.toLowerCase();
+      if (/rtx\s*4060\s*laptop/i.test(original)) return { label: '중상급 노트북 외장 GPU', score: 2.15, text: 'RTX 4060 Laptop 계열로 보입니다. FHD 게임과 GPU 가속이 들어가는 그래픽 작업에 유리하며, 노트북 제품은 전력 한계(TGP)와 발열 설계에 따라 같은 RTX 4060이라도 체감 차이가 큽니다.' };
+      if (/(rtx\s*40(8|9)|rtx\s*50|rx\s*79|rx\s*78)/i.test(text)) return { label: '상급 외장 GPU', score: 2.4, text: '고해상도 게임, 그래픽 작업, GPU 가속 작업에 유리한 상급 그래픽 계열로 볼 수 있습니다.' };
       if (/(rtx\s*40(5|6|7)|rtx\s*30(6|7|8)|rx\s*6[67]|rx\s*77|arc\s*a7)/i.test(text)) return { label: '중상급 외장 GPU', score: 2, text: 'FHD 게임, 그래픽 작업, 영상 편집 보조에 비교적 유리한 그래픽 계열로 볼 수 있습니다.' };
       if (/(rtx\s*20|rtx\s*30(5)|gtx\s*16|gtx\s*10|rx\s*5|rx\s*6|arc)/i.test(text)) return { label: '외장 GPU', score: 1.4, text: '내장 그래픽보다 그래픽 작업에 유리하지만, 모델별 성능 차이가 큽니다.' };
       if (/(iris|uhd|vega|integrated|내장|apple\s*m|radeon\s*graphics)/i.test(text)) return { label: '내장·통합 GPU', score: 0.6, text: '문서, 웹, 영상 시청, 가벼운 그래픽 작업 중심에 적합한 그래픽 계열로 볼 수 있습니다.' };
@@ -314,20 +316,23 @@
     const buildAutoInterpretationRows = (specs, manualGpu) => {
       const rows = [];
       const grade = summarizeAutoGrade(specs, manualGpu);
-      rows.push({ label: '종합 추정', text: `${grade.label} — ${grade.detail}` });
-      rows.push({ label: '운영체제', text: `${specs.os}로 추정됩니다. 웹 보안 정책상 세부 버전과 설치 환경은 표시하지 않습니다.` });
+      const memoryText = specs.memory ? `메모리 추정 ${specs.memory}GB` : '메모리 자동 확인 제한';
+      const coreText = specs.cores ? `CPU 논리 코어 ${specs.cores}개` : 'CPU 논리 코어 자동 확인 제한';
+      const gpuText = manualGpu ? `직접 입력 GPU ${manualGpu}` : grade.gpuGrade.label;
+      rows.push({ label: '종합 추정', text: `${coreText}, ${memoryText}, ${gpuText} 기준으로 ${grade.label}입니다. ${grade.detail}` });
+      rows.push({ label: '운영체제', text: `${specs.os}로 추정됩니다. 웹페이지는 보안 정책상 Windows 세부 버전, 설치된 프로그램, 장치 드라이버 상태까지 직접 확인하지는 않습니다.` });
       if (specs.cores) {
-        rows.push({ label: 'CPU 논리 코어', text: specs.cores >= 16 ? `${specs.cores}개입니다. 고부하 멀티태스킹과 개발·편집 작업에 유리한 편입니다.` : specs.cores >= 12 ? `${specs.cores}개입니다. 중상급 노트북 또는 데스크톱급 작업 여유로 볼 수 있습니다.` : specs.cores >= 8 ? `${specs.cores}개입니다. 일반 업무와 여러 프로그램 동시 사용에 무난한 편입니다.` : specs.cores >= 4 ? `${specs.cores}개입니다. 기본 작업은 가능하지만 무거운 작업은 CPU 모델 확인이 필요합니다.` : `${specs.cores}개입니다. 동시 작업이 많으면 체감이 제한될 수 있습니다.` });
+        rows.push({ label: 'CPU 논리 코어', text: specs.cores >= 16 ? `${specs.cores}개로 표시됩니다. 이 정도 논리 코어 수는 고성능 노트북 H급 CPU나 데스크톱 중급 이상 CPU에서 자주 보이는 범위라 멀티태스킹, 개발 도구, 가벼운 영상 편집에 유리한 편입니다. 단, 정확한 CPU 모델명은 직접 입력해야 합니다.` : specs.cores >= 12 ? `${specs.cores}개로 표시됩니다. 일반 노트북보다 작업 여유가 있는 편이며, 여러 프로그램을 동시에 쓰는 환경에 비교적 적합합니다.` : specs.cores >= 8 ? `${specs.cores}개로 표시됩니다. 문서·웹·온라인 강의와 일반 멀티태스킹에는 무난한 편입니다.` : specs.cores >= 4 ? `${specs.cores}개로 표시됩니다. 기본 작업은 가능하지만 개발·편집·게임은 CPU 모델 확인이 필요합니다.` : `${specs.cores}개로 표시됩니다. 동시 작업이 많으면 체감이 제한될 수 있습니다.` });
       } else {
         rows.push({ label: 'CPU 논리 코어', text: '자동 확인이 제한되었습니다. CPU 모델명을 직접 입력하면 용도별 판단이 더 정확해집니다.' });
       }
       if (specs.memory) {
-        rows.push({ label: '메모리 추정', text: specs.memory >= 32 ? `약 ${specs.memory}GB입니다. 영상 편집, 개발, 멀티태스킹에 여유가 큰 편입니다.` : specs.memory >= 16 ? `약 ${specs.memory}GB입니다. 일반 작업, 개발, 가벼운 편집에는 비교적 안정적인 편입니다.` : specs.memory >= 8 ? `약 ${specs.memory}GB입니다. 문서·웹 중심은 무난하지만 무거운 편집·게임은 여유가 제한될 수 있습니다.` : `약 ${specs.memory}GB입니다. 여러 프로그램을 동시에 쓰기에는 부족할 수 있습니다.` });
+        rows.push({ label: '메모리 추정', text: specs.memory >= 32 ? `약 ${specs.memory}GB로 표시됩니다. 대형 프로젝트, 영상 편집, 개발 도구와 브라우저 탭을 많이 여는 작업에 여유가 큰 편입니다.` : specs.memory >= 16 ? `약 ${specs.memory}GB로 표시됩니다. 현재 일반 노트북·PC 기준으로 표준 이상에 가까운 용량이며, 문서·웹·개발·FHD 게임에는 대체로 무난합니다. 영상 편집이나 가상머신은 32GB가 더 안정적입니다.` : specs.memory >= 8 ? `약 ${specs.memory}GB로 표시됩니다. 기본 작업은 가능하지만 여러 프로그램을 동시에 쓰거나 게임·편집을 하면 부족할 수 있습니다.` : `약 ${specs.memory}GB로 표시됩니다. 여러 프로그램을 동시에 쓰기에는 부족할 수 있습니다.` });
       } else {
         rows.push({ label: '메모리 추정', text: '브라우저가 RAM 추정값을 제공하지 않았습니다. 실제 용량을 직접 입력하는 것이 좋습니다.' });
       }
-      rows.push({ label: 'GPU', text: manualGpu ? `${manualGpu}로 직접 입력되었습니다. ${grade.gpuGrade.text}` : `${grade.gpuGrade.label}: 자동 WebGL 값은 참고용입니다. 실제 그래픽카드 모델명을 입력하면 게임·그래픽 작업 판단이 더 좋아집니다.` });
-      rows.push({ label: '화면 해상도', text: `${specs.screen}입니다. 작업 공간과 선명도에 영향을 주지만, 체감은 모니터 크기와 배율 설정에 따라 달라집니다.` });
+      rows.push({ label: manualGpu ? `GPU (${manualGpu})` : 'GPU', text: manualGpu ? `${grade.gpuGrade.text} 자동 WebGL 렌더러보다 직접 입력한 모델명을 기준으로 해석하는 것이 더 정확합니다.` : `${grade.gpuGrade.label}: 자동 WebGL 값은 참고용입니다. 실제 그래픽카드 모델명을 입력하면 게임·그래픽 작업 판단이 더 좋아집니다.` });
+      rows.push({ label: '화면 해상도', text: `${specs.screen}입니다. FHD급 화면이면 문서·웹·영상 시청에 무난하고, QHD·4K 작업은 화면 공간이 넓지만 GPU 부담도 커질 수 있습니다.` });
       return { grade, rows };
     };
 
@@ -412,43 +417,128 @@
       worker.postMessage({});
     };
 
+    const analyzeCpuModel = (cpu) => {
+      const value = String(cpu || '').trim();
+      const text = value.toLowerCase();
+      if (!value) return { score: 0, tier: 'CPU 미입력', text: 'CPU 모델명을 입력하면 작업 성격에 맞는 해석이 더 구체적입니다.' };
+      const intel = text.match(/i([3579])[-\s]?(\d{4,5})?\s*([a-z]{0,3})/i);
+      const ryzen = text.match(/ryzen\s*([3579])\s*(\d{4,5})?\s*([a-z]{0,3})/i);
+      const apple = text.match(/m([1-4])\s*(pro|max|ultra)?/i);
+      if (intel) {
+        const grade = Number(intel[1]);
+        const num = intel[2] || '';
+        const suffix = (intel[3] || '').toUpperCase();
+        const generation = num.length >= 5 ? Number(num.slice(0, 2)) : num.length >= 4 ? Number(num.slice(0, 1)) : null;
+        const isLaptopHigh = /HX|HK|H/.test(suffix);
+        const isLowPower = /U|Y/.test(suffix);
+        const family = `Intel Core i${grade}${generation ? ` ${generation}세대` : ''}${suffix ? ` ${suffix}급` : ''}`;
+        if (grade >= 7 && isLaptopHigh) return { score: 3.4, tier: `${family} 고성능 노트북 CPU`, text: `${value}는 ${family}으로 보입니다. 고성능 노트북 라인에 가까워 게임, 개발 도구, 멀티태스킹, FHD 영상 편집에 유리한 편입니다. 다만 노트북 CPU는 전력 설정과 발열 설계에 따라 같은 모델도 성능 차이가 큽니다.` };
+        if (grade >= 7) return { score: 3.1, tier: `${family} 상급 CPU`, text: `${value}는 상급 CPU 계열로 볼 수 있습니다. 무거운 문서 작업, 개발, 가벼운 편집과 여러 프로그램 동시 사용에 여유가 있는 편입니다.` };
+        if (grade === 5) return { score: 2.4, tier: `${family} 중급 CPU`, text: `${value}는 중급 CPU 계열로 볼 수 있습니다. 일반 작업과 FHD 게임, 가벼운 개발 작업에 무난하며, 고해상도 편집은 RAM과 GPU도 함께 봐야 합니다.` };
+        if (grade <= 3 || isLowPower) return { score: 1.3, tier: `${family} 보급·저전력 CPU`, text: `${value}는 기본 작업 중심의 CPU로 보는 것이 안전합니다. 문서·웹·강의는 가능하지만 무거운 편집이나 최신 게임은 제한될 수 있습니다.` };
+      }
+      if (ryzen) {
+        const grade = Number(ryzen[1]);
+        const num = ryzen[2] || '';
+        const suffix = (ryzen[3] || '').toUpperCase();
+        const generation = num ? `${num[0]}000번대` : '';
+        if (grade >= 7) return { score: 3.2, tier: `Ryzen ${grade} ${generation} 상급 CPU`, text: `${value}는 Ryzen ${grade} 계열로 보입니다. 멀티태스킹, 개발, 편집 작업에 비교적 유리하며 노트북은 전력 제한을 함께 봐야 합니다.` };
+        if (grade === 5) return { score: 2.4, tier: `Ryzen ${grade} ${generation} 중급 CPU`, text: `${value}는 중급 CPU 계열로 볼 수 있습니다. 일반 작업, 개발 입문, FHD 게임 보조에는 무난한 편입니다.` };
+        return { score: 1.3, tier: `Ryzen ${grade} 보급형 CPU`, text: `${value}는 기본 작업 중심으로 보는 것이 좋습니다. 무거운 프로그램은 세부 모델과 RAM을 함께 확인해야 합니다.` };
+      }
+      if (apple) {
+        const chip = `Apple M${apple[1]}${apple[2] ? ' ' + apple[2].toUpperCase() : ''}`;
+        const score = apple[2] ? 3.4 : 2.5;
+        return { score, tier: `${chip} 계열`, text: `${value}는 ${chip} 계열로 보입니다. 문서·웹·개발·콘텐츠 작업에서 전력 효율이 좋은 편이며, Pro/Max/Ultra 여부와 메모리 용량에 따라 전문 작업 체감이 달라집니다.` };
+      }
+      if (/n100|celeron|pentium|athlon/i.test(text)) return { score: 0.9, tier: '입문형 CPU', text: `${value}는 입문형 또는 저전력 CPU 계열로 보입니다. 웹서핑, 문서, 영상 시청 중심으로 보는 것이 좋습니다.` };
+      return { score: 1.8, tier: '세부 확인 필요 CPU', text: `${value}는 자동 규칙으로 세대와 등급을 확정하기 어렵습니다. 제조사 사양표나 벤치마크 자료를 함께 확인하는 것이 좋습니다.` };
+    };
+
+    const analyzeRamValue = (ram) => {
+      const gb = parseMemory(ram);
+      if (!gb) return { score: 0, tier: 'RAM 미입력', text: 'RAM 용량을 입력하면 멀티태스킹과 작업 여유를 더 잘 판단할 수 있습니다.' };
+      if (gb >= 64) return { score: 2.5, tier: `${gb}GB 대용량 RAM`, text: `${gb}GB는 대형 영상 편집, 개발 서버, 가상머신, 대형 파일 작업까지 여유가 큰 용량입니다.` };
+      if (gb >= 32) return { score: 2.2, tier: `${gb}GB 고용량 RAM`, text: `${gb}GB는 개발, 영상 편집, 여러 프로그램 동시 실행에 안정적인 편입니다.` };
+      if (gb >= 16) return { score: 1.6, tier: `${gb}GB 표준 이상 RAM`, text: `${gb}GB는 현재 일반 노트북·PC 기준으로 표준 이상에 가까운 용량입니다. 문서·웹·개발·FHD 게임에는 무난하지만, 영상 편집·가상머신·최신 게임을 오래 쓰면 32GB가 더 안정적입니다.` };
+      if (gb >= 8) return { score: 0.9, tier: `${gb}GB 기본 RAM`, text: `${gb}GB는 기본 작업에는 가능하지만 브라우저 탭이 많거나 게임·편집을 하면 부족할 수 있습니다.` };
+      return { score: 0.3, tier: `${gb}GB 저용량 RAM`, text: `${gb}GB는 현대 웹 사용과 멀티태스킹에서 답답할 가능성이 큽니다.` };
+    };
+
+    const analyzeGpuModel = (gpu) => {
+      const value = String(gpu || '').trim();
+      if (!value) return { score: 0, tier: 'GPU 미입력', text: 'GPU 모델명을 입력하면 게임, 그래픽 작업, 영상 편집 보조 성능을 더 잘 판단할 수 있습니다.' };
+      const grade = classifyGpuText(value);
+      return { score: grade.score, tier: `${value} · ${grade.label}`, text: `${value}는 ${grade.text}` };
+    };
+
+    const analyzeStorageValue = (storage) => {
+      const value = String(storage || '').trim();
+      const text = value.toLowerCase();
+      if (!value) return { score: 0, tier: '저장장치 미입력', text: '저장장치 종류와 용량을 입력하면 체감 속도와 저장 여유를 판단하기 쉽습니다.' };
+      const capacity = value.match(/(\d+(?:\.\d+)?)\s*(tb|gb)/i);
+      const capText = capacity ? `${capacity[1]}${capacity[2].toUpperCase()}` : '용량 미표시';
+      if (/wd\s*pc\s*sn740|sn740/i.test(text)) return { score: 1.8, tier: `NVMe SSD · WD PC SN740 계열 · ${capText}`, text: `${value}는 WD PC SN740 계열의 NVMe SSD로 보입니다. 부팅, 프로그램 실행, 게임 로딩 체감에 유리한 저장장치입니다. 다만 입력값에 용량이 보이지 않으므로 실제 저장 공간은 별도로 확인하는 것이 좋습니다.` };
+      if (/nvme|pcie/i.test(text)) return { score: 1.7, tier: `NVMe SSD · ${capText}`, text: `${value}는 NVMe SSD 계열로 보입니다. 일반 SATA SSD보다 빠른 편이라 부팅, 프로그램 실행, 대용량 파일 작업 체감에 유리합니다.` };
+      if (/ssd/i.test(text)) return { score: 1.4, tier: `SSD · ${capText}`, text: `${value}는 SSD 계열로 보입니다. HDD보다 부팅과 프로그램 실행 체감이 확실히 좋습니다.` };
+      if (/hdd/i.test(text)) return { score: 0.6, tier: `HDD · ${capText}`, text: `${value}는 HDD 계열로 보입니다. 대용량 보관에는 유리하지만 운영체제와 프로그램 실행 체감은 SSD보다 느릴 수 있습니다.` };
+      return { score: 0.8, tier: `저장장치 세부 확인 필요 · ${capText}`, text: `${value}는 저장장치 종류를 확정하기 어렵습니다. SSD/NVMe/HDD 여부와 용량을 함께 확인하는 것이 좋습니다.` };
+    };
+
+    const purposeLabel = (purpose) => ({
+      office: '문서·웹·온라인 강의',
+      design: '이미지 편집·디자인',
+      video: '영상 편집',
+      game: '게임',
+      coding: '코딩·개발 작업'
+    }[purpose] || '선택하지 않음');
+
+    const buildPurposeComment = ({ purpose, cpuInfo, ramInfo, gpuInfo, storageInfo }) => {
+      if (purpose === 'game') {
+        return `게임 기준으로는 GPU 비중이 큽니다. ${gpuInfo.tier}라면 FHD 게임에 비교적 유리한 편으로 볼 수 있고, ${cpuInfo.tier}와 ${ramInfo.tier} 조합이면 일반적인 게임·디스코드·브라우저 동시 사용도 무난한 편입니다. QHD 이상 해상도나 최신 AAA 게임은 옵션 조정과 노트북 전력 제한을 함께 확인해야 합니다.`;
+      }
+      if (purpose === 'video') return `영상 편집은 CPU, RAM, 저장장치, GPU가 모두 영향을 줍니다. ${ramInfo.tier} 기준으로 FHD 편집은 가능성이 있지만, 4K·고비트레이트·효과가 많은 프로젝트는 32GB RAM과 더 높은 GPU 여유가 체감됩니다.`;
+      if (purpose === 'coding') return `개발 작업은 CPU 코어, RAM, SSD 체감이 중요합니다. ${cpuInfo.tier}, ${ramInfo.tier}, ${storageInfo.tier} 조합이면 일반 개발과 멀티태스킹은 비교적 무난하며, Docker·가상머신을 많이 쓰면 RAM 여유를 더 보는 것이 좋습니다.`;
+      if (purpose === 'design') return `이미지 편집·디자인은 RAM과 저장장치 체감이 큽니다. ${ramInfo.tier}, ${storageInfo.tier} 조합이면 일반 편집은 무난한 편이며, 대용량 파일과 GPU 가속 기능은 그래픽카드 모델에 따라 달라집니다.`;
+      if (purpose === 'office') return `문서·웹·온라인 강의 기준으로는 충분히 여유가 있는 편으로 보입니다. 브라우저 탭을 많이 열거나 화상회의와 문서 작업을 동시에 해도 ${ramInfo.tier}이면 일반적인 사용에는 무난합니다.`;
+      return '사용 목적을 선택하면 이 사양이 어떤 작업에 더 적합한지 더 구체적으로 해석할 수 있습니다.';
+    };
+
     const interpretManual = (data) => {
       const cpu = data.get('cpu')?.trim() || '';
       const ram = data.get('ram')?.trim() || '';
       const gpu = data.get('gpu')?.trim() || '';
       const storage = data.get('storage')?.trim() || '';
       const purpose = data.get('purpose') || '';
-      const ramGb = parseMemory(ram);
-      const gpuLower = gpu.toLowerCase();
-      const cpuLower = cpu.toLowerCase();
-      const storageLower = storage.toLowerCase();
-      const rows = [];
-
-      rows.push({ label: 'CPU', text: cpu ? (/(i7|i9|ryzen\s*7|ryzen\s*9|m[1-4]\s*(pro|max|ultra)?)/i.test(cpuLower) ? '무거운 작업에 비교적 유리한 CPU로 볼 수 있습니다. 다만 노트북은 전력 제한과 발열에 따라 체감 차이가 큽니다.' : /(i5|ryzen\s*5|m[1-4])/i.test(cpuLower) ? '일반 작업과 중간 수준 작업에 무난한 CPU로 볼 수 있습니다.' : /(i3|ryzen\s*3|n100|celeron|pentium)/i.test(cpuLower) ? '문서·웹 중심의 보급형 작업에 맞는 CPU로 볼 수 있습니다.' : '모델 세부 성능 확인이 필요합니다.') : 'CPU 모델명을 입력하면 더 구체적으로 해석할 수 있습니다.' });
-      rows.push({ label: 'RAM', text: ramGb ? (ramGb >= 32 ? '영상 편집, 개발, 멀티태스킹에 여유가 큰 편입니다.' : ramGb >= 16 ? '일반 작업과 가벼운 편집, 개발 작업에 무난한 편입니다.' : ramGb >= 8 ? '일반 작업은 가능하지만 무거운 작업은 부족할 수 있습니다.' : '메모리가 부족해 여러 작업에서 답답할 수 있습니다.') : 'RAM 용량을 입력하면 작업 여유를 더 잘 판단할 수 있습니다.' });
-      rows.push({ label: 'GPU', text: gpu ? (/(rtx\s*40|rtx\s*30|rtx\s*20|gtx|radeon\s*rx|arc)/i.test(gpuLower) ? '별도 그래픽카드로 보이며 게임·그래픽 작업에 더 유리합니다.' : /(iris|uhd|vega|integrated|내장|apple\s*m)/i.test(gpuLower) ? '내장 또는 통합 그래픽 계열로 보이며 문서·웹·가벼운 작업 중심에 적합합니다.' : 'GPU 모델명을 기준으로 추가 확인이 필요합니다.') : 'GPU 모델명을 입력하면 게임·그래픽 작업 가능성을 더 잘 볼 수 있습니다.' });
-      rows.push({ label: '저장장치', text: storage ? (/nvme|ssd/i.test(storageLower) ? 'SSD 계열로 보이며 부팅과 프로그램 실행 체감에 유리합니다.' : /hdd/i.test(storageLower) ? 'HDD 계열은 대용량 보관에는 좋지만 체감 속도는 SSD보다 느릴 수 있습니다.' : '종류와 용량을 함께 확인하면 더 좋습니다.') : '저장장치 종류와 용량을 입력하면 체감 속도와 저장 여유를 판단하기 쉽습니다.' });
-
-      const purposeText = {
-        office: '문서 작업·웹서핑·온라인 강의는 RAM 8GB 이상이면 대체로 무난하고, SSD가 있으면 체감이 좋아집니다.',
-        design: '이미지 편집은 RAM 16GB 이상과 SSD가 있으면 안정적이며, 큰 파일 작업은 GPU와 CPU도 영향을 줍니다.',
-        video: '영상 편집은 CPU, RAM 16~32GB 이상, SSD, GPU가 모두 중요합니다. 코덱과 해상도에 따라 체감 차이가 큽니다.',
-        game: '게임은 GPU 영향이 큽니다. 게임별 권장사양과 해상도, 옵션 설정을 함께 확인해야 합니다.',
-        coding: '개발 작업은 CPU 코어, RAM, SSD가 중요합니다. Docker나 가상머신을 쓰면 RAM 16GB 이상이 더 안정적입니다.'
-      }[purpose];
-      if (purposeText) rows.push({ label: '사용 목적', text: purposeText });
-
-      return rows;
+      const cpuInfo = analyzeCpuModel(cpu);
+      const ramInfo = analyzeRamValue(ram);
+      const gpuInfo = analyzeGpuModel(gpu);
+      const storageInfo = analyzeStorageValue(storage);
+      const score = cpuInfo.score + ramInfo.score + gpuInfo.score + storageInfo.score;
+      const profile = score >= 8 ? '고성능 노트북·게이밍/작업용 PC급으로 볼 수 있는 구성' : score >= 6.2 ? '중상급 노트북·FHD 게임/개발 작업에 적합한 구성' : score >= 4.4 ? '일반 업무와 학습, 가벼운 편집에 무난한 구성' : score >= 2.6 ? '기본 작업 중심 구성' : '입력 정보가 부족하거나 보급형 중심 구성';
+      const summary = `${[cpuInfo.tier, ramInfo.tier, gpuInfo.tier, storageInfo.tier].filter(Boolean).join(' / ')} 기준으로 ${profile}입니다.`;
+      return {
+        profile,
+        summary,
+        rows: [
+          { label: '종합', text: summary },
+          { label: cpu ? `CPU (${cpu})` : 'CPU', text: cpuInfo.text },
+          { label: ram ? `RAM (${ram})` : 'RAM', text: ramInfo.text },
+          { label: gpu ? `GPU (${gpu})` : 'GPU', text: gpuInfo.text },
+          { label: storage ? `저장장치 (${storage})` : '저장장치', text: storageInfo.text },
+          { label: `사용 목적 (${purposeLabel(purpose)})`, text: buildPurposeComment({ purpose, cpuInfo, ramInfo, gpuInfo, storageInfo }) }
+        ]
+      };
     };
 
-    const showManualResult = (rows) => {
+    const showManualResult = (result) => {
       const body = `
         <div class="pc-result-summary">
-          <div class="summary-callout">직접 입력한 CPU·RAM·GPU·저장장치 정보를 기준으로 용도별 의미를 정리했습니다.</div>
+          <div class="summary-callout"><strong>${escape(result.profile)}</strong><br>${escape(result.summary)}</div>
           <div class="result-list">
-            ${rows.map((row) => `<div class="result-row"><span>${escape(row.label)}</span><strong>${escape(row.text)}</strong></div>`).join('')}
+            ${result.rows.map((row) => `<div class="result-row"><span>${escape(row.label)}</span><strong>${escape(row.text)}</strong></div>`).join('')}
           </div>
-          <p class="legal-note pc-note"><strong>안내:</strong> 이 해석은 입력한 텍스트와 일반적인 사양 기준을 바탕으로 한 참고 설명입니다. 정확한 성능은 실제 모델명, 전력 제한, 발열, 작업 종류에 따라 달라집니다.</p>
+          <p class="legal-note pc-note"><strong>안내:</strong> 이 해석은 입력한 모델명과 일반적인 사양 기준을 바탕으로 한 참고 설명입니다. 같은 CPU·GPU라도 노트북 전력 제한, 발열, 드라이버, 게임별 최적화, 작업 종류에 따라 체감 성능이 달라집니다.</p>
         </div>`;
       showModal({ eyebrow: '직접 입력 사양', title: '직접 입력 사양 해석', body, wide: true });
     };
@@ -635,8 +725,8 @@
 
     manualForm?.addEventListener('submit', (event) => {
       event.preventDefault();
-      const rows = interpretManual(new FormData(manualForm));
-      showManualResult(rows);
+      const result = interpretManual(new FormData(manualForm));
+      showManualResult(result);
     });
 
     imageInput?.addEventListener('change', (event) => {

@@ -275,37 +275,69 @@
         { label: 'CPU 논리 코어', value: specs.cores ? `${specs.cores}개` : '확인 제한', desc: specs.cores ? '동시에 처리 가능한 논리 프로세서 수입니다.' : '현재 환경에서 제공되지 않습니다.', tone: specs.cores >= 8 ? 'success' : 'neutral' },
         { label: '메모리 추정', value: specs.memory ? `약 ${specs.memory}GB` : '확인 제한', desc: specs.memory ? '브라우저가 제공하는 대략적인 메모리 값입니다.' : '정확한 RAM은 직접 입력해 주세요.', tone: specs.memory >= 8 ? 'success' : 'neutral' },
         { label: 'GPU 자동 확인', value: specs.gpu.value, desc: specs.gpu.detail, tone: 'warning' },
-        { label: '화면 해상도', value: specs.screen, desc: `픽셀 비율 ${specs.pixelRatio} 기준으로 표시됩니다.` },
+        { label: '화면 해상도', value: specs.screen, desc: '현재 화면의 표시 해상도입니다.' },
         { label: '정확한 부품명', value: '직접 입력 필요', desc: 'CPU 모델명, GPU 모델, 저장장치 모델은 직접 입력이 더 정확합니다.', tone: 'warning' }
       ];
       autoGrid.innerHTML = cards.map(renderSpecCard).join('');
     };
 
+    const classifyGpuText = (gpuText) => {
+      const text = String(gpuText || '').toLowerCase();
+      if (/(rtx\s*40(8|9)|rtx\s*50|rx\s*79|rx\s*78)/i.test(text)) return { label: '상급 외장 GPU', score: 2.4, text: '고해상도 게임, 그래픽 작업, GPU 가속 작업에 유리한 그래픽 계열로 볼 수 있습니다.' };
+      if (/(rtx\s*40(5|6|7)|rtx\s*30(6|7|8)|rx\s*6[67]|rx\s*77|arc\s*a7)/i.test(text)) return { label: '중상급 외장 GPU', score: 2, text: 'FHD 게임, 그래픽 작업, 영상 편집 보조에 비교적 유리한 그래픽 계열로 볼 수 있습니다.' };
+      if (/(rtx\s*20|rtx\s*30(5)|gtx\s*16|gtx\s*10|rx\s*5|rx\s*6|arc)/i.test(text)) return { label: '외장 GPU', score: 1.4, text: '내장 그래픽보다 그래픽 작업에 유리하지만, 모델별 성능 차이가 큽니다.' };
+      if (/(iris|uhd|vega|integrated|내장|apple\s*m|radeon\s*graphics)/i.test(text)) return { label: '내장·통합 GPU', score: 0.6, text: '문서, 웹, 영상 시청, 가벼운 그래픽 작업 중심에 적합한 그래픽 계열로 볼 수 있습니다.' };
+      return { label: 'GPU 확인 필요', score: 0, text: 'GPU 모델명이 명확하지 않아 게임·그래픽 작업 판단은 직접 입력값 확인이 필요합니다.' };
+    };
+
+    const summarizeAutoGrade = (specs, manualGpu) => {
+      const gpuText = manualGpu || specs.gpu.raw || '';
+      const gpuGrade = classifyGpuText(gpuText);
+      let score = 0;
+      if (specs.cores >= 16) score += 3;
+      else if (specs.cores >= 12) score += 2.5;
+      else if (specs.cores >= 8) score += 2;
+      else if (specs.cores >= 4) score += 1;
+      if (specs.memory >= 32) score += 2;
+      else if (specs.memory >= 16) score += 1.6;
+      else if (specs.memory >= 8) score += 1;
+      else if (specs.memory) score += 0.4;
+      score += gpuGrade.score;
+
+      if (score >= 6) return { label: '고성능 작업용·게이밍 PC급으로 볼 수 있는 구성', detail: '멀티태스킹, 개발, FHD~QHD 게임, 가벼운 영상 편집까지 비교적 여유가 있는 쪽입니다.', gpuGrade };
+      if (score >= 4.5) return { label: '중상급 생산성·FHD 게임 가능급으로 볼 수 있는 구성', detail: '문서·웹·개발·가벼운 편집에는 여유가 있고, GPU 모델에 따라 게임 체감도 기대할 수 있습니다.', gpuGrade };
+      if (score >= 3) return { label: '일반 업무·학습용 이상으로 볼 수 있는 구성', detail: '웹서핑, 문서 작업, 온라인 강의, 여러 탭 사용은 대체로 무난하며 무거운 게임·편집은 추가 확인이 필요합니다.', gpuGrade };
+      if (score >= 1.5) return { label: '기본 업무·웹 사용 중심 구성으로 볼 수 있습니다', detail: '가벼운 작업에는 사용할 수 있지만, 멀티태스킹이나 무거운 프로그램은 체감이 제한될 수 있습니다.', gpuGrade };
+      return { label: '자동 확인값만으로는 등급 판단이 제한됩니다', detail: 'CPU 모델명, RAM, GPU, 저장장치를 직접 입력하면 더 정확하게 해석할 수 있습니다.', gpuGrade };
+    };
+
     const buildAutoInterpretationRows = (specs, manualGpu) => {
       const rows = [];
-      rows.push({ label: '운영체제', text: `${specs.os}로 추정됩니다. 브라우저 환경 문자열 기준이라 실제 OS 세부 버전은 표시하지 않습니다.` });
+      const grade = summarizeAutoGrade(specs, manualGpu);
+      rows.push({ label: '종합 추정', text: `${grade.label} — ${grade.detail}` });
+      rows.push({ label: '운영체제', text: `${specs.os}로 추정됩니다. 웹 보안 정책상 세부 버전과 설치 환경은 표시하지 않습니다.` });
       if (specs.cores) {
-        rows.push({ label: 'CPU 논리 코어', text: specs.cores >= 12 ? `${specs.cores}개로 표시됩니다. 멀티태스킹, 개발 도구, 가벼운 편집 작업에 비교적 여유가 있는 편입니다.` : specs.cores >= 8 ? `${specs.cores}개로 표시됩니다. 일반 작업과 여러 프로그램 동시 사용에 무난한 편입니다.` : specs.cores >= 4 ? `${specs.cores}개로 표시됩니다. 문서·웹 사용은 가능하지만 무거운 작업은 직접 CPU 모델 확인이 필요합니다.` : `${specs.cores}개로 표시됩니다. 동시 작업이 많으면 체감이 답답할 수 있습니다.` });
+        rows.push({ label: 'CPU 논리 코어', text: specs.cores >= 16 ? `${specs.cores}개입니다. 고부하 멀티태스킹과 개발·편집 작업에 유리한 편입니다.` : specs.cores >= 12 ? `${specs.cores}개입니다. 중상급 노트북 또는 데스크톱급 작업 여유로 볼 수 있습니다.` : specs.cores >= 8 ? `${specs.cores}개입니다. 일반 업무와 여러 프로그램 동시 사용에 무난한 편입니다.` : specs.cores >= 4 ? `${specs.cores}개입니다. 기본 작업은 가능하지만 무거운 작업은 CPU 모델 확인이 필요합니다.` : `${specs.cores}개입니다. 동시 작업이 많으면 체감이 제한될 수 있습니다.` });
       } else {
-        rows.push({ label: 'CPU 논리 코어', text: '자동 확인이 제한되어 CPU 모델명을 직접 입력하는 것이 좋습니다.' });
+        rows.push({ label: 'CPU 논리 코어', text: '자동 확인이 제한되었습니다. CPU 모델명을 직접 입력하면 용도별 판단이 더 정확해집니다.' });
       }
       if (specs.memory) {
-        rows.push({ label: '메모리 추정', text: specs.memory >= 16 ? `약 ${specs.memory}GB로 표시됩니다. 여러 탭, 문서 작업, 가벼운 편집 작업에는 여유가 있는 편입니다.` : specs.memory >= 8 ? `약 ${specs.memory}GB로 표시됩니다. 일반 작업은 무난하지만 영상 편집·게임·개발 작업은 여유가 제한될 수 있습니다.` : `약 ${specs.memory}GB로 표시됩니다. 여러 프로그램을 동시에 쓰면 부족할 가능성이 있습니다.` });
+        rows.push({ label: '메모리 추정', text: specs.memory >= 32 ? `약 ${specs.memory}GB입니다. 영상 편집, 개발, 멀티태스킹에 여유가 큰 편입니다.` : specs.memory >= 16 ? `약 ${specs.memory}GB입니다. 일반 작업, 개발, 가벼운 편집에는 비교적 안정적인 편입니다.` : specs.memory >= 8 ? `약 ${specs.memory}GB입니다. 문서·웹 중심은 무난하지만 무거운 편집·게임은 여유가 제한될 수 있습니다.` : `약 ${specs.memory}GB입니다. 여러 프로그램을 동시에 쓰기에는 부족할 수 있습니다.` });
       } else {
-        rows.push({ label: '메모리 추정', text: '브라우저에서 RAM 값을 제공하지 않았습니다. 정확한 용량은 직접 입력해 주세요.' });
+        rows.push({ label: '메모리 추정', text: '브라우저가 RAM 추정값을 제공하지 않았습니다. 실제 용량을 직접 입력하는 것이 좋습니다.' });
       }
-      rows.push({ label: 'GPU', text: manualGpu ? `${manualGpu}로 직접 입력되었습니다. 게임·그래픽 작업 판단은 이 모델명을 기준으로 보는 것이 자동 WebGL 값보다 더 좋습니다.` : 'GPU 모델명이 직접 입력되지 않았습니다. 자동 WebGL 렌더러는 참고용이라 실제 그래픽카드 이름과 다를 수 있습니다.' });
-      rows.push({ label: '화면 해상도', text: `${specs.screen}로 표시됩니다. 해상도는 작업 공간과 선명도에 영향을 주지만, 체감은 모니터 크기와 배율 설정에 따라 달라집니다.` });
-      return rows;
+      rows.push({ label: 'GPU', text: manualGpu ? `${manualGpu}로 직접 입력되었습니다. ${grade.gpuGrade.text}` : `${grade.gpuGrade.label}: 자동 WebGL 값은 참고용입니다. 실제 그래픽카드 모델명을 입력하면 게임·그래픽 작업 판단이 더 좋아집니다.` });
+      rows.push({ label: '화면 해상도', text: `${specs.screen}입니다. 작업 공간과 선명도에 영향을 주지만, 체감은 모니터 크기와 배율 설정에 따라 달라집니다.` });
+      return { grade, rows };
     };
 
     const interpretAutoSpecs = () => {
       const specs = lastAutoSpecs || collectAutoSpecs();
       const manualGpu = autoGpuInput?.value.trim() || '';
-      const rows = buildAutoInterpretationRows(specs, manualGpu);
+      const { grade, rows } = buildAutoInterpretationRows(specs, manualGpu);
       const body = `
         <div class="pc-result-summary">
-          <div class="summary-callout">자동 확인값은 브라우저가 제공하는 범위 안에서만 표시됩니다. 정확한 CPU 모델명, GPU 모델명, 저장장치 모델은 직접 입력 결과를 함께 보는 것이 좋습니다.</div>
+          <div class="summary-callout"><strong>${escape(grade.label)}</strong><br>${escape(grade.detail)} 자동 확인값은 브라우저가 제공하는 범위 안에서만 표시되므로, 정확한 CPU·GPU·저장장치 모델명은 직접 입력 결과와 함께 보는 것이 좋습니다.</div>
           <div class="result-list">
             ${rows.map((row) => `<div class="result-row"><span>${escape(row.label)}</span><strong>${escape(row.text)}</strong></div>`).join('')}
           </div>
@@ -341,13 +373,9 @@
     };
 
     const runCpuTest = () => {
-      benchmarkBox.hidden = false;
-      benchmarkBar.style.width = '8%';
-      benchmarkResult.innerHTML = '<div class="result-row"><span>상태</span><strong>테스트를 준비하고 있습니다.</strong></div>';
-      cpuTestStatus.textContent = '측정 중';
-      cpuTestStatus.className = 'status-pill neutral';
       cpuTestButton.disabled = true;
       cpuTestButton.textContent = 'CPU 테스트 중...';
+      showModal({ eyebrow: 'CPU 간단 테스트', title: 'CPU 테스트 중입니다', body: '<p>브라우저 안에서 약 1초 동안 짧은 반복 연산을 실행하고 있습니다. 잠시만 기다려 주세요.</p>' });
 
       const workerCode = `
         self.onmessage = () => {
@@ -370,23 +398,12 @@
         const { count, elapsed } = event.data || {};
         const score = Math.round((count / elapsed) * 1000);
         const grade = classifyCpuScore(score);
-        benchmarkBar.style.width = grade.width;
-        cpuTestStatus.textContent = grade.label;
-        cpuTestStatus.className = `status-pill ${grade.tone}`;
-        benchmarkResult.innerHTML = `
-          <div class="result-row"><span>참고 점수</span><strong>${escape(score.toLocaleString('ko-KR'))} ops/sec</strong></div>
-          <div class="result-row"><span>비교 범위</span><strong>${escape(grade.range)}</strong></div>
-          <div class="result-row"><span>측정 시간</span><strong>약 ${escape(Math.round(elapsed))}ms</strong></div>
-        `;
         cpuTestButton.disabled = false;
         cpuTestButton.textContent = 'CPU 간단 테스트 다시 시작';
         openCpuResultModal(score, elapsed, grade);
         worker.terminate();
       };
       worker.onerror = () => {
-        cpuTestStatus.textContent = '오류';
-        cpuTestStatus.className = 'status-pill warning';
-        benchmarkResult.innerHTML = '<div class="result-row"><span>오류</span><strong>CPU 테스트를 실행할 수 없습니다.</strong></div>';
         cpuTestButton.disabled = false;
         cpuTestButton.textContent = 'CPU 간단 테스트 시작';
         showModal({ eyebrow: 'CPU 간단 테스트', title: 'CPU 테스트 실행 오류', body: '<p>현재 브라우저 환경에서 CPU 간단 테스트를 실행할 수 없습니다. 새로고침 후 다시 시도해 주세요.</p>' });
@@ -472,48 +489,147 @@
       if (input && value) input.value = value.trim();
     };
 
-    const runOcr = async (file) => {
-      if (!file) return;
-      if (!window.Tesseract?.recognize) {
-        showModal({ eyebrow: '이미지 텍스트 인식', title: 'OCR 모듈을 불러오지 못했습니다', body: '<p>텍스트 인식 스크립트를 불러오지 못했습니다. 네트워크 상태를 확인하거나 직접 입력해 주세요.</p>' });
-        return;
+    const fieldTargets = {
+      cpu: { selector: '#manual-cpu', label: 'CPU', key: 'cpu' },
+      ram: { selector: '#manual-ram', label: 'RAM', key: 'ram' },
+      gpu: { selector: '#manual-gpu', label: 'GPU', key: 'gpu' },
+      storage: { selector: '#manual-storage', label: '저장장치', key: 'storage' },
+      autoGpu: { selector: '#auto-gpu-manual', label: 'GPU', key: 'gpu' }
+    };
+
+    const extractTargetValue = (text, targetKey) => {
+      const target = fieldTargets[targetKey];
+      if (!target) return '';
+      const specs = extractSpecsFromText(text);
+      return specs[target.key] || normalizeOcrText(text).slice(0, 100);
+    };
+
+    const fillTargetValue = (targetKey, value) => {
+      const target = fieldTargets[targetKey];
+      if (!target || !value) return false;
+      const input = document.querySelector(target.selector);
+      if (!input) return false;
+      input.value = String(value).trim();
+      return true;
+    };
+
+    const recognizeImageText = async (file, statusElement = ocrStatus) => {
+      if (!window.Tesseract?.recognize) throw new Error('OCR 모듈을 불러오지 못했습니다.');
+      const result = await window.Tesseract.recognize(file, 'kor+eng', {
+        logger: (message) => {
+          if (!statusElement || message.status !== 'recognizing text') return;
+          const pct = Math.round((message.progress || 0) * 100);
+          statusElement.textContent = `텍스트 인식 중... ${pct}%`;
+        }
+      });
+      return result?.data?.text || '';
+    };
+
+    const readPdfText = async (file) => {
+      if (!window.pdfjsLib?.getDocument) throw new Error('PDF 분석 모듈을 불러오지 못했습니다.');
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+      const data = await file.arrayBuffer();
+      const pdf = await window.pdfjsLib.getDocument({ data }).promise;
+      const pageCount = Math.min(pdf.numPages, 3);
+      const parts = [];
+      for (let pageNo = 1; pageNo <= pageCount; pageNo += 1) {
+        const page = await pdf.getPage(pageNo);
+        const textContent = await page.getTextContent();
+        parts.push(textContent.items.map((item) => item.str || '').join(' '));
       }
-      if (ocrStatus) ocrStatus.textContent = '이미지에서 텍스트를 인식하는 중입니다. 잠시만 기다려 주세요.';
+      const text = parts.join('\n').trim();
+      if (text) return text;
+      if (!window.Tesseract?.recognize) return '';
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 1.7 });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      const context = canvas.getContext('2d');
+      await page.render({ canvasContext: context, viewport }).promise;
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      return blob ? recognizeImageText(blob) : '';
+    };
+
+    const processSpecText = (text, sourceLabel = '사양표') => {
+      const specs = extractSpecsFromText(text);
+      fillIfFound('#manual-cpu', specs.cpu);
+      fillIfFound('#manual-ram', specs.ram);
+      fillIfFound('#manual-gpu', specs.gpu);
+      fillIfFound('#manual-storage', specs.storage);
+      const found = [specs.cpu && 'CPU', specs.ram && 'RAM', specs.gpu && 'GPU', specs.storage && '저장장치'].filter(Boolean);
+      if (ocrStatus) ocrStatus.textContent = found.length ? `${found.join(', ')} 후보를 입력란에 채웠습니다. 정확한지 직접 확인해 주세요.` : '자동으로 찾은 사양 후보가 없습니다. 더 선명한 이미지·PDF를 사용하거나 직접 입력해 주세요.';
+      showModal({
+        eyebrow: '사양표 자동 인식',
+        title: `${sourceLabel} 인식 결과`,
+        wide: true,
+        body: `
+          <div class="pc-result-summary">
+            <div class="summary-callout">인식한 텍스트에서 찾은 후보를 입력란에 채웠습니다. OCR과 PDF 추출은 오인식이 있을 수 있으므로 모델명과 용량을 반드시 확인해 주세요.</div>
+            <div class="result-list">
+              <div class="result-row"><span>CPU 후보</span><strong>${escape(specs.cpu || '찾지 못함')}</strong></div>
+              <div class="result-row"><span>RAM 후보</span><strong>${escape(specs.ram || '찾지 못함')}</strong></div>
+              <div class="result-row"><span>GPU 후보</span><strong>${escape(specs.gpu || '찾지 못함')}</strong></div>
+              <div class="result-row"><span>저장장치 후보</span><strong>${escape(specs.storage || '찾지 못함')}</strong></div>
+            </div>
+            <p class="legal-note pc-note"><strong>안내:</strong> 이미지와 PDF는 브라우저에서 텍스트 인식·추출에만 사용하며, 한눈체크 서버 DB에 저장하지 않습니다.</p>
+          </div>`
+      });
+    };
+
+    const runSpecFileExtract = async (file) => {
+      if (!file) return;
+      if (ocrStatus) ocrStatus.textContent = file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf') ? 'PDF에서 사양 텍스트를 추출하는 중입니다.' : '이미지에서 텍스트를 인식하는 중입니다. 잠시만 기다려 주세요.';
       try {
-        const result = await window.Tesseract.recognize(file, 'kor+eng', {
-          logger: (message) => {
-            if (!ocrStatus || message.status !== 'recognizing text') return;
-            const pct = Math.round((message.progress || 0) * 100);
-            ocrStatus.textContent = `텍스트 인식 중... ${pct}%`;
-          }
-        });
-        const text = result?.data?.text || '';
-        const specs = extractSpecsFromText(text);
-        fillIfFound('#manual-cpu', specs.cpu);
-        fillIfFound('#manual-ram', specs.ram);
-        fillIfFound('#manual-gpu', specs.gpu);
-        fillIfFound('#manual-storage', specs.storage);
-        const found = [specs.cpu && 'CPU', specs.ram && 'RAM', specs.gpu && 'GPU', specs.storage && '저장장치'].filter(Boolean);
-        if (ocrStatus) ocrStatus.textContent = found.length ? `${found.join(', ')} 후보를 입력란에 채웠습니다. 정확한지 직접 확인해 주세요.` : '자동으로 찾은 사양 후보가 없습니다. 이미지를 더 선명하게 캡처하거나 직접 입력해 주세요.';
-        showModal({
-          eyebrow: '이미지 텍스트 인식',
-          title: '사양표 캡처 인식 결과',
-          wide: true,
-          body: `
-            <div class="pc-result-summary">
-              <div class="summary-callout">이미지에서 찾은 후보를 입력란에 채웠습니다. OCR은 오인식이 있을 수 있으므로 모델명과 용량을 반드시 확인해 주세요.</div>
-              <div class="result-list">
-                <div class="result-row"><span>CPU 후보</span><strong>${escape(specs.cpu || '찾지 못함')}</strong></div>
-                <div class="result-row"><span>RAM 후보</span><strong>${escape(specs.ram || '찾지 못함')}</strong></div>
-                <div class="result-row"><span>GPU 후보</span><strong>${escape(specs.gpu || '찾지 못함')}</strong></div>
-                <div class="result-row"><span>저장장치 후보</span><strong>${escape(specs.storage || '찾지 못함')}</strong></div>
-              </div>
-              <p class="legal-note pc-note"><strong>안내:</strong> 이미지는 브라우저에서 텍스트 인식에만 사용하며, 한눈체크 서버 DB에 저장하지 않습니다.</p>
-            </div>`
-        });
+        const isPdf = file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf');
+        const text = isPdf ? await readPdfText(file) : await recognizeImageText(file, ocrStatus);
+        processSpecText(text, isPdf ? 'PDF 사양표' : '이미지 사양표');
       } catch (error) {
         if (ocrStatus) ocrStatus.textContent = '텍스트 인식에 실패했습니다. 직접 입력해 주세요.';
-        showModal({ eyebrow: '이미지 텍스트 인식', title: 'OCR 실패', body: `<p>이미지 텍스트 인식 중 오류가 발생했습니다. 직접 입력하거나 더 선명한 이미지로 다시 시도해 주세요.</p><p class="legal-note pc-note">${escape(error?.message || '')}</p>` });
+        showModal({ eyebrow: '사양표 자동 인식', title: '인식 실패', body: `<p>사양표 인식 중 오류가 발생했습니다. 직접 입력하거나 더 선명한 이미지·텍스트 포함 PDF로 다시 시도해 주세요.</p><p class="legal-note pc-note">${escape(error?.message || '')}</p>` });
+      }
+    };
+
+    const readClipboardForTarget = async (targetKey) => {
+      const target = fieldTargets[targetKey];
+      if (!target) return;
+      try {
+        if (navigator.clipboard?.read) {
+          const items = await navigator.clipboard.read();
+          for (const item of items) {
+            const textType = item.types.find((type) => type === 'text/plain');
+            if (textType) {
+              const blob = await item.getType(textType);
+              const text = await blob.text();
+              const value = extractTargetValue(text, targetKey);
+              if (fillTargetValue(targetKey, value)) {
+                showModal({ eyebrow: '붙여넣기 인식', title: `${target.label} 값을 채웠습니다`, body: `<p>클립보드 텍스트에서 <strong>${escape(value)}</strong> 값을 추출했습니다. 정확한지 확인해 주세요.</p>` });
+                return;
+              }
+            }
+            const imageType = item.types.find((type) => type.startsWith('image/'));
+            if (imageType) {
+              const blob = await item.getType(imageType);
+              const text = await recognizeImageText(blob);
+              const value = extractTargetValue(text, targetKey);
+              if (fillTargetValue(targetKey, value)) {
+                showModal({ eyebrow: '붙여넣기 인식', title: `${target.label} 이미지 인식 결과`, body: `<p>클립보드 이미지에서 <strong>${escape(value)}</strong> 후보를 채웠습니다. OCR 결과는 반드시 확인해 주세요.</p>` });
+                return;
+              }
+            }
+          }
+        }
+        if (navigator.clipboard?.readText) {
+          const text = await navigator.clipboard.readText();
+          const value = extractTargetValue(text, targetKey);
+          if (fillTargetValue(targetKey, value)) {
+            showModal({ eyebrow: '붙여넣기 인식', title: `${target.label} 값을 채웠습니다`, body: `<p>클립보드 텍스트에서 <strong>${escape(value)}</strong> 값을 추출했습니다. 정확한지 확인해 주세요.</p>` });
+            return;
+          }
+        }
+        throw new Error('클립보드에서 인식할 수 있는 텍스트나 이미지를 찾지 못했습니다.');
+      } catch (error) {
+        showModal({ eyebrow: '붙여넣기 인식', title: '클립보드 인식이 제한되었습니다', body: `<p>브라우저 권한이나 보안 설정 때문에 클립보드 이미지를 직접 읽지 못했습니다. 해당 입력칸을 클릭한 뒤 Ctrl+V 또는 ⌘+V로 붙여넣어 보세요.</p><p class="legal-note pc-note">${escape(error?.message || '')}</p>` });
       }
     };
 
@@ -525,11 +641,36 @@
 
     imageInput?.addEventListener('change', (event) => {
       const file = event.target.files?.[0];
-      runOcr(file);
+      runSpecFileExtract(file);
+    });
+
+    Object.entries(fieldTargets).forEach(([targetKey, config]) => {
+      const input = document.querySelector(config.selector);
+      input?.addEventListener('paste', async (event) => {
+        const items = Array.from(event.clipboardData?.items || []);
+        const imageItem = items.find((item) => item.type.startsWith('image/'));
+        if (!imageItem) return;
+        event.preventDefault();
+        try {
+          const file = imageItem.getAsFile();
+          const text = await recognizeImageText(file);
+          const value = extractTargetValue(text, targetKey);
+          if (fillTargetValue(targetKey, value)) {
+            showModal({ eyebrow: '붙여넣기 인식', title: `${config.label} 이미지 인식 결과`, body: `<p>붙여넣은 이미지에서 <strong>${escape(value)}</strong> 후보를 채웠습니다. 정확한지 확인해 주세요.</p>` });
+          }
+        } catch (error) {
+          showModal({ eyebrow: '붙여넣기 인식', title: '이미지 인식 실패', body: `<p>붙여넣은 이미지에서 텍스트를 인식하지 못했습니다. 더 선명한 캡처를 사용하거나 직접 입력해 주세요.</p><p class="legal-note pc-note">${escape(error?.message || '')}</p>` });
+        }
+      });
     });
 
     document.addEventListener('click', (event) => {
       if (!(event.target instanceof Element)) return;
+      const pasteButton = event.target.closest('[data-ocr-target]');
+      if (pasteButton) {
+        readClipboardForTarget(pasteButton.dataset.ocrTarget);
+        return;
+      }
       const helpButton = event.target.closest('[data-help-topic]');
       if (!helpButton) return;
       const topic = helpContents[helpButton.dataset.helpTopic];

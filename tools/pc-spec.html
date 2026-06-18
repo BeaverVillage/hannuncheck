@@ -68,22 +68,11 @@
                   <div class="inline-input-button">
                     <input id="auto-gpu-manual" name="autoGpu" type="text" placeholder="예: RTX 4060 Laptop, Intel Iris Xe">
                     <button type="button" class="help-button" data-help-topic="gpu">어디서 보나요?</button>
+                    <button type="button" class="paste-ocr-button" data-ocr-target="autoGpu" aria-label="GPU 붙여넣기 인식">붙여넣기 인식</button>
                   </div>
                   <small>자동 확인의 GPU/WebGL 값이 실제 그래픽카드 이름처럼 보이지 않을 때 직접 입력하세요.</small>
                 </div>
                 <button class="submit-button" type="button" id="auto-spec-interpret-button">사양 확인하기</button>
-              </div>
-              <div class="benchmark-box" id="benchmark-box" hidden>
-                <div class="result-header slim">
-                  <div>
-                    <p class="eyebrow">CPU quick test</p>
-                    <strong class="result-title">CPU 간단 테스트 결과</strong>
-                  </div>
-                  <span class="status-pill neutral" id="cpu-test-status">대기</span>
-                </div>
-                <div class="benchmark-meter"><span id="benchmark-bar"></span></div>
-                <div class="result-list" id="benchmark-result"></div>
-                <p class="legal-note pc-note"><strong>해석:</strong> 이 테스트는 브라우저 안에서 짧게 반복 연산을 수행해 참고 점수를 보여주는 기능입니다. 전문 벤치마크가 아니며, 전원 모드·발열·백그라운드 작업·기기 설정에 따라 결과가 달라질 수 있습니다.</p>
               </div>
             </div>
           </article>
@@ -92,20 +81,21 @@
             <article class="notice-card blue">
               <p class="eyebrow">Manual input</p>
               <h2>정확한 부품명은 직접 입력하세요</h2>
-              <p>자동 확인값만으로는 실제 CPU·GPU 모델을 확정하기 어렵습니다. 도움말 버튼을 눌러 확인 위치를 보고 입력하거나, 사양표 캡처 이미지를 올려 텍스트를 추출할 수 있습니다.</p>
+              <p>자동 확인값만으로는 실제 CPU·GPU 모델을 확정하기 어렵습니다. 도움말 버튼으로 확인 위치를 보고 입력하거나, 사양표 이미지·PDF 또는 클립보드 붙여넣기 인식으로 후보값을 채울 수 있습니다.</p>
             </article>
             <article class="page-card manual-spec-card">
               <form id="manual-spec-form" novalidate>
                 <div class="ocr-upload-box">
-                  <label for="spec-image-input"><strong>사양표 캡처 이미지로 자동 채우기</strong><small>이미지는 서버에 업로드하지 않고 브라우저에서 텍스트 인식을 시도합니다.</small></label>
-                  <input id="spec-image-input" type="file" accept="image/*">
-                  <p id="ocr-status" class="inline-privacy-note">CPU, RAM, GPU, SSD 같은 글자가 보이는 캡처를 선택하세요.</p>
+                  <label for="spec-image-input"><strong>사양표 이미지·PDF로 자동 채우기</strong><small>이미지 또는 PDF 사양표에서 CPU, RAM, GPU, 저장장치 후보를 추출합니다. 파일은 서버에 저장하지 않습니다.</small></label>
+                  <input id="spec-image-input" type="file" accept="image/*,.pdf,application/pdf">
+                  <p id="ocr-status" class="inline-privacy-note">사양표 전체가 보이는 캡처 이미지 또는 텍스트가 포함된 PDF를 선택하세요.</p>
                 </div>
                 <div class="form-row help-field-row">
                   <label for="manual-cpu">CPU 모델명 <span>선택</span></label>
                   <div class="inline-input-button">
                     <input id="manual-cpu" name="cpu" type="text" placeholder="예: Intel i5-12400F, Ryzen 5 5600">
                     <button type="button" class="help-button" data-help-topic="cpu">어디서 보나요?</button>
+                    <button type="button" class="paste-ocr-button" data-ocr-target="cpu" aria-label="CPU 붙여넣기 인식">붙여넣기 인식</button>
                   </div>
                 </div>
                 <div class="form-row help-field-row">
@@ -113,6 +103,7 @@
                   <div class="inline-input-button">
                     <input id="manual-ram" name="ram" type="text" placeholder="예: 16GB">
                     <button type="button" class="help-button" data-help-topic="ram">어디서 보나요?</button>
+                    <button type="button" class="paste-ocr-button" data-ocr-target="ram" aria-label="RAM 붙여넣기 인식">붙여넣기 인식</button>
                   </div>
                 </div>
                 <div class="form-row help-field-row">
@@ -120,6 +111,7 @@
                   <div class="inline-input-button">
                     <input id="manual-gpu" name="gpu" type="text" placeholder="예: RTX 3060, Intel Iris Xe">
                     <button type="button" class="help-button" data-help-topic="gpu">어디서 보나요?</button>
+                    <button type="button" class="paste-ocr-button" data-ocr-target="gpu" aria-label="GPU 붙여넣기 인식">붙여넣기 인식</button>
                   </div>
                 </div>
                 <div class="form-row help-field-row">
@@ -127,6 +119,7 @@
                   <div class="inline-input-button">
                     <input id="manual-storage" name="storage" type="text" placeholder="예: NVMe SSD 512GB">
                     <button type="button" class="help-button" data-help-topic="storage">어디서 보나요?</button>
+                    <button type="button" class="paste-ocr-button" data-ocr-target="storage" aria-label="저장장치 붙여넣기 인식">붙여넣기 인식</button>
                   </div>
                 </div>
                 <div class="form-row">
@@ -141,7 +134,7 @@
                   </select>
                 </div>
                 <button class="submit-button" type="submit">직접 입력 사양 확인하기</button>
-                <p class="inline-privacy-note">직접 입력한 사양과 이미지 인식 결과는 현재 브라우저 화면에서만 사용하며, 한눈체크 자체 DB에 저장하지 않습니다.</p>
+                <p class="inline-privacy-note">직접 입력한 사양, 사양표 이미지·PDF 인식 결과, 클립보드 붙여넣기 결과는 현재 브라우저 화면에서만 사용하며, 한눈체크 자체 DB에 저장하지 않습니다.</p>
               </form>
             </article>
           </aside>
@@ -170,7 +163,7 @@
             <h2>자동 확인과 직접 입력을 나눠서 더 정확하게 봅니다.</h2>
             <ol class="info-step-list">
               <li><strong>자동 정보 확인</strong><br>운영체제 추정, 논리 코어 수, 메모리 추정, GPU/WebGL, 화면 해상도를 확인합니다.</li>
-              <li><strong>GPU·부품명 보완</strong><br>정확한 CPU 모델명, RAM, GPU, 저장장치는 직접 입력하거나 캡처 이미지에서 추출합니다.</li>
+              <li><strong>GPU·부품명 보완</strong><br>정확한 CPU 모델명, RAM, GPU, 저장장치는 직접 입력하거나 사양표 이미지·PDF, 클립보드 붙여넣기 인식으로 후보값을 채웁니다.</li>
               <li><strong>CPU 간단 테스트</strong><br>짧은 반복 연산으로 현재 브라우저 환경의 참고 처리량을 확인합니다.</li>
               <li><strong>팝업 결과 확인</strong><br>각 결과 팝업에서 사양의 의미, 비교군, 한계를 함께 확인합니다.</li>
             </ol>
@@ -223,6 +216,7 @@
         </nav>
       </div>
     </footer>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
     <script src="/assets/js/app.js" defer></script>
   </body>

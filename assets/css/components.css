@@ -1412,3 +1412,56 @@ body.drawer-open {
     white-space: normal;
   }
 }
+
+
+/* v10 PC checker refinements */
+.console-dots span:nth-child(1) { background: #60a5fa; }
+.console-dots span:nth-child(2) { background: #5eead4; }
+.console-dots span:nth-child(3) { background: #fbbf24; }
+
+.pc-console .console-dots span:nth-child(1) { background: #60a5fa; }
+.pc-console .console-dots span:nth-child(2) { background: #34d399; }
+.pc-console .console-dots span:nth-child(3) { background: #f59e0b; }
+
+.inline-input-button {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.paste-ocr-button {
+  min-height: 48px;
+  padding: 0 12px;
+  color: #fff;
+  background: var(--check-primary);
+  border: 1px solid rgba(30, 58, 95, 0.22);
+  border-radius: 14px;
+  font-size: 0.84rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.paste-ocr-button:hover {
+  background: var(--check-blue);
+}
+
+.pc-result-summary .result-row {
+  align-items: flex-start;
+}
+
+.pc-result-summary .result-row strong {
+  max-width: 72%;
+  text-align: left;
+  line-height: 1.7;
+}
+
+.help-modal-panel.wide-result {
+  width: min(840px, 100%);
+}
+
+@media (max-width: 720px) {
+  .inline-input-button {
+    grid-template-columns: 1fr;
+  }
+  .pc-result-summary .result-row strong {
+    max-width: none;
+  }
+}

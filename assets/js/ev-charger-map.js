@@ -97,6 +97,7 @@
 
   function init() {
     bindEvents();
+    setupEvMobileBottomSheet();
     loadKakaoMap().finally(() => {
       updateMapCenter();
       renderMapMarkers([]);
@@ -740,6 +741,11 @@
     list.sort(sorter(mode));
     const displayList = groupStationsForDisplay(list);
     displayList.sort(sorter(mode));
+    displayList.forEach((item, index) => { item.rank = index + 1; });
+    if (state.selectedId && !displayList.some((item) => String(item.id) === String(state.selectedId))) {
+      state.selectedId = null;
+      root.querySelector('.parking-map-popup')?.remove();
+    }
     state.sortedStations = displayList;
     const radiusText = formatRadius(els.radius?.value || '3000');
     const typeText = selectedText(els.type) || '전체';
@@ -762,9 +768,10 @@
     if (els.mobileResults) els.mobileResults.innerHTML = displayList.slice(0, EV_MOBILE_DISPLAY_LIMIT).map((item, index) => renderStationCard(item, index, true)).join('') + renderMoreNotice(displayList.length, Math.min(displayList.length, EV_MOBILE_DISPLAY_LIMIT));
     bindResultCardEvents();
     renderMapMarkers(mapList);
+    if (state.selectedId) showEvMapPopup(state.selectedId);
     syncMapToolbar();
     syncSortButtons(mode);
-    openMobileSheet('collapsed');
+    if (!state.selectedId) openMobileSheet('collapsed');
   }
 
   function renderMoreNotice(total, visible) {
@@ -882,7 +889,7 @@
     const reason = buildReason(item);
     const detailId = `${mobile ? 'mobile-' : ''}ev-detail-${rank}`;
     return `<article class="parking-result-card ${item.statusTone || ''} ${rank === 1 ? 'is-best' : ''} ${selected ? 'is-pinned' : ''}" data-ev-station-index="${index}" data-ev-station-id="${escapeHtml(item.id)}">
-      <div class="parking-card-head"><div><strong>${escapeHtml(item.name)}</strong><span>${rank === 1 ? '추천 1위' : `${rank}순위`} · ${escapeHtml(item.availabilityLabel || '상태 확인')}</span></div>${selected ? `<button type="button" class="subtle-button tiny" data-ev-pin-clear>선택 해제</button>` : ''}</div>
+      <div class="parking-card-head"><div><strong>${escapeHtml(item.name)}</strong><span>${rank === 1 ? '추천 1위' : `${rank}순위`} · ${escapeHtml(item.availabilityLabel || '상태 확인')}</span></div></div>
       <div class="parking-list-summary" aria-hidden="true"><strong>${escapeHtml(priceText)}</strong><span>${distanceText}</span><span>${escapeHtml(item.availabilityLabel || '확인 필요')}</span></div>
       <div class="parking-price-row"><strong>${escapeHtml(priceText)}</strong><span>${escapeHtml(top.typeLabel || '충전 타입 확인')}</span></div>
       <p class="parking-reason">${escapeHtml(reason)}</p>
@@ -902,15 +909,15 @@
     </article>`;
   }
 
-  function bindResultCardEvents() {
-    root.querySelectorAll('[data-ev-station-index]').forEach((card) => {
+  function bindResultCardEvents(scope = root) {
+    scope.querySelectorAll('[data-ev-station-index]').forEach((card) => {
       card.addEventListener('click', (event) => {
-        if (event.target.closest('[data-ev-detail-toggle], [data-ev-pin-clear], a, button')) return;
+        if (event.target.closest('[data-ev-detail-toggle], a, button')) return;
         const item = state.sortedStations[Number(card.dataset.evStationIndex)];
         focusStation(item);
       });
     });
-    root.querySelectorAll('[data-ev-detail-toggle]').forEach((button) => {
+    scope.querySelectorAll('[data-ev-detail-toggle]').forEach((button) => {
       button.addEventListener('click', (event) => {
         event.stopPropagation();
         const card = button.closest('.parking-result-card');
@@ -919,13 +926,6 @@
         if (detail) detail.hidden = !open;
         button.setAttribute('aria-expanded', open ? 'true' : 'false');
         button.textContent = open ? '상세 닫기 ▲' : '상세 보기 ▼';
-      });
-    });
-    root.querySelectorAll('[data-ev-pin-clear]').forEach((button) => {
-      button.addEventListener('click', (event) => {
-        event.stopPropagation();
-        state.selectedId = null;
-        renderResults();
       });
     });
   }
@@ -938,12 +938,10 @@
     button.className = `parking-map-label ev-map-label is-status-${item.statusTone || 'unknown'} ${index === 0 ? 'is-best' : ''} ${selected ? 'is-selected' : ''}`;
     button.dataset.evMapId = String(item.id || '');
     button.title = `${index + 1}순위 · ${item.name || '전기차 충전소'}`;
-    if (index < 10) {
-      const rank = document.createElement('span');
-      rank.className = 'parking-marker-rank';
-      rank.textContent = String(index + 1);
-      button.appendChild(rank);
-    }
+    const rank = document.createElement('span');
+    rank.className = 'parking-marker-rank';
+    rank.textContent = String(index + 1);
+    button.appendChild(rank);
     const label = document.createElement('span');
     label.textContent = status;
     button.appendChild(label);
@@ -958,7 +956,7 @@
   function renderMapLabelHtml(item, index, style = '') {
     const selected = state.selectedId === item.id;
     const status = item.availableCount > 0 ? `가능 ${item.availableCount}기` : '상태 확인';
-    const rank = index < 10 ? `<span class="parking-marker-rank">${index + 1}</span>` : '';
+    const rank = `<span class="parking-marker-rank">${index + 1}</span>`;
     const styleAttr = style ? ` style="${style}"` : '';
     return `<button type="button" class="parking-map-label ev-map-label is-status-${item.statusTone || 'unknown'} ${index === 0 ? 'is-best' : ''} ${selected ? 'is-selected' : ''}"${styleAttr} data-ev-map-id="${escapeHtml(item.id)}" title="${escapeHtml(`${index + 1}순위 · ${item.name}`)}">${rank}<span>${escapeHtml(status)}</span></button>`;
   }
@@ -1051,6 +1049,86 @@
     }
     setStatus(`${item.name} 위치를 지도 중심으로 이동했습니다. 실제 충전 가능 여부는 현장에서 다시 확인해 주세요.`, 'neutral');
     renderResults();
+    showEvMapPopup(item.id);
+    if (isMobileEvViewport() && options.openSheet) setEvMobileSheetState('half');
+  }
+
+
+  function showEvMapPopup(id) {
+    const item = state.sortedStations.find((row) => String(row.id) === String(id));
+    const mapCard = root.querySelector('.parking-map-card');
+    if (!item || !mapCard) return;
+    mapCard.querySelector('.parking-map-popup')?.remove();
+    const rank = item.rank || (state.sortedStations.findIndex((row) => String(row.id) === String(id)) + 1) || '-';
+    const price = item.availableCount > 0 ? `사용 가능 ${item.availableCount}기` : item.chargingCount > 0 ? '충전 중 확인' : '상태 확인 필요';
+    const distance = `목적지에서 약 ${formatDistance(item.distanceM)}`;
+    const meta = `${typesSummary(item)} · ${item.parkingFree === true ? '주차료 무료' : item.parkingFree === false ? '주차료 유료' : '주차료 확인'}`;
+    const reason = buildReason(item);
+    const popup = document.createElement('article');
+    const useDetailPopup = !isMobileEvViewport();
+    popup.className = `parking-map-popup${useDetailPopup ? ' parking-map-popup--detail' : ''} ev-map-popup`;
+    popup.setAttribute('role', 'dialog');
+    popup.setAttribute('aria-label', `${item.name} 충전소 ${useDetailPopup ? '상세' : '요약'}`);
+    const kakaoLink = renderKakaoLink(item, 'parking-kakao-map-link tiny');
+    popup.innerHTML = useDetailPopup ? [
+      '<button type="button" class="parking-map-popup__close" aria-label="지도 충전소 요약 닫기">×</button>',
+      '<div class="parking-map-popup__head">',
+      `<span>${rank}위</span>`,
+      `<strong>${escapeHtml(item.name)}</strong>`,
+      '</div>',
+      `<p class="parking-map-popup__meta">${escapeHtml(meta)}</p>`,
+      `<div class="parking-map-popup__price-row"><strong>${escapeHtml(price)}</strong><span>${escapeHtml(distance)}</span></div>`,
+      `<p class="parking-map-popup__reason">${escapeHtml(reason)}</p>`,
+      '<div class="parking-map-popup__metrics">',
+      `<span class="parking-metric-chip metric-distance">${escapeHtml(distance)}</span>`,
+      `<span class="parking-metric-chip metric-availability">급속 ${item.rapidCount || 0}기 · 완속 ${item.slowCount || 0}기</span>`,
+      `<span class="parking-metric-chip metric-confidence-high">${escapeHtml(item.availabilityLabel || '확인 필요')}</span>`,
+      `<span class="parking-metric-chip metric-confidence-medium">${escapeHtml(item.business || '운영기관 확인')}</span>`,
+      '</div>',
+      `<div class="parking-map-popup__selected-row"><p class="parking-pinned-badge parking-pinned-badge--inline">지도에서 선택한 충전소입니다.</p>${kakaoLink}</div>`
+    ].join('') : [
+      '<button type="button" class="parking-map-popup__close" aria-label="지도 충전소 요약 닫기">×</button>',
+      '<div class="parking-map-popup__head">',
+      `<span>${rank}위</span>`,
+      `<strong>${escapeHtml(item.name)}</strong>`,
+      '</div>',
+      `<p class="parking-map-popup__meta">${escapeHtml(meta)}</p>`,
+      `<p class="parking-map-popup__price">${escapeHtml(price)}</p>`,
+      `<p class="parking-map-popup__detail">${escapeHtml(distance)} · ${escapeHtml(item.availabilityLabel || '확인 필요')}</p>`,
+      `<div class="parking-map-popup__actions"><button type="button" class="subtle-button tiny" data-ev-mobile-detail-card>상세 보기</button>${kakaoLink}</div>`
+    ].join('');
+    popup.querySelector('.parking-map-popup__close')?.addEventListener('click', () => popup.remove());
+    popup.querySelector('[data-ev-mobile-detail-card]')?.addEventListener('click', () => openMobileEvDetail(item.id));
+    mapCard.append(popup);
+  }
+
+  function openMobileEvDetail(id) {
+    const item = state.sortedStations.find((row) => String(row.id) === String(id));
+    if (!item) return;
+    document.querySelector('.parking-mobile-detail-modal.ev-mobile-detail-modal')?.remove();
+    const modal = document.createElement('div');
+    modal.className = 'parking-mobile-detail-modal ev-mobile-detail-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', `${item.name} 상세 정보`);
+    const index = Math.max(0, state.sortedStations.findIndex((row) => String(row.id) === String(id)));
+    modal.innerHTML = `<div class="parking-mobile-detail-backdrop" data-ev-mobile-detail-close></div>
+      <section class="parking-mobile-detail-panel">
+        <div class="parking-mobile-detail-head"><strong>충전소 상세</strong><button type="button" aria-label="상세 닫기" data-ev-mobile-detail-close>×</button></div>
+        ${renderStationCard(item, index, true)}
+      </section>`;
+    document.body.append(modal);
+    const detail = modal.querySelector('[data-ev-card-detail]');
+    const toggle = modal.querySelector('[data-ev-detail-toggle]');
+    if (detail) detail.hidden = false;
+    if (toggle) {
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.textContent = '상세 닫기 ▲';
+    }
+    modal.querySelectorAll('[data-ev-mobile-detail-close]').forEach((button) => {
+      button.addEventListener('click', () => modal.remove());
+    });
+    bindResultCardEvents(modal);
   }
 
   function updateMapCenter() {
@@ -1248,7 +1326,7 @@
             <label><input type="checkbox" data-ev-action-filter="noLimit" ${checked('noLimit')}> 이용 제한 없음</label>
             <label><input type="checkbox" data-ev-action-filter="rapidOnly" ${checked('rapidOnly')}> 급속</label>
             <label><input type="checkbox" data-ev-action-filter="updatedOnly" ${checked('updatedOnly')}> 갱신 정보</label>
-            <label><input type="checkbox" data-ev-action-filter="lowRiskOnly" ${checked('lowRiskOnly')}> 낮은 위험</label>
+            <label><input type="checkbox" data-ev-action-filter="lowRiskOnly" ${checked('lowRiskOnly')}> 상태 양호</label>
           </div>
         </div>
         <button type="button" class="primary-button wide-button" data-ev-action-close>적용하기</button>`;
@@ -1288,19 +1366,196 @@
     return true;
   }
 
+  function setupEvMobileBottomSheet() {
+    const sheet = els.mobileSheet;
+    if (!sheet || sheet.dataset.dragReady === 'true') return;
+    const head = sheet.querySelector('.parking-mobile-sheet-head');
+    const handle = sheet.querySelector('.parking-sheet-handle');
+    const dragTargets = [head, handle].filter(Boolean);
+    if (!dragTargets.length) return;
+    sheet.dataset.dragReady = 'true';
+    dragTargets.forEach((target) => {
+      target.setAttribute('role', 'button');
+      target.setAttribute('tabindex', '0');
+      target.setAttribute('aria-hidden', 'false');
+      target.setAttribute('aria-label', '추천 충전소 목록을 위아래로 끌어서 열고 닫기');
+    });
+
+    const isMobile = () => isMobileEvViewport();
+    const isInteractiveTarget = (target) => Boolean(target?.closest?.('button, a, input, select, textarea, summary, label'));
+    let dragViewportHeight = 0;
+    let startClientY = 0;
+    let startSheetY = 0;
+    let lastSheetY = 0;
+    let lastClientY = 0;
+    let lastMoveTime = 0;
+    let dragVelocityY = 0;
+    let activePointerId = null;
+    let activeTarget = null;
+    let dragging = false;
+
+    const beginDrag = (clientY, pointerId = null, target = null) => {
+      if (!isMobile()) return false;
+      if (dragging) return true;
+      dragging = true;
+      activePointerId = pointerId;
+      activeTarget = target;
+      dragViewportHeight = window.innerHeight || document.documentElement.clientHeight || 700;
+      startClientY = clientY;
+      startSheetY = yForEvMobileSheetMode(evMobileSheetMode(), dragViewportHeight);
+      lastSheetY = startSheetY;
+      lastClientY = clientY;
+      lastMoveTime = Date.now();
+      dragVelocityY = 0;
+      sheet.classList.add('is-dragging', 'is-gesture-owned');
+      sheet.style.setProperty('--parking-sheet-height', `${evMobileSheetHeight(dragViewportHeight)}px`);
+      applyEvMobileSheetY(startSheetY, dragViewportHeight);
+      try { if (pointerId != null) target?.setPointerCapture?.(pointerId); } catch (_) {}
+      return true;
+    };
+    const moveDrag = (clientY) => {
+      if (!dragging) return;
+      const now = Date.now();
+      const elapsed = Math.max(1, now - (lastMoveTime || now));
+      dragVelocityY = (clientY - lastClientY) / elapsed;
+      lastClientY = clientY;
+      lastMoveTime = now;
+      lastSheetY = applyEvMobileSheetY(startSheetY + clientY - startClientY, dragViewportHeight);
+    };
+    const endDrag = () => {
+      if (!dragging) return;
+      try { if (activePointerId != null) activeTarget?.releasePointerCapture?.(activePointerId); } catch (_) {}
+      dragging = false;
+      activePointerId = null;
+      activeTarget = null;
+      sheet.classList.remove('is-dragging', 'is-gesture-owned');
+      snapEvMobileSheet(lastSheetY, startSheetY, dragVelocityY, dragViewportHeight);
+    };
+    const keyHandler = (event) => {
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (sheet.classList.contains('is-collapsed')) setEvMobileSheetState('half');
+        else setEvMobileSheetState('expanded');
+      }
+      if (event.key === 'ArrowDown' || event.key === 'Escape') {
+        event.preventDefault();
+        if (sheet.classList.contains('is-expanded')) setEvMobileSheetState('half');
+        else setEvMobileSheetState('collapsed');
+      }
+    };
+    const onDragStart = (event) => {
+      if (isInteractiveTarget(event.target)) return;
+      const clientY = event.clientY ?? event.touches?.[0]?.clientY;
+      if (clientY == null || !beginDrag(clientY, event.pointerId ?? null, event.currentTarget)) return;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    const onDragMove = (event) => {
+      if (!dragging) return;
+      const clientY = event.clientY ?? event.touches?.[0]?.clientY;
+      if (clientY != null) moveDrag(clientY);
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    const onDragEnd = (event) => {
+      if (!dragging) return;
+      event.preventDefault?.();
+      event.stopPropagation?.();
+      endDrag();
+    };
+    dragTargets.forEach((target) => {
+      target.addEventListener('keydown', keyHandler);
+      if (window.PointerEvent) {
+        target.addEventListener('pointerdown', onDragStart, { passive: false });
+        target.addEventListener('pointermove', onDragMove, { passive: false });
+        target.addEventListener('pointerup', onDragEnd, { passive: false });
+        target.addEventListener('pointercancel', onDragEnd, { passive: false });
+      } else {
+        target.addEventListener('touchstart', onDragStart, { passive: false });
+        target.addEventListener('touchmove', onDragMove, { passive: false });
+        target.addEventListener('touchend', onDragEnd, { passive: false });
+        target.addEventListener('mousedown', onDragStart);
+        window.addEventListener('mousemove', onDragMove);
+        window.addEventListener('mouseup', onDragEnd);
+      }
+    });
+    window.addEventListener('resize', () => {
+      if (!isMobile() || dragging) return;
+      setEvMobileSheetState(evMobileSheetMode(), { preserve: true });
+    }, { passive: true });
+    setEvMobileSheetState('collapsed');
+  }
+
+  function evMobileSheetHeight(viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700) {
+    return Math.min(Math.max(360, viewportHeight * 0.9), 780);
+  }
+
+  function evMobileSheetPositions(viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700) {
+    const height = evMobileSheetHeight(viewportHeight);
+    const peek = 48;
+    const collapsed = Math.max(0, height - peek);
+    const halfVisible = clamp(viewportHeight * 0.48, peek + 120, height - 24);
+    const half = Math.max(0, Math.min(collapsed, height - halfVisible));
+    return { expanded: 0, half, collapsed };
+  }
+
+  function evMobileSheetMode() {
+    if (els.mobileSheet?.classList.contains('is-expanded')) return 'expanded';
+    if (els.mobileSheet?.classList.contains('is-collapsed')) return 'collapsed';
+    return 'half';
+  }
+
+  function yForEvMobileSheetMode(mode, viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700) {
+    const pos = evMobileSheetPositions(viewportHeight);
+    if (mode === 'expanded') return pos.expanded;
+    if (mode === 'collapsed' || mode === 'closed') return pos.collapsed;
+    return pos.half;
+  }
+
+  function applyEvMobileSheetY(value, viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700) {
+    const pos = evMobileSheetPositions(viewportHeight);
+    const y = clamp(value, pos.expanded, pos.collapsed);
+    els.mobileSheet?.style.setProperty('--parking-sheet-y', `${y}px`);
+    return y;
+  }
+
+  function snapEvMobileSheet(currentY, startY, velocityY, viewportHeight) {
+    const pos = evMobileSheetPositions(viewportHeight);
+    const travel = Math.abs(currentY - startY);
+    let nextMode;
+    if (velocityY < -0.45 && travel > 36) nextMode = 'expanded';
+    else if (velocityY > 0.45 && travel > 36) nextMode = 'collapsed';
+    else {
+      const projectedY = clamp(currentY + velocityY * 120, pos.expanded, pos.collapsed);
+      nextMode = [
+        ['expanded', Math.abs(projectedY - pos.expanded)],
+        ['half', Math.abs(projectedY - pos.half)],
+        ['collapsed', Math.abs(projectedY - pos.collapsed)]
+      ].sort((a, b) => a[1] - b[1])[0][0];
+    }
+    setEvMobileSheetState(nextMode);
+  }
+
+  function setEvMobileSheetState(mode = 'half') {
+    const sheet = els.mobileSheet;
+    if (!sheet) return;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700;
+    sheet.style.setProperty('--parking-sheet-height', `${evMobileSheetHeight(viewportHeight)}px`);
+    const normalized = mode === 'open' ? 'half' : mode === 'closed' ? 'collapsed' : mode;
+    applyEvMobileSheetY(yForEvMobileSheetMode(normalized, viewportHeight), viewportHeight);
+    sheet.classList.remove('is-open', 'is-expanded', 'is-collapsed', 'is-dragging');
+    if (normalized === 'expanded') sheet.classList.add('is-open', 'is-expanded');
+    else if (normalized === 'collapsed') sheet.classList.add('is-collapsed');
+    else sheet.classList.add('is-open');
+    els.mobileListToggle?.setAttribute('aria-expanded', normalized !== 'collapsed' ? 'true' : 'false');
+  }
+
   function openMobileSheet(mode = 'open') {
-    if (!els.mobileSheet) return;
-    els.mobileSheet.classList.remove('is-open', 'is-expanded', 'is-collapsed');
-    if (mode === 'expanded') els.mobileSheet.classList.add('is-expanded', 'is-open');
-    else if (mode === 'collapsed') els.mobileSheet.classList.add('is-collapsed');
-    else els.mobileSheet.classList.add('is-open');
-    els.mobileListToggle?.setAttribute('aria-expanded', mode !== 'collapsed' ? 'true' : 'false');
+    setEvMobileSheetState(mode);
   }
 
   function closeMobileSheet() {
-    els.mobileSheet?.classList.remove('is-open', 'is-expanded');
-    els.mobileSheet?.classList.add('is-collapsed');
-    els.mobileListToggle?.setAttribute('aria-expanded', 'false');
+    setEvMobileSheetState('collapsed');
   }
 
   function toggleMobileSheet() {

@@ -16,7 +16,7 @@
   const EV_TYPE_LABELS = { '01': 'DC차데모', '02': 'AC완속', '03': 'DC차데모+AC3상', '04': 'DC콤보', '05': 'DC차데모+DC콤보', '06': 'DC차데모+AC3상+DC콤보', '07': 'AC3상', '08': 'DC콤보(완속)', '09': 'NACS', '10': 'DC콤보+NACS', '11': 'DC콤보2(버스전용)' };
   const EV_RESULT_DISPLAY_LIMIT = 20;
   const EV_MAP_DISPLAY_LIMIT = 20;
-  const EV_MOBILE_DISPLAY_LIMIT = 12;
+  const EV_MOBILE_DISPLAY_LIMIT = EV_RESULT_DISPLAY_LIMIT;
   const EV_GROUP_DISTANCE_M = 80;
   const EV_SPLIT_CHUNK_MARGIN_M = 1200;
 
@@ -82,6 +82,8 @@
     stations: [],
     sortedStations: [],
     selectedId: null,
+    displayResults: [],
+    shouldFitBounds: false,
     kakaoReady: false,
     map: null,
     mapMarkers: [],
@@ -102,6 +104,8 @@
       updateMapCenter();
       renderMapMarkers([]);
       renderEmpty('목적지를 검색하면 주변 전기차 충전소 후보를 표시합니다.');
+      syncMapToolbar();
+      syncSortButtons(els.sort?.value || 'recommended');
       setStatus('목적지를 검색하거나 충전소 찾기를 눌러 주변 충전소를 확인하세요.', 'neutral');
     });
   }
@@ -193,7 +197,12 @@
     });
     els.mapRefresh?.addEventListener('click', researchCurrentMapArea);
     els.mobileMapJump?.addEventListener('click', () => scrollToMap());
-    els.mobileListToggle?.addEventListener('click', () => toggleMobileSheet());
+    els.mobileListToggle?.addEventListener('click', () => {
+      const isOpen = els.mobileSheet?.classList.contains('is-open');
+      setEvMobileSheetState(isOpen ? 'closed' : 'half');
+      if (!isOpen) els.mobileSheet?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      updateMobileEvListToggle();
+    });
     els.mobileSheetMapButton?.addEventListener('click', () => {
       closeMobileSheet();
       scrollToMap();
@@ -578,7 +587,7 @@
     const unknownCount = Math.max(0, Number(station.unknownCount ?? (chargers.length - availableCount - chargingCount - troubleCount)));
     const parkingFree = normalizeLocalBoolean(station.parkingFree ?? station.parkingFreeYn ?? station.freeParking);
     const limitYn = normalizeLocalBoolean(station.limitYn ?? station.limitYnRaw ?? station.limit);
-    const bestScore = buildLocalScore({ distanceM, rapidCount, parkingFree, limitYn, availableCount, statusMode });
+    const bestScore = buildLocalScore({ distanceM, rapidCount, parkingFree, limitYn, availableCount, chargingCount, troubleCount, unknownCount, updatedAt: station.updatedAt || '', totalCount: chargers.length, statusMode });
     return {
       id: String(station.statId || station.id || `${station.name || station.statNm}-${station.addr || station.address}`),
       name: String(station.statNm || station.name || '전기차충전소').trim(),
@@ -596,11 +605,12 @@
       chargingCount,
       troubleCount,
       unknownCount,
+      totalChargerCount: chargers.length,
       rapidCount,
       slowCount,
       bestScore,
       statusTone: availableCount > 0 ? 'good' : (chargingCount > 0 ? 'busy' : (troubleCount > 0 ? 'bad' : 'unknown')),
-      availabilityLabel: availableCount > 0 ? '사용 가능성 높음' : '상태 확인 필요'
+      availabilityLabel: buildAvailabilityLabel({ availableCount, chargingCount, troubleCount })
     };
   }
 
@@ -635,16 +645,87 @@
     });
   }
 
-  function buildLocalScore({ distanceM, rapidCount, parkingFree, limitYn, availableCount, statusMode }) {
-    let score = 65;
-    if (availableCount > 0) score += 25;
-    if (statusMode === 'unknown') score -= 4;
-    if (rapidCount > 0) score += 8;
-    if (parkingFree === true) score += 4;
-    if (limitYn === false) score += 4;
-    if (limitYn === true) score -= 8;
-    if (Number.isFinite(distanceM)) score += Math.max(-24, 20 - distanceM / 250);
-    return Math.round(score);
+  function buildLocalScore({ distanceM, rapidCount, parkingFree, limitYn, availableCount, chargingCount = 0, troubleCount = 0, unknownCount = 0, updatedAt = '', totalCount = 0, statusMode = 'unknown' }) {
+    const distance = Number(distanceM);
+    const available = Number(availableCount || 0);
+    const charging = Number(chargingCount || 0);
+    const trouble = Number(troubleCount || 0);
+    const unknown = Number(unknownCount || 0);
+    const total = Math.max(Number(totalCount || 0), available + charging + trouble + unknown, 1);
+
+    let distanceScore = 0;
+    if (Number.isFinite(distance)) {
+      if (distance <= 300) distanceScore = 40;
+      else if (distance <= 500) distanceScore = 35;
+      else if (distance <= 1000) distanceScore = 28;
+      else if (distance <= 2000) distanceScore = 18;
+      else if (distance <= 3000) distanceScore = 10;
+      else distanceScore = Math.max(0, 8 - (distance - 3000) / 500);
+    }
+
+    let availabilityScore = 2;
+    if (available >= 10) availabilityScore = 35;
+    else if (available >= 5) availabilityScore = 28;
+    else if (available >= 3) availabilityScore = 20;
+    else if (available >= 1) availabilityScore = 12;
+    else if (charging > 0) availabilityScore = 4;
+
+    const rapidScore = Number(rapidCount || 0) > 0 ? 10 : 3;
+    let convenienceScore = 0;
+    if (parkingFree === true) convenienceScore += 3;
+    if (limitYn === false) convenienceScore += 3;
+    if (total >= 6) convenienceScore += 2;
+    if (available / total >= 0.5 && available > 0) convenienceScore += 2;
+
+    let reliabilityScore = 0;
+    if (updatedAt) reliabilityScore += 5;
+    else if (statusMode !== 'unknown') reliabilityScore += 2;
+    if (trouble > 0) reliabilityScore -= Math.min(8, trouble * 2);
+    if (limitYn === true) reliabilityScore -= 6;
+
+    return Math.round(distanceScore + availabilityScore + rapidScore + convenienceScore + reliabilityScore);
+  }
+
+  function buildAvailabilityText(item) {
+    const available = Number(item?.availableCount || 0);
+    const charging = Number(item?.chargingCount || 0);
+    const trouble = Number(item?.troubleCount || 0);
+    if (available > 0) return `사용 가능 ${available}기`;
+    if (charging > 0) return `충전 중 ${charging}기`;
+    if (trouble > 0) return `점검·고장 ${trouble}기`;
+    return '상태 확인 필요';
+  }
+
+  function buildAvailabilityLabel({ availableCount = 0, chargingCount = 0, troubleCount = 0 } = {}) {
+    const available = Number(availableCount || 0);
+    const charging = Number(chargingCount || 0);
+    const trouble = Number(troubleCount || 0);
+    if (available >= 5) return '사용 가능 여유';
+    if (available > 0) return '사용 가능';
+    if (charging > 0) return '도착 시점 확인';
+    if (trouble > 0) return '운영 상태 주의';
+    return '상태 확인 필요';
+  }
+
+  function buildTotalChargerCount(item) {
+    return Math.max(
+      Number(item?.chargerCount || 0),
+      Number(item?.totalChargerCount || 0),
+      Number(item?.availableCount || 0) + Number(item?.chargingCount || 0) + Number(item?.troubleCount || 0) + Number(item?.unknownCount || 0),
+      Array.isArray(item?.chargers) ? item.chargers.length : 0,
+      0
+    );
+  }
+
+  function buildConvenienceBadges(item) {
+    const badges = [];
+    if (Number(item?.rapidCount || 0) > 0) badges.push('급속');
+    if (item?.parkingFree === true) badges.push('주차료 무료');
+    else if (item?.parkingFree === false) badges.push('주차료 유료');
+    if (item?.limitYn === false) badges.push('이용 제한 없음');
+    else if (item?.limitYn === true) badges.push('이용 제한 있음');
+    if (item?.updatedAt) badges.push('상태 갱신');
+    return badges;
   }
 
   function zcodeForSido(sido) {
@@ -667,16 +748,36 @@
       const remote = byId.get(String(local.id || ''));
       if (!remote) return local;
       matched += 1;
+      const availableCount = Number(remote.availableCount ?? local.availableCount ?? 0);
+      const chargingCount = Number(remote.chargingCount ?? local.chargingCount ?? 0);
+      const troubleCount = Number(remote.troubleCount ?? local.troubleCount ?? 0);
+      const unknownCount = Number(remote.unknownCount ?? local.unknownCount ?? 0);
+      const chargers = Array.isArray(remote.chargers) && remote.chargers.length ? remote.chargers : local.chargers;
+      const updatedAt = remote.updatedAt || local.updatedAt || '';
       return {
         ...local,
-        availableCount: Number(remote.availableCount ?? local.availableCount ?? 0),
-        chargingCount: Number(remote.chargingCount ?? local.chargingCount ?? 0),
-        troubleCount: Number(remote.troubleCount ?? local.troubleCount ?? 0),
-        unknownCount: Number(remote.unknownCount ?? local.unknownCount ?? 0),
-        chargers: Array.isArray(remote.chargers) && remote.chargers.length ? remote.chargers : local.chargers,
-        updatedAt: remote.updatedAt || local.updatedAt || '',
-        statusTone: remote.statusTone || local.statusTone,
-        availabilityLabel: remote.availabilityLabel || local.availabilityLabel
+        availableCount,
+        chargingCount,
+        troubleCount,
+        unknownCount,
+        chargers,
+        updatedAt,
+        totalChargerCount: buildTotalChargerCount({ ...local, availableCount, chargingCount, troubleCount, unknownCount, chargers }),
+        bestScore: buildLocalScore({
+          distanceM: local.distanceM,
+          rapidCount: local.rapidCount,
+          parkingFree: local.parkingFree,
+          limitYn: local.limitYn,
+          availableCount,
+          chargingCount,
+          troubleCount,
+          unknownCount,
+          updatedAt,
+          totalCount: buildTotalChargerCount({ ...local, availableCount, chargingCount, troubleCount, unknownCount, chargers }),
+          statusMode: remote.statusTone || local.statusTone
+        }),
+        statusTone: availableCount > 0 ? 'good' : (chargingCount > 0 ? 'busy' : (troubleCount > 0 ? 'bad' : 'unknown')),
+        availabilityLabel: buildAvailabilityLabel({ availableCount, chargingCount, troubleCount })
       };
     });
     return {
@@ -696,6 +797,7 @@
     state.dataSource = options.fromLocalCache || data?.cache?.scope === 'local-static' ? 'local-static' : (options.fromClientCache ? 'client-cache' : 'remote');
     state.lastSearchCenter = { lat: state.center.lat, lng: state.center.lng };
     state.lastSearchZoom = state.map?.getLevel?.() ?? state.lastSearchZoom;
+    state.shouldFitBounds = true;
     renderDataBadges({ ...data, fromClientCache: options.fromClientCache, fromLocalCache: options.fromLocalCache || data?.cache?.scope === 'local-static' });
     renderResults();
   }
@@ -739,44 +841,62 @@
     let list = [...state.stations];
     list = applyFilters(list);
     list.sort(sorter(mode));
-    const displayList = groupStationsForDisplay(list);
-    displayList.sort(sorter(mode));
-    displayList.forEach((item, index) => { item.rank = index + 1; });
-    if (state.selectedId && !displayList.some((item) => String(item.id) === String(state.selectedId))) {
-      state.selectedId = null;
+
+    const groupedList = groupStationsForDisplay(list);
+    groupedList.sort(sorter(mode));
+    groupedList.forEach((item, index) => { item.rank = index + 1; });
+
+    const visibleList = groupedList.slice(0, EV_RESULT_DISPLAY_LIMIT);
+    state.sortedStations = groupedList;
+    state.displayResults = visibleList;
+
+    const selectedStillVisible = state.selectedId && visibleList.some((item) => isSameStationId(item, state.selectedId));
+    if (!selectedStillVisible) {
+      state.selectedId = visibleList[0]?.id || null;
       root.querySelector('.parking-map-popup')?.remove();
     }
-    state.sortedStations = displayList;
+
     const radiusText = formatRadius(els.radius?.value || '3000');
     const typeText = selectedText(els.type) || '전체';
     if (els.summaryTitle) els.summaryTitle.textContent = `${state.center.name || '선택 위치'} · ${radiusText} · ${typeText}`;
     if (els.summarySubtitle) {
-      const groupedText = displayList.length < list.length ? ` · 유사 장소 ${list.length - displayList.length}건 묶음` : '';
-      els.summarySubtitle.textContent = `${state.center.sido || '선택 지역'} 기준 ${displayList.length}개 충전소 후보를 확인했습니다${groupedText}.`;
+      const groupedText = groupedList.length < list.length ? ` · 유사 장소 ${list.length - groupedList.length}건 묶음` : '';
+      els.summarySubtitle.textContent = `${state.center.sido || '선택 지역'} 기준 ${groupedList.length}개 충전소 후보를 확인했습니다${groupedText}.`;
     }
-    if (els.mobileSheetTitle) els.mobileSheetTitle.textContent = displayList.length ? `추천 충전소 ${Math.min(displayList.length, EV_RESULT_DISPLAY_LIMIT)}곳` : '추천 결과';
+    if (els.mobileSheetTitle) els.mobileSheetTitle.textContent = visibleList.length ? `추천 충전소 ${visibleList.length}곳` : '추천 결과';
     if (els.mobileSheetSubtitle) els.mobileSheetSubtitle.textContent = `${state.center.name || '선택 위치'} 주변 충전소 상태를 비교합니다.`;
-    if (!displayList.length) {
+
+    if (!visibleList.length) {
+      state.displayResults = [];
+      state.selectedId = null;
       renderEmpty('조건에 맞는 충전소가 없습니다. 반경이나 필터를 조정해 주세요.');
       renderMapMarkers([]);
+      syncMapToolbar();
+      syncSortButtons(mode);
       return;
     }
-    const visibleList = displayList.slice(0, EV_RESULT_DISPLAY_LIMIT);
-    const mapList = displayList.slice(0, EV_MAP_DISPLAY_LIMIT);
-    const html = visibleList.map((item, index) => renderStationCard(item, index)).join('') + renderMoreNotice(displayList.length, visibleList.length);
-    if (els.resultList) els.resultList.innerHTML = html;
-    if (els.mobileResults) els.mobileResults.innerHTML = displayList.slice(0, EV_MOBILE_DISPLAY_LIMIT).map((item, index) => renderStationCard(item, index, true)).join('') + renderMoreNotice(displayList.length, Math.min(displayList.length, EV_MOBILE_DISPLAY_LIMIT));
-    bindResultCardEvents();
-    renderMapMarkers(mapList);
+
+    const moreNotice = renderMoreNotice(groupedList.length, visibleList.length);
+    const desktopHtml = visibleList.map((item, index) => renderStationCard(item, index, false)).join('') + moreNotice;
+    const mobileHtml = visibleList.map((item, index) => renderStationCard(item, index, true)).join('') + moreNotice;
+    if (els.resultList) els.resultList.innerHTML = desktopHtml;
+    if (els.mobileResults) els.mobileResults.innerHTML = mobileHtml;
+    bindResultCardEvents(els.resultList);
+    bindResultCardEvents(els.mobileResults);
+
+    renderMapMarkers(visibleList);
     if (state.selectedId) showEvMapPopup(state.selectedId);
     syncMapToolbar();
     syncSortButtons(mode);
-    if (!state.selectedId) openMobileSheet('collapsed');
+    updateMobileEvListToggle(visibleList.length);
+    if (isMobileEvViewport() && !els.mobileSheet?.classList.contains('is-open') && !els.mobileSheet?.classList.contains('is-expanded')) {
+      openMobileSheet('collapsed');
+    }
   }
 
   function renderMoreNotice(total, visible) {
     if (total <= visible) return '';
-    return `<article class="parking-result-card parking-result-more"><strong>상위 ${visible}곳만 표시 중입니다.</strong><p>지도 혼잡을 줄이기 위해 가까운 후보를 우선 표시합니다. 반경을 줄이거나 지도를 확대해 다시 검색하면 더 좁은 범위로 볼 수 있습니다.</p></article>`;
+    return `<article class="parking-result-card parking-result-more"><strong>상위 ${visible}곳만 표시 중입니다.</strong><p>지도와 목록은 동일한 상위 후보를 표시합니다. 조건이나 반경을 조정하면 결과가 함께 갱신됩니다.</p></article>`;
   }
 
   function groupStationsForDisplay(list) {
@@ -849,13 +969,35 @@
     const availableCount = Number(group.availableCount || 0);
     const chargingCount = Number(group.chargingCount || 0);
     const troubleCount = Number(group.troubleCount || 0);
+    const unknownCount = Number(group.unknownCount || 0);
     const sourceCount = Number(group.sourceStationCount || 1);
+    const sourceIds = Array.from(new Set((group.sourceStationIds || [group.id]).filter(Boolean).map(String)));
+    const representativeId = sourceCount > 1 ? `group:${sourceIds[0] || group.id}` : String(group.id || sourceIds[0] || group.name || 'station');
+    const totalChargerCount = buildTotalChargerCount({ ...group, availableCount, chargingCount, troubleCount, unknownCount });
+    const bestScore = buildLocalScore({
+      distanceM: group.distanceM,
+      rapidCount: group.rapidCount,
+      parkingFree: group.parkingFree,
+      limitYn: group.limitYn,
+      availableCount,
+      chargingCount,
+      troubleCount,
+      unknownCount,
+      updatedAt: group.updatedAt || '',
+      totalCount: totalChargerCount,
+      statusMode: group.statusTone || 'unknown'
+    });
     return {
       ...group,
-      id: sourceCount > 1 ? `group:${group.sourceStationIds?.[0] || group.id}` : group.id,
-      name: sourceCount > 1 ? `${group.name} 외 ${sourceCount - 1}건` : group.name,
+      id: representativeId,
+      originalId: String(group.id || sourceIds[0] || representativeId),
+      stationIdAliases: sourceIds.includes(representativeId) ? sourceIds : [representativeId, ...sourceIds],
+      displayName: group.name,
+      groupLabel: sourceCount > 1 ? `같은 장소 ${sourceCount}건 묶음` : '',
+      totalChargerCount,
+      bestScore,
       statusTone: availableCount > 0 ? 'good' : (chargingCount > 0 ? 'busy' : (troubleCount > 0 ? 'bad' : 'unknown')),
-      availabilityLabel: availableCount > 0 ? '사용 가능성 높음' : '상태 확인 필요'
+      availabilityLabel: buildAvailabilityLabel({ availableCount, chargingCount, troubleCount })
     };
   }
 
@@ -880,25 +1022,35 @@
   }
 
   function renderStationCard(item, index, mobile = false) {
-    const top = item.chargers?.[0] || {};
-    const rank = index + 1;
-    const selected = state.selectedId === item.id;
+    const rank = item.rank || index + 1;
+    const selected = isSameStationId(item, state.selectedId);
     const statusClass = item.statusTone === 'good' ? 'metric-confidence-high' : item.statusTone === 'busy' ? 'metric-risk-medium' : item.statusTone === 'bad' ? 'metric-risk-high' : 'metric-confidence-low';
-    const priceText = item.availableCount > 0 ? `사용 가능 ${item.availableCount}기` : item.chargingCount > 0 ? '충전 중 확인' : '상태 확인 필요';
+    const availabilityText = buildAvailabilityText(item);
     const distanceText = `목적지에서 약 ${formatDistance(item.distanceM)}`;
     const reason = buildReason(item);
     const detailId = `${mobile ? 'mobile-' : ''}ev-detail-${rank}`;
+    const totalCount = buildTotalChargerCount(item);
+    const badges = buildConvenienceBadges(item);
+    const compactTypes = compactTypesSummary(item);
+    const groupBadge = item.groupLabel ? `<span class="parking-metric-chip metric-confidence-medium">${escapeHtml(item.groupLabel)}</span>` : '';
+    const badgeText = badges.slice(0, 3).join(' · ') || '이용 조건 확인';
     return `<article class="parking-result-card ${item.statusTone || ''} ${rank === 1 ? 'is-best' : ''} ${selected ? 'is-pinned' : ''}" data-ev-station-index="${index}" data-ev-station-id="${escapeHtml(item.id)}">
-      <div class="parking-card-head"><div><strong>${escapeHtml(item.name)}</strong><span>${rank === 1 ? '추천 1위' : `${rank}순위`} · ${escapeHtml(item.availabilityLabel || '상태 확인')}</span></div></div>
-      <div class="parking-list-summary" aria-hidden="true"><strong>${escapeHtml(priceText)}</strong><span>${distanceText}</span><span>${escapeHtml(item.availabilityLabel || '확인 필요')}</span></div>
-      <div class="parking-price-row"><strong>${escapeHtml(priceText)}</strong><span>${escapeHtml(top.typeLabel || '충전 타입 확인')}</span></div>
+      <div class="parking-card-head"><div><strong>${escapeHtml(item.displayName || item.name)}</strong><span>${rank === 1 ? '추천 1위' : `${rank}순위`} · ${escapeHtml(item.availabilityLabel || '상태 확인')}</span></div></div>
+      <div class="parking-list-summary" aria-hidden="true"><strong>${escapeHtml(availabilityText)}</strong><span>${distanceText}</span><span>${escapeHtml(badgeText)}</span></div>
+      <div class="parking-price-row"><strong>${escapeHtml(availabilityText)}</strong><span>${escapeHtml(compactTypes)}</span></div>
       <p class="parking-reason">${escapeHtml(reason)}</p>
-      <div class="parking-card-metrics"><span class="parking-metric-chip metric-distance">${distanceText}</span><span class="parking-metric-chip metric-availability">급속 ${item.rapidCount || 0}기 · 완속 ${item.slowCount || 0}기</span><span class="parking-metric-chip ${statusClass}">${escapeHtml(item.availabilityLabel || '확인 필요')}</span><span class="parking-metric-chip metric-confidence-high">${item.parkingFree === true ? '주차료 무료' : item.parkingFree === false ? '주차료 유료' : '주차료 확인'}</span></div>
+      <div class="parking-card-metrics">
+        <span class="parking-metric-chip metric-distance">${distanceText}</span>
+        <span class="parking-metric-chip metric-availability">전체 ${totalCount || 0}기 · 급속 ${item.rapidCount || 0}기</span>
+        <span class="parking-metric-chip ${statusClass}">${escapeHtml(item.availabilityLabel || '확인 필요')}</span>
+        <span class="parking-metric-chip metric-confidence-high">${escapeHtml(badgeText)}</span>
+        ${groupBadge}
+      </div>
       ${selected ? `<p class="parking-pinned-badge">지도에서 선택한 충전소입니다.</p>` : ''}
       <div class="parking-card-actions"><button type="button" class="parking-detail-toggle" data-ev-detail-toggle aria-expanded="false" aria-controls="${detailId}">상세 보기 ▼</button>${renderKakaoLink(item)}</div>
       <div class="parking-card-detail" data-ev-card-detail id="${detailId}" hidden>
         <p><strong>충전 타입</strong> ${escapeHtml(typesSummary(item))}</p>
-        <p><strong>상태</strong> 사용 가능 ${item.availableCount || 0}기, 충전 중 ${item.chargingCount || 0}기, 고장·점검 ${item.troubleCount || 0}기, 확인 필요 ${item.unknownCount || 0}기</p>
+        <p><strong>충전기 상태</strong> 사용 가능 ${item.availableCount || 0}기 / 전체 ${totalCount || 0}기 · 충전 중 ${item.chargingCount || 0}기 · 점검/고장 ${item.troubleCount || 0}기 · 확인 필요 ${item.unknownCount || 0}기</p>
         <p><strong>이용 시간</strong> ${escapeHtml(item.useTime || '확인 필요')}</p>
         <p><strong>운영기관</strong> ${escapeHtml(item.business || '확인 필요')}</p>
         <p><strong>주소</strong> ${escapeHtml(item.address || '주소 정보 없음')}</p>
@@ -910,11 +1062,12 @@
   }
 
   function bindResultCardEvents(scope = root) {
-    scope.querySelectorAll('[data-ev-station-index]').forEach((card) => {
+    if (!scope) return;
+    scope.querySelectorAll('[data-ev-station-id]').forEach((card) => {
       card.addEventListener('click', (event) => {
         if (event.target.closest('[data-ev-detail-toggle], a, button')) return;
-        const item = state.sortedStations[Number(card.dataset.evStationIndex)];
-        focusStation(item);
+        const item = findDisplayStationById(card.dataset.evStationId);
+        focusStation(item, { openSheet: isMobileEvViewport(), keepMapCenter: false });
       });
     });
     scope.querySelectorAll('[data-ev-detail-toggle]').forEach((button) => {
@@ -931,17 +1084,20 @@
   }
 
   function createMapLabelElement(item, index) {
-    const selected = state.selectedId === item.id;
-    const status = item.availableCount > 0 ? `가능 ${item.availableCount}기` : '상태 확인';
+    const selected = isSameStationId(item, state.selectedId);
+    const status = markerStatusText(item);
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `parking-map-label ev-map-label is-status-${item.statusTone || 'unknown'} ${index === 0 ? 'is-best' : ''} ${selected ? 'is-selected' : ''}`;
     button.dataset.evMapId = String(item.id || '');
-    button.title = `${index + 1}순위 · ${item.name || '전기차 충전소'}`;
-    const rank = document.createElement('span');
-    rank.className = 'parking-marker-rank';
-    rank.textContent = String(index + 1);
-    button.appendChild(rank);
+    button.title = `${index + 1}순위 · ${item.displayName || item.name || '전기차 충전소'} · ${status}`;
+    const rankText = markerRankText(index, selected);
+    if (rankText) {
+      const rank = document.createElement('span');
+      rank.className = 'parking-marker-rank';
+      rank.textContent = rankText;
+      button.appendChild(rank);
+    }
     const label = document.createElement('span');
     label.textContent = status;
     button.appendChild(label);
@@ -954,11 +1110,25 @@
   }
 
   function renderMapLabelHtml(item, index, style = '') {
-    const selected = state.selectedId === item.id;
-    const status = item.availableCount > 0 ? `가능 ${item.availableCount}기` : '상태 확인';
-    const rank = `<span class="parking-marker-rank">${index + 1}</span>`;
+    const selected = isSameStationId(item, state.selectedId);
+    const status = markerStatusText(item);
+    const rankText = markerRankText(index, selected);
+    const rank = rankText ? `<span class="parking-marker-rank">${rankText}</span>` : '';
     const styleAttr = style ? ` style="${style}"` : '';
-    return `<button type="button" class="parking-map-label ev-map-label is-status-${item.statusTone || 'unknown'} ${index === 0 ? 'is-best' : ''} ${selected ? 'is-selected' : ''}"${styleAttr} data-ev-map-id="${escapeHtml(item.id)}" title="${escapeHtml(`${index + 1}순위 · ${item.name}`)}">${rank}<span>${escapeHtml(status)}</span></button>`;
+    return `<button type="button" class="parking-map-label ev-map-label is-status-${item.statusTone || 'unknown'} ${index === 0 ? 'is-best' : ''} ${selected ? 'is-selected' : ''}"${styleAttr} data-ev-map-id="${escapeHtml(item.id)}" title="${escapeHtml(`${index + 1}순위 · ${item.displayName || item.name} · ${status}`)}">${rank}<span>${escapeHtml(status)}</span></button>`;
+  }
+
+  function markerRankText(index, selected) {
+    if (selected) return String(index + 1);
+    return index < 10 ? String(index + 1) : '';
+  }
+
+  function markerStatusText(item) {
+    const available = Number(item?.availableCount || 0);
+    if (available > 0) return `가능 ${available}기`;
+    if (Number(item?.chargingCount || 0) > 0) return '충전 중';
+    if (Number(item?.troubleCount || 0) > 0) return '주의';
+    return '확인 필요';
   }
 
   function renderMapMarkers(list) {
@@ -996,8 +1166,9 @@
         state.mapOverlays.push(overlay);
       });
 
-      if (rows.length && !state.selectedId) {
+      if (rows.length && state.shouldFitBounds) {
         state.map.setBounds(bounds);
+        state.shouldFitBounds = false;
       }
       return;
     }
@@ -1026,7 +1197,7 @@
     }).join('') + `<span class="parking-destination-marker" style="left:50%; top:50%">목적지</span>`;
 
     els.mapMarkers.querySelectorAll('[data-ev-map-id]').forEach((button) => button.addEventListener('click', () => {
-      const item = state.sortedStations.find((station) => String(station.id) === String(button.dataset.evMapId));
+      const item = findDisplayStationById(button.dataset.evMapId);
       focusStation(item, { keepMapCenter: true });
     }));
   }
@@ -1041,13 +1212,16 @@
   function focusStation(item, options = {}) {
     if (!item) return;
     state.selectedId = item.id;
+    state.shouldFitBounds = false;
     if (state.kakaoReady && state.map && window.kakao?.maps) {
       const position = new window.kakao.maps.LatLng(Number(item.lat), Number(item.lng));
-      if (typeof state.map.panTo === 'function') state.map.panTo(position);
-      else state.map.setCenter(position);
+      if (!options.keepMapCenter) {
+        if (typeof state.map.panTo === 'function') state.map.panTo(position);
+        else state.map.setCenter(position);
+      }
       if (!options.keepLevel && typeof state.map.getLevel === 'function' && state.map.getLevel() > 4) state.map.setLevel(4);
     }
-    setStatus(`${item.name} 위치를 지도 중심으로 이동했습니다. 실제 충전 가능 여부는 현장에서 다시 확인해 주세요.`, 'neutral');
+    setStatus(`${item.displayName || item.name} 위치를 지도에서 선택했습니다. 실제 충전 가능 여부는 현장에서 다시 확인해 주세요.`, 'neutral');
     renderResults();
     showEvMapPopup(item.id);
     if (isMobileEvViewport() && options.openSheet) setEvMobileSheetState('half');
@@ -1055,14 +1229,15 @@
 
 
   function showEvMapPopup(id) {
-    const item = state.sortedStations.find((row) => String(row.id) === String(id));
+    const item = findDisplayStationById(id);
     const mapCard = root.querySelector('.parking-map-card');
     if (!item || !mapCard) return;
     mapCard.querySelector('.parking-map-popup')?.remove();
-    const rank = item.rank || (state.sortedStations.findIndex((row) => String(row.id) === String(id)) + 1) || '-';
-    const price = item.availableCount > 0 ? `사용 가능 ${item.availableCount}기` : item.chargingCount > 0 ? '충전 중 확인' : '상태 확인 필요';
+    const rank = item.rank || (state.sortedStations.findIndex((row) => isSameStationId(row, id)) + 1) || '-';
+    const price = buildAvailabilityText(item);
     const distance = `목적지에서 약 ${formatDistance(item.distanceM)}`;
-    const meta = `${typesSummary(item)} · ${item.parkingFree === true ? '주차료 무료' : item.parkingFree === false ? '주차료 유료' : '주차료 확인'}`;
+    const totalCount = buildTotalChargerCount(item);
+    const meta = `${compactTypesSummary(item)} · ${buildConvenienceBadges(item).slice(0, 2).join(' · ') || '이용 조건 확인'}`;
     const reason = buildReason(item);
     const popup = document.createElement('article');
     const useDetailPopup = !isMobileEvViewport();
@@ -1074,14 +1249,14 @@
       '<button type="button" class="parking-map-popup__close" aria-label="지도 충전소 요약 닫기">×</button>',
       '<div class="parking-map-popup__head">',
       `<span>${rank}위</span>`,
-      `<strong>${escapeHtml(item.name)}</strong>`,
+      `<strong>${escapeHtml(item.displayName || item.name)}</strong>`,
       '</div>',
       `<p class="parking-map-popup__meta">${escapeHtml(meta)}</p>`,
       `<div class="parking-map-popup__price-row"><strong>${escapeHtml(price)}</strong><span>${escapeHtml(distance)}</span></div>`,
       `<p class="parking-map-popup__reason">${escapeHtml(reason)}</p>`,
       '<div class="parking-map-popup__metrics">',
       `<span class="parking-metric-chip metric-distance">${escapeHtml(distance)}</span>`,
-      `<span class="parking-metric-chip metric-availability">급속 ${item.rapidCount || 0}기 · 완속 ${item.slowCount || 0}기</span>`,
+      `<span class="parking-metric-chip metric-availability">전체 ${totalCount || 0}기 · 급속 ${item.rapidCount || 0}기</span>`,
       `<span class="parking-metric-chip metric-confidence-high">${escapeHtml(item.availabilityLabel || '확인 필요')}</span>`,
       `<span class="parking-metric-chip metric-confidence-medium">${escapeHtml(item.business || '운영기관 확인')}</span>`,
       '</div>',
@@ -1090,7 +1265,7 @@
       '<button type="button" class="parking-map-popup__close" aria-label="지도 충전소 요약 닫기">×</button>',
       '<div class="parking-map-popup__head">',
       `<span>${rank}위</span>`,
-      `<strong>${escapeHtml(item.name)}</strong>`,
+      `<strong>${escapeHtml(item.displayName || item.name)}</strong>`,
       '</div>',
       `<p class="parking-map-popup__meta">${escapeHtml(meta)}</p>`,
       `<p class="parking-map-popup__price">${escapeHtml(price)}</p>`,
@@ -1103,7 +1278,7 @@
   }
 
   function openMobileEvDetail(id) {
-    const item = state.sortedStations.find((row) => String(row.id) === String(id));
+    const item = findDisplayStationById(id);
     if (!item) return;
     document.querySelector('.parking-mobile-detail-modal.ev-mobile-detail-modal')?.remove();
     const modal = document.createElement('div');
@@ -1111,7 +1286,7 @@
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
     modal.setAttribute('aria-label', `${item.name} 상세 정보`);
-    const index = Math.max(0, state.sortedStations.findIndex((row) => String(row.id) === String(id)));
+    const index = Math.max(0, state.displayResults.findIndex((row) => isSameStationId(row, id)));
     modal.innerHTML = `<div class="parking-mobile-detail-backdrop" data-ev-mobile-detail-close></div>
       <section class="parking-mobile-detail-panel">
         <div class="parking-mobile-detail-head"><strong>충전소 상세</strong><button type="button" aria-label="상세 닫기" data-ev-mobile-detail-close>×</button></div>
@@ -1185,6 +1360,7 @@
     root.querySelectorAll('[data-ev-map-sort]').forEach((button) => button.classList.toggle('active', button.dataset.evMapSort === mode));
     root.querySelectorAll('[data-ev-mobile-sort]').forEach((button) => button.classList.toggle('active', button.dataset.evMobileSort === mode));
     if (els.mapSortToggle) els.mapSortToggle.textContent = sortLabel(mode);
+    if (els.mobileSortButton) els.mobileSortButton.textContent = `${sortLabel(mode)} 변경`;
   }
 
   function syncAvailabilityPreset() {
@@ -1204,6 +1380,11 @@
   function syncMapToolbar() {
     if (els.mapRadiusToggle) els.mapRadiusToggle.textContent = formatRadius(els.radius?.value || '3000');
     if (els.mapType && els.mapType.value !== els.type.value) els.mapType.value = els.type.value;
+    els.mapRadiusButtons.forEach((button) => {
+      const activeRadius = button.dataset.evMapRadius && els.radius?.value === button.dataset.evMapRadius;
+      const activeSpeed = button.dataset.evMapSpeed && els.speed?.value === button.dataset.evMapSpeed;
+      button.classList.toggle('active', Boolean(activeRadius || activeSpeed));
+    });
     els.mapFilterInputs.forEach((input) => {
       const source = els.filters[input.dataset.evMapFilter];
       if (source) input.checked = source.checked;
@@ -1321,11 +1502,11 @@
         <div class="parking-mobile-action-sheet__section">
           <span class="parking-mobile-action-sheet__label">충전소 조건</span>
           <div class="parking-mobile-action-sheet__check-grid">
-            <label><input type="checkbox" data-ev-action-filter="availableOnly" ${checked('availableOnly')}> 사용 가능</label>
+            <label><input type="checkbox" data-ev-action-filter="availableOnly" ${checked('availableOnly')}> 사용 가능 우선</label>
             <label><input type="checkbox" data-ev-action-filter="freeParking" ${checked('freeParking')}> 주차료 무료</label>
             <label><input type="checkbox" data-ev-action-filter="noLimit" ${checked('noLimit')}> 이용 제한 없음</label>
-            <label><input type="checkbox" data-ev-action-filter="rapidOnly" ${checked('rapidOnly')}> 급속</label>
-            <label><input type="checkbox" data-ev-action-filter="updatedOnly" ${checked('updatedOnly')}> 갱신 정보</label>
+            <label><input type="checkbox" data-ev-action-filter="rapidOnly" ${checked('rapidOnly')}> 급속 우선</label>
+            <label><input type="checkbox" data-ev-action-filter="updatedOnly" ${checked('updatedOnly')}> 상태 갱신</label>
             <label><input type="checkbox" data-ev-action-filter="lowRiskOnly" ${checked('lowRiskOnly')}> 상태 양호</label>
           </div>
         </div>
@@ -1351,7 +1532,7 @@
       title.textContent = '정렬 기준';
       const current = els.sort?.value || 'recommended';
       body.innerHTML = `<div class="parking-mobile-action-sheet__sort-list">
-        ${[['recommended','사용 가능성순'], ['nearby','가까운순'], ['rapid','급속 우선'], ['available','사용 가능 대수'], ['updated','갱신 최신순']].map(([value, label]) => `<button type="button" data-ev-action-sort="${value}" class="${current === value ? 'active' : ''}"><span>${label}</span><strong>${current === value ? '✓' : ''}</strong></button>`).join('')}
+        ${[['recommended','추천순'], ['nearby','가까운순'], ['rapid','급속 우선'], ['available','가능대수'], ['updated','최신순']].map(([value, label]) => `<button type="button" data-ev-action-sort="${value}" class="${current === value ? 'active' : ''}"><span>${label}</span><strong>${current === value ? '✓' : ''}</strong></button>`).join('')}
       </div>`;
       body.querySelectorAll('[data-ev-action-sort]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -1474,20 +1655,23 @@
         target.addEventListener('touchstart', onDragStart, { passive: false });
         target.addEventListener('touchmove', onDragMove, { passive: false });
         target.addEventListener('touchend', onDragEnd, { passive: false });
-        target.addEventListener('mousedown', onDragStart);
-        window.addEventListener('mousemove', onDragMove);
-        window.addEventListener('mouseup', onDragEnd);
+        target.addEventListener('touchcancel', onDragEnd, { passive: false });
       }
     });
+    let lastViewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
     window.addEventListener('resize', () => {
-      if (!isMobile() || dragging) return;
-      setEvMobileSheetState(evMobileSheetMode(), { preserve: true });
+      if (dragging) return;
+      const nextWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+      if (Math.abs(nextWidth - lastViewportWidth) < 12) return;
+      lastViewportWidth = nextWidth;
+      setEvMobileSheetState(evMobileSheetMode());
     }, { passive: true });
+    window.addEventListener('orientationchange', () => window.setTimeout(() => setEvMobileSheetState(evMobileSheetMode()), 220));
     setEvMobileSheetState('collapsed');
   }
 
   function evMobileSheetHeight(viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700) {
-    return Math.min(Math.max(360, viewportHeight * 0.9), 780);
+    return Math.min(Math.max(360, viewportHeight * 0.88), 760);
   }
 
   function evMobileSheetPositions(viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700) {
@@ -1552,16 +1736,19 @@
 
   function openMobileSheet(mode = 'open') {
     setEvMobileSheetState(mode);
+    updateMobileEvListToggle();
   }
 
   function closeMobileSheet() {
     setEvMobileSheetState('collapsed');
+    updateMobileEvListToggle();
   }
 
   function toggleMobileSheet() {
-    const expanded = els.mobileSheet?.classList.contains('is-expanded') || els.mobileSheet?.classList.contains('is-open');
-    if (expanded) closeMobileSheet();
-    else openMobileSheet('expanded');
+    const isOpen = els.mobileSheet?.classList.contains('is-open');
+    setEvMobileSheetState(isOpen ? 'closed' : 'half');
+    if (!isOpen) els.mobileSheet?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    updateMobileEvListToggle();
   }
 
   function scrollToMap() { els.map?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
@@ -1571,12 +1758,37 @@
     const html = '<article class="parking-result-card"><strong>충전소 정보를 확인하고 있습니다.</strong><p>제공기관 데이터 기준으로 주변 충전소를 불러오는 중입니다.</p></article>';
     if (els.resultList) els.resultList.innerHTML = html;
     if (els.mobileResults) els.mobileResults.innerHTML = html;
+    updateMobileEvListToggle(0);
   }
 
   function renderEmpty(message) {
     const html = `<article class="parking-result-card"><strong>확인할 충전소가 없습니다.</strong><p>${escapeHtml(message)}</p></article>`;
     if (els.resultList) els.resultList.innerHTML = html;
     if (els.mobileResults) els.mobileResults.innerHTML = html;
+    updateMobileEvListToggle(0);
+  }
+
+  function updateMobileEvListToggle(count = state.displayResults?.length || 0) {
+    if (!els.mobileListToggle) return;
+    const isOpen = !els.mobileSheet?.classList.contains('is-collapsed');
+    els.mobileListToggle.textContent = isOpen ? '추천 목록 접기' : count ? `추천 충전소 ${count}곳 보기` : '추천 충전소 보기';
+    els.mobileListToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+
+  function findDisplayStationById(id) {
+    const target = String(id || '');
+    if (!target) return null;
+    return (state.displayResults || []).find((item) => isSameStationId(item, target))
+      || (state.sortedStations || []).find((item) => isSameStationId(item, target))
+      || null;
+  }
+
+  function isSameStationId(item, id) {
+    const target = String(id || '');
+    if (!item || !target) return false;
+    if (String(item.id || '') === target) return true;
+    if (String(item.originalId || '') === target) return true;
+    return Array.isArray(item.stationIdAliases) && item.stationIdAliases.map(String).includes(target);
   }
 
   function renderDataBadges(data) {
@@ -1593,26 +1805,37 @@
 
   function sorter(mode) {
     return (a, b) => {
-      if (mode === 'nearby') return a.distanceM - b.distanceM;
-      if (mode === 'rapid') return b.rapidCount - a.rapidCount || b.bestScore - a.bestScore || a.distanceM - b.distanceM;
-      if (mode === 'available') return b.availableCount - a.availableCount || a.distanceM - b.distanceM;
-      if (mode === 'updated') return updatedScore(b) - updatedScore(a) || b.bestScore - a.bestScore;
-      return b.bestScore - a.bestScore || a.distanceM - b.distanceM;
+      const distanceA = Number.isFinite(a.distanceM) ? a.distanceM : Number.POSITIVE_INFINITY;
+      const distanceB = Number.isFinite(b.distanceM) ? b.distanceM : Number.POSITIVE_INFINITY;
+      if (mode === 'nearby') return distanceA - distanceB || b.availableCount - a.availableCount || b.bestScore - a.bestScore;
+      if (mode === 'rapid') return b.rapidCount - a.rapidCount || b.availableCount - a.availableCount || distanceA - distanceB || b.bestScore - a.bestScore;
+      if (mode === 'available') return b.availableCount - a.availableCount || b.bestScore - a.bestScore || distanceA - distanceB;
+      if (mode === 'updated') return updatedScore(b) - updatedScore(a) || b.availableCount - a.availableCount || b.bestScore - a.bestScore;
+      return b.bestScore - a.bestScore || b.availableCount - a.availableCount || distanceA - distanceB;
     };
   }
 
   function buildReason(item) {
-    if (item.sourceStationCount > 1 && item.availableCount > 0) return `같은 장소로 보이는 충전소 ${item.sourceStationCount}건을 묶어 사용 가능 충전기 ${item.availableCount}기를 표시합니다.`;
-    if (item.sourceStationCount > 1) return `같은 장소로 보이는 충전소 ${item.sourceStationCount}건을 묶어 표시합니다.`;
-    if (item.availableCount > 0) return `현재 제공 데이터 기준 사용 가능 충전기 ${item.availableCount}기가 확인됩니다.`;
-    if (item.chargingCount > 0) return '충전 중인 충전기가 있어 도착 시점의 상태 확인이 필요합니다.';
-    if (item.troubleCount > 0) return '고장·점검 또는 통신 이상 상태가 포함되어 현장 확인이 필요합니다.';
+    const badges = buildConvenienceBadges(item);
+    const badgeText = badges.length ? ` ${badges.slice(0, 2).join(' · ')} 조건도 함께 반영했습니다.` : '';
+    if (item.sourceStationCount > 1 && item.availableCount > 0) return `같은 장소로 보이는 충전소 ${item.sourceStationCount}건을 묶어 표시했고, 사용 가능 ${item.availableCount}기를 우선 반영했습니다.${badgeText}`;
+    if (item.sourceStationCount > 1) return `같은 장소로 보이는 충전소 ${item.sourceStationCount}건을 하나의 후보로 묶어 표시합니다.${badgeText}`;
+    if (item.availableCount > 0) return `제공 데이터 기준 사용 가능 충전기 ${item.availableCount}기가 있어 우선 후보로 볼 수 있습니다.${badgeText}`;
+    if (item.chargingCount > 0) return '현재 충전 중인 충전기가 있어 도착 시점의 사용 가능 여부 확인이 필요합니다.';
+    if (item.troubleCount > 0) return '점검·고장 또는 통신 이상 상태가 포함되어 현장 확인이 필요합니다.';
     return '상태 정보가 부족하므로 운영기관 안내와 현장 표시를 함께 확인해 주세요.';
   }
 
   function typesSummary(item) {
     const labels = [...new Set((item.chargers || []).map((c) => c.typeLabel).filter(Boolean))];
     return labels.length ? labels.slice(0, 4).join(' · ') : '충전 타입 확인 필요';
+  }
+
+  function compactTypesSummary(item) {
+    const labels = [...new Set((item.chargers || []).map((c) => c.typeLabel).filter(Boolean))];
+    if (!labels.length) return '충전 타입 확인';
+    if (labels.length === 1) return labels[0];
+    return `${labels[0]} 외 ${labels.length - 1}종`;
   }
 
   function renderKakaoLink(item) {
@@ -1653,7 +1876,7 @@
   function selectedText(select) { return select?.selectedOptions?.[0]?.textContent?.trim() || ''; }
   function setStatus(message, tone) { if (els.status) { els.status.textContent = message; els.status.className = `status-message ${tone || 'neutral'}`; } }
   function setSearchStatus(message) { if (els.searchStatus) els.searchStatus.textContent = message; }
-  function sortLabel(mode) { return ({ recommended: '사용 가능성순', nearby: '가까운순', rapid: '급속 우선', available: '사용 가능 대수', updated: '갱신 최신순' })[mode] || '사용 가능성순'; }
+  function sortLabel(mode) { return ({ recommended: '추천순', nearby: '가까운순', rapid: '급속 우선', available: '가능대수', updated: '최신순' })[mode] || '추천순'; }
   function formatRadius(value) { const number = Number(value); return number >= 1000 ? `${number / 1000}km` : `${number}m`; }
   function formatDistance(m) { return Number.isFinite(m) ? (m >= 1000 ? `${(m / 1000).toFixed(1)}km` : `${Math.round(m)}m`) : '거리 확인'; }
   function updatedScore(item) { return item.updatedAt ? Date.parse(item.updatedAt.replace(' ', 'T')) || 0 : 0; }

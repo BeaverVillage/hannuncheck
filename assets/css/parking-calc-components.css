@@ -11094,7 +11094,7 @@ body {
   color: #b91c1c;
 }
 
-/* EV charger map v37 polish: keep parking-map UX, reduce mobile clutter, restore selected map card. */
+/* EV charger map v38 shell pass 1: keep parking-map UX, reduce mobile clutter, restore selected map card. */
 [data-ev-charger-map] .parking-result-card .parking-card-head strong {
   display: -webkit-box;
   -webkit-line-clamp: 1;

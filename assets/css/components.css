@@ -2301,3 +2301,55 @@ body.parking-place-popup-open {
     padding-right: 16px;
   }
 }
+
+
+/* v46: outdoor air region search stability and empty-state cleanup */
+.air-summary-panel[hidden] {
+  display: none !important;
+}
+.outdoor-console .preview-note {
+  margin: 0 24px 22px;
+}
+.outdoor-search-panel .form-row small {
+  min-height: auto;
+  line-height: 1.55;
+}
+.air-main-card.is-loading {
+  display: block;
+}
+.air-main-card .empty-state {
+  margin: 0;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.air-place-popup .parking-place-popup__close {
+  flex: 0 0 auto;
+  writing-mode: horizontal-tb;
+  white-space: nowrap;
+}
+@media (max-width: 980px) {
+  .outdoor-form-v19 {
+    padding: 20px;
+  }
+  .outdoor-console .preview-note {
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+}
+@media (max-width: 560px) {
+  .outdoor-form-v19 {
+    padding: 16px;
+  }
+  .outdoor-console .preview-note {
+    margin: 0 16px 16px;
+  }
+  .air-search-box .secondary-action-button,
+  .outdoor-actions .secondary-action-button,
+  .outdoor-actions .submit-button {
+    width: 100%;
+  }
+  .air-place-popup__hint {
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
+}

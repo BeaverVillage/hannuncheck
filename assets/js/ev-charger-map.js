@@ -14,9 +14,8 @@
   const ZCODE_BY_SIDO = { 서울: '11', 부산: '26', 대구: '27', 인천: '28', 광주: '29', 대전: '30', 울산: '31', 세종: '36', 경기: '41', 강원: '51', 충북: '43', 충남: '44', 전북: '52', 전남: '46', 경북: '47', 경남: '48', 제주: '50' };
   const SIDO_BY_ZCODE = Object.fromEntries(Object.entries(ZCODE_BY_SIDO).map(([name, code]) => [code, name]));
   const EV_TYPE_LABELS = { '01': 'DC차데모', '02': 'AC완속', '03': 'DC차데모+AC3상', '04': 'DC콤보', '05': 'DC차데모+DC콤보', '06': 'DC차데모+AC3상+DC콤보', '07': 'AC3상', '08': 'DC콤보(완속)', '09': 'NACS', '10': 'DC콤보+NACS', '11': 'DC콤보2(버스전용)' };
-  const EV_RESULT_DISPLAY_LIMIT = 20;
-  const EV_MAP_DISPLAY_LIMIT = 20;
-  const EV_MOBILE_DISPLAY_LIMIT = EV_RESULT_DISPLAY_LIMIT;
+  const EV_RESULT_LIMIT_BY_RADIUS = { '1000': 15, '3000': 20, '5000': 35, '10000': 50 };
+  const EV_MAP_LIMIT_BY_RADIUS = { '1000': 15, '3000': 20, '5000': 35, '10000': 50 };
   const EV_GROUP_DISTANCE_M = 80;
   const EV_SPLIT_CHUNK_MARGIN_M = 1200;
 
@@ -113,6 +112,7 @@
   }
 
   function bindEvents() {
+    document.addEventListener('click', handleKakaoPlaceClick);
     els.form?.addEventListener('submit', (event) => {
       event.preventDefault();
       searchDestination(els.destination.value, { openPopup: true });
@@ -930,7 +930,8 @@
     groupedList.sort(sorter(mode));
     groupedList.forEach((item, index) => { item.rank = index + 1; });
 
-    const visibleList = groupedList.slice(0, EV_RESULT_DISPLAY_LIMIT);
+    const visibleLimit = resultLimitForRadius();
+    const visibleList = groupedList.slice(0, visibleLimit);
     state.sortedStations = groupedList;
     state.displayResults = visibleList;
 
@@ -980,7 +981,7 @@
 
   function renderMoreNotice(total, visible) {
     if (total <= visible) return '';
-    return `<article class="parking-result-card parking-result-more"><strong>상위 ${visible}곳만 표시 중입니다.</strong><p>지도와 목록은 동일한 상위 후보를 표시합니다. 조건이나 반경을 조정하면 결과가 함께 갱신됩니다.</p></article>`;
+    return `<article class="parking-result-card parking-result-more"><strong>상위 ${visible}곳만 표시 중입니다.</strong><p>반경이 넓을수록 더 많은 후보를 표시합니다. 조건이나 반경을 조정하면 결과가 함께 갱신됩니다.</p></article>`;
   }
 
   function groupStationsForDisplay(list) {
@@ -1111,7 +1112,6 @@
     const statusClass = item.statusTone === 'good' ? 'metric-confidence-high' : item.statusTone === 'busy' ? 'metric-risk-medium' : item.statusTone === 'bad' ? 'metric-risk-high' : 'metric-confidence-low';
     const availabilityText = buildAvailabilityText(item);
     const distanceText = `장소에서 약 ${formatDistance(item.distanceM)}`;
-    const reason = buildReason(item);
     const detailId = `${mobile ? 'mobile-' : ''}ev-detail-${rank}`;
     const totalCount = buildTotalChargerCount(item);
     const badges = buildConvenienceBadges(item);
@@ -1122,7 +1122,6 @@
       <div class="parking-card-head"><div><strong>${escapeHtml(item.displayName || item.name)}</strong><span>${`추천 ${rank}위`} · ${escapeHtml(item.availabilityLabel || '상태 확인')}</span></div></div>
       <div class="parking-list-summary" aria-hidden="true"><strong>${escapeHtml(availabilityText)}</strong><span>${distanceText}</span><span>${escapeHtml(badgeText)}</span></div>
       <div class="parking-price-row"><strong>${escapeHtml(availabilityText)}</strong><span>${escapeHtml(compactTypes)}</span></div>
-      <p class="parking-reason">${escapeHtml(reason)}</p>
       <div class="parking-card-metrics">
         <span class="parking-metric-chip metric-distance">${distanceText}</span>
         <span class="parking-metric-chip metric-availability">전체 ${totalCount || 0}기 · 급속 ${item.rapidCount || 0}기</span>
@@ -1216,7 +1215,7 @@
 
   function renderMapMarkers(list) {
     clearKakaoMarkers();
-    const rows = Array.isArray(list) ? list.slice(0, EV_MAP_DISPLAY_LIMIT) : [];
+    const rows = Array.isArray(list) ? list.slice(0, mapLimitForRadius()) : [];
 
     if (state.kakaoReady && state.map && window.kakao?.maps) {
       if (els.mapMarkers) els.mapMarkers.innerHTML = '';
@@ -1261,7 +1260,7 @@
 
   function renderFallbackMarkers(list) {
     if (!els.mapMarkers) return;
-    const rows = Array.isArray(list) ? list.slice(0, EV_MAP_DISPLAY_LIMIT) : [];
+    const rows = Array.isArray(list) ? list.slice(0, mapLimitForRadius()) : [];
     const lats = rows.map((row) => Number(row.lat)).filter(Number.isFinite).concat(Number(state.center.lat));
     const lngs = rows.map((row) => Number(row.lng)).filter(Number.isFinite).concat(Number(state.center.lng));
     const minLat = Math.min(...lats);
@@ -1321,7 +1320,6 @@
     const distance = `장소에서 약 ${formatDistance(item.distanceM)}`;
     const totalCount = buildTotalChargerCount(item);
     const meta = `${compactTypesSummary(item)} · ${buildConvenienceBadges(item).slice(0, 2).join(' · ') || '이용 조건 확인'}`;
-    const reason = buildReason(item);
     const popup = document.createElement('article');
     const useDetailPopup = !isMobileEvViewport();
     popup.className = `parking-map-popup${useDetailPopup ? ' parking-map-popup--detail' : ''} ev-map-popup`;
@@ -1336,7 +1334,6 @@
       '</div>',
       `<p class="parking-map-popup__meta">${escapeHtml(meta)}</p>`,
       `<div class="parking-map-popup__price-row"><strong>${escapeHtml(price)}</strong><span>${escapeHtml(distance)}</span></div>`,
-      `<p class="parking-map-popup__reason">${escapeHtml(reason)}</p>`,
       '<div class="parking-map-popup__metrics">',
       `<span class="parking-metric-chip metric-distance">${escapeHtml(distance)}</span>`,
       `<span class="parking-metric-chip metric-availability">전체 ${totalCount || 0}기 · 급속 ${item.rapidCount || 0}기</span>`,
@@ -1854,8 +1851,18 @@
   function updateMobileEvListToggle(count = state.displayResults?.length || 0) {
     if (!els.mobileListToggle) return;
     const isOpen = !els.mobileSheet?.classList.contains('is-collapsed');
-    els.mobileListToggle.textContent = isOpen ? '추천 목록 접기' : count ? `추천 목록 펼치기 · ${count}곳` : '추천 목록 펼치기';
+    els.mobileListToggle.textContent = isOpen ? '추천 목록 접기' : '추천 목록 보기';
     els.mobileListToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+
+  function resultLimitForRadius() {
+    const radius = String(els.radius?.value || '3000');
+    return EV_RESULT_LIMIT_BY_RADIUS[radius] || (Number(radius) >= 10000 ? 50 : Number(radius) >= 5000 ? 35 : 20);
+  }
+
+  function mapLimitForRadius() {
+    const radius = String(els.radius?.value || '3000');
+    return EV_MAP_LIMIT_BY_RADIUS[radius] || resultLimitForRadius();
   }
 
   function findDisplayStationById(id) {
@@ -1899,15 +1906,13 @@
   }
 
   function buildReason(item) {
-    const badges = buildConvenienceBadges(item);
-    const badgeText = badges.length ? ` ${badges.slice(0, 2).join(' · ')} 조건도 함께 반영했습니다.` : '';
-    if (item.sourceStationCount > 1 && item.availableCount > 0) return `같은 장소로 보이는 충전소 ${item.sourceStationCount}건을 묶어 표시했고, 사용 가능 ${item.availableCount}기를 우선 반영했습니다.${badgeText}`;
-    if (item.sourceStationCount > 1) return `같은 장소로 보이는 충전소 ${item.sourceStationCount}건을 하나의 후보로 묶어 표시합니다.${badgeText}`;
-    if (item.availableCount > 0) return `제공 데이터 기준 사용 가능 충전기 ${item.availableCount}기가 있어 우선 후보로 볼 수 있습니다.${badgeText}`;
-    if (item.chargingCount > 0) return '현재 충전 중인 충전기가 있어 도착 시점의 사용 가능 여부 확인이 필요합니다.';
-    if (item.troubleCount > 0) return '점검·고장 또는 통신 이상 상태가 포함되어 현장 확인이 필요합니다.';
-    return '상태 정보가 부족하므로 운영기관 안내와 현장 표시를 함께 확인해 주세요.';
+    if (item.sourceStationCount > 1) return `같은 장소 ${item.sourceStationCount}건 묶음`;
+    if (item.availableCount > 0) return `사용 가능 ${item.availableCount}기`;
+    if (item.chargingCount > 0) return '충전 중';
+    if (item.troubleCount > 0) return '운영 상태 주의';
+    return '상태 확인 필요';
   }
+
 
   function typesSummary(item) {
     const labels = [...new Set((item.chargers || []).map((c) => c.typeLabel).filter(Boolean))];
@@ -1923,11 +1928,79 @@
 
   function renderKakaoLink(item, extraClass = '') {
     if (!Number.isFinite(item.lat) || !Number.isFinite(item.lng)) return '';
-    const queryText = [item.displayName || item.name || '전기차 충전소', item.address || ''].filter(Boolean).join(' ');
-    const query = encodeURIComponent(queryText);
+    const queryText = buildKakaoPlaceQuery(item);
+    const fallbackUrl = `https://map.kakao.com/link/search/${encodeURIComponent(queryText)}`;
     const className = ['parking-kakao-link', extraClass].filter(Boolean).join(' ');
-    return `<a class="${escapeHtml(className)}" href="https://map.kakao.com/?q=${query}" target="_blank" rel="noopener">카카오맵 장소</a>`;
+    return `<a class="${escapeHtml(className)}" href="${escapeHtml(fallbackUrl)}" target="_blank" rel="noopener" data-ev-kakao-place="${escapeHtml(item.id)}">카카오맵 장소</a>`;
   }
+
+  function buildKakaoPlaceQuery(item) {
+    const rawName = String(item?.displayName || item?.name || '').trim();
+    const address = String(item?.address || '').trim();
+    const cleanedName = rawName
+      .replace(/전기차\s*충전소|전기충전소|충전소|급속충전소|완속충전소/gi, '')
+      .replace(/[()\[\]{}]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const nameLooksAddress = /^(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주|[가-힣]+시|[가-힣]+군|[가-힣]+구)\s/.test(cleanedName) && /\d/.test(cleanedName);
+    if (cleanedName && cleanedName.length >= 3 && !nameLooksAddress) {
+      const regionHint = [state.center.sido, item?.address ? inferDistrict(item.address) : state.center.region2].filter(Boolean).join(' ');
+      return [regionHint, cleanedName].filter(Boolean).join(' ').trim();
+    }
+    return [rawName, address].filter(Boolean).join(' ').trim() || '전기차 충전소';
+  }
+
+  async function handleKakaoPlaceClick(event) {
+    const link = event.target?.closest?.('[data-ev-kakao-place]');
+    if (!link) return;
+    const id = link.getAttribute('data-ev-kakao-place');
+    const item = findDisplayStationById(id);
+    if (!item) return;
+    event.preventDefault();
+    let opened = null;
+    try {
+      opened = window.open('', '_blank');
+      if (opened) opened.opener = null;
+    } catch (_) {}
+    const fallbackUrl = link.href;
+    let targetUrl = fallbackUrl;
+    try {
+      targetUrl = await resolveKakaoPlaceUrl(item, fallbackUrl);
+    } catch (_) {
+      targetUrl = fallbackUrl;
+    }
+    if (opened) {
+      opened.location.href = targetUrl;
+    } else {
+      window.location.href = targetUrl;
+    }
+  }
+
+  function resolveKakaoPlaceUrl(item, fallbackUrl) {
+    return new Promise((resolve) => {
+      if (!window.kakao?.maps?.services) return resolve(fallbackUrl);
+      const query = buildKakaoPlaceQuery(item);
+      try {
+        const places = new window.kakao.maps.services.Places();
+        places.keywordSearch(query, (data, status) => {
+          if (status !== window.kakao.maps.services.Status.OK || !Array.isArray(data) || !data.length) return resolve(fallbackUrl);
+          const ranked = data
+            .map((place) => ({
+              place,
+              distance: distanceMeters(Number(item.lat), Number(item.lng), Number(place.y), Number(place.x))
+            }))
+            .filter((row) => Number.isFinite(row.distance))
+            .sort((a, b) => a.distance - b.distance);
+          const best = ranked[0]?.place || data[0];
+          if (best?.place_url && (!ranked[0] || ranked[0].distance <= 700)) return resolve(best.place_url);
+          resolve(fallbackUrl);
+        }, { x: Number(item.lng), y: Number(item.lat), radius: 1200 });
+      } catch (_) {
+        resolve(fallbackUrl);
+      }
+    });
+  }
+
 
   async function fetchJson(url, options = {}) {
     const timeoutMs = Number(options.timeoutMs || 0);

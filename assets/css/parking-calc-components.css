@@ -11502,3 +11502,150 @@ body {
     pointer-events: auto !important;
   }
 }
+
+/* EV charger v45 step1: mobile map/button interaction and compact result polish */
+@media (max-width: 860px) {
+  [data-ev-charger-map] #ev-map,
+  [data-ev-charger-map] .parking-map,
+  [data-ev-charger-map] .parking-map > div {
+    pointer-events: auto !important;
+    touch-action: auto !important;
+  }
+
+  [data-ev-charger-map] .parking-map-toolbar {
+    z-index: 82 !important;
+    pointer-events: none !important;
+  }
+
+  [data-ev-charger-map] .parking-map-toolbar__search,
+  [data-ev-charger-map] .parking-map-toolbar__actions,
+  [data-ev-charger-map] .parking-map-control-popover,
+  [data-ev-charger-map] .parking-map-toolbar__button,
+  [data-ev-charger-map] .parking-map-popover-panel {
+    pointer-events: auto !important;
+  }
+
+  [data-ev-charger-map] .parking-map-toolbar__actions {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    overflow: visible !important;
+  }
+
+  [data-ev-charger-map] .parking-map-popover-panel {
+    z-index: 95 !important;
+  }
+
+  [data-ev-charger-map] .parking-mobile-list-toggle {
+    left: 50% !important;
+    right: auto !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px) !important;
+    z-index: 48 !important;
+    transform: translateX(-50%) !important;
+    max-width: min(210px, calc(100% - 32px)) !important;
+    min-height: 40px !important;
+    padding: 0.52rem 0.86rem !important;
+    white-space: nowrap !important;
+    pointer-events: auto !important;
+  }
+
+  [data-ev-charger-map] .parking-mobile-list-toggle[aria-expanded="true"] {
+    left: 50% !important;
+    right: auto !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+    transform: translateX(-50%) !important;
+    max-width: min(210px, calc(100% - 32px)) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  [data-ev-charger-map] .parking-bottom-sheet {
+    z-index: 70 !important;
+  }
+
+  [data-ev-charger-map] .parking-bottom-sheet.is-collapsed {
+    pointer-events: none !important;
+  }
+
+  [data-ev-charger-map] .parking-bottom-sheet.is-collapsed .parking-sheet-handle,
+  [data-ev-charger-map] .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-head {
+    pointer-events: auto !important;
+  }
+
+  .parking-mobile-action-sheet {
+    z-index: 140 !important;
+  }
+
+  .parking-mobile-action-sheet__panel,
+  .parking-mobile-action-sheet__backdrop {
+    pointer-events: auto !important;
+  }
+}
+
+[data-ev-charger-map] .parking-reason {
+  display: none !important;
+}
+
+
+/* v47: 지도형 도구 상단 영역을 한눈체크 공통 기능 페이지 톤으로 통일 */
+.map-tool-hero {
+  padding: 42px 0 26px;
+  background: var(--check-bg, #f3f7fb);
+}
+.map-tool-hero .container > .breadcrumb {
+  margin-bottom: 18px;
+}
+.map-tool-hero .map-tool-hero__intro {
+  max-width: 780px;
+  margin-bottom: 0;
+}
+.map-tool-hero .map-tool-hero__intro .eyebrow {
+  color: var(--check-muted, #64748b);
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.map-tool-hero .map-tool-hero__intro h1 {
+  margin: 0.35rem 0 0.8rem;
+  color: var(--check-primary, #0f172a);
+  font-size: clamp(2rem, 4vw, 3.05rem);
+  line-height: 1.17;
+  letter-spacing: -0.055em;
+  word-break: keep-all;
+}
+.map-tool-hero .map-tool-hero__intro .lead,
+.map-tool-hero .map-tool-hero__intro > p:not(.eyebrow):not(.fine-print) {
+  max-width: 720px;
+  color: var(--check-muted, #64748b);
+  font-size: clamp(1rem, 1.4vw, 1.1rem);
+  line-height: 1.75;
+}
+.map-tool-hero .map-tool-hero__intro .strong-note {
+  display: inline-flex;
+  max-width: 100%;
+  margin-top: 8px;
+  padding: 10px 14px;
+  color: #1e3a5f;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  font-weight: 850;
+}
+@media (max-width: 720px) {
+  .map-tool-hero {
+    padding: 28px 0 18px;
+  }
+  .map-tool-hero .map-tool-hero__intro h1 {
+    font-size: clamp(1.9rem, 10vw, 2.65rem);
+    letter-spacing: -0.06em;
+  }
+  .map-tool-hero .map-tool-hero__intro .strong-note {
+    width: 100%;
+  }
+}

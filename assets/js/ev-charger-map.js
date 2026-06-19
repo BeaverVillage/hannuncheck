@@ -99,7 +99,7 @@
     bindEvents();
     loadKakaoMap().finally(() => {
       updateMapCenter();
-      renderFallbackMarkers([]);
+      renderMapMarkers([]);
       renderEmpty('목적지를 검색하면 주변 전기차 충전소 후보를 표시합니다.');
       setStatus('목적지를 검색하거나 충전소 찾기를 눌러 주변 충전소를 확인하세요.', 'neutral');
     });
@@ -930,6 +930,31 @@
     });
   }
 
+  function createMapLabelElement(item, index) {
+    const selected = state.selectedId === item.id;
+    const status = item.availableCount > 0 ? `가능 ${item.availableCount}기` : '상태 확인';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `parking-map-label ev-map-label is-status-${item.statusTone || 'unknown'} ${index === 0 ? 'is-best' : ''} ${selected ? 'is-selected' : ''}`;
+    button.dataset.evMapId = String(item.id || '');
+    button.title = `${index + 1}순위 · ${item.name || '전기차 충전소'}`;
+    if (index < 10) {
+      const rank = document.createElement('span');
+      rank.className = 'parking-marker-rank';
+      rank.textContent = String(index + 1);
+      button.appendChild(rank);
+    }
+    const label = document.createElement('span');
+    label.textContent = status;
+    button.appendChild(label);
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      focusStation(item, { keepMapCenter: true });
+    });
+    return button;
+  }
+
   function renderMapLabelHtml(item, index, style = '') {
     const selected = state.selectedId === item.id;
     const status = item.availableCount > 0 ? `가능 ${item.availableCount}기` : '상태 확인';
@@ -940,46 +965,71 @@
 
   function renderMapMarkers(list) {
     clearKakaoMarkers();
+    const rows = Array.isArray(list) ? list.slice(0, EV_MAP_DISPLAY_LIMIT) : [];
+
     if (state.kakaoReady && state.map && window.kakao?.maps) {
+      if (els.mapMarkers) els.mapMarkers.innerHTML = '';
+
       const bounds = new window.kakao.maps.LatLngBounds();
       const centerPosition = new window.kakao.maps.LatLng(state.center.lat, state.center.lng);
       bounds.extend(centerPosition);
+
+      const destination = document.createElement('span');
+      destination.className = 'parking-destination-marker';
+      destination.textContent = '목적지';
       const destOverlay = new window.kakao.maps.CustomOverlay({
         position: centerPosition,
-        yAnchor: 1.25,
-        content: `<div class="parking-destination-marker">목적지</div>`
+        content: destination,
+        yAnchor: 1.2
       });
       destOverlay.setMap(state.map);
       state.mapOverlays.push(destOverlay);
-      list.forEach((item, index) => {
-        const position = new window.kakao.maps.LatLng(item.lat, item.lng);
+
+      rows.forEach((item, index) => {
+        if (!Number.isFinite(Number(item.lat)) || !Number.isFinite(Number(item.lng))) return;
+        const position = new window.kakao.maps.LatLng(Number(item.lat), Number(item.lng));
         bounds.extend(position);
-        const marker = new window.kakao.maps.Marker({ position, title: item.name });
-        marker.setMap(state.map);
-        state.mapMarkers.push(marker);
         const overlay = new window.kakao.maps.CustomOverlay({
           position,
-          yAnchor: 1.65,
-          content: renderMapLabelHtml(item, index)
+          content: createMapLabelElement(item, index),
+          yAnchor: 1
         });
         overlay.setMap(state.map);
         state.mapOverlays.push(overlay);
       });
-      if (list.length) state.map.setBounds(bounds);
+
+      if (rows.length && !state.selectedId) {
+        state.map.setBounds(bounds);
+      }
+      return;
     }
-    renderFallbackMarkers(list);
+
+    renderFallbackMarkers(rows);
   }
 
   function renderFallbackMarkers(list) {
     if (!els.mapMarkers) return;
-    els.mapMarkers.innerHTML = `<div class="parking-destination-marker" style="left:50%; top:50%">목적지</div>` + list.slice(0, 18).map((item, index) => {
-      const left = 18 + ((index * 17) % 68);
-      const top = 18 + ((index * 29) % 62);
-      return renderMapLabelHtml(item, index, `left:${left}%; top:${top}%`);
-    }).join('');
+    const rows = Array.isArray(list) ? list.slice(0, EV_MAP_DISPLAY_LIMIT) : [];
+    const lats = rows.map((row) => Number(row.lat)).filter(Number.isFinite).concat(Number(state.center.lat));
+    const lngs = rows.map((row) => Number(row.lng)).filter(Number.isFinite).concat(Number(state.center.lng));
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const pos = (row) => {
+      const x = 10 + ((Number(row.lng) - minLng) / Math.max(0.001, maxLng - minLng)) * 80;
+      const y = 85 - ((Number(row.lat) - minLat) / Math.max(0.001, maxLat - minLat)) * 70;
+      return { left: `${clamp(x, 8, 88)}%`, top: `${clamp(y, 12, 82)}%` };
+    };
+
+    els.mapMarkers.innerHTML = rows.map((item, index) => {
+      const p = pos(item);
+      return renderMapLabelHtml(item, index, `left:${p.left}; top:${p.top}`);
+    }).join('') + `<span class="parking-destination-marker" style="left:50%; top:50%">목적지</span>`;
+
     els.mapMarkers.querySelectorAll('[data-ev-map-id]').forEach((button) => button.addEventListener('click', () => {
-      const item = state.sortedStations.find((station) => station.id === button.dataset.evMapId);
-      focusStation(item);
+      const item = state.sortedStations.find((station) => String(station.id) === String(button.dataset.evMapId));
+      focusStation(item, { keepMapCenter: true });
     }));
   }
 
@@ -990,12 +1040,14 @@
     state.mapOverlays = [];
   }
 
-  function focusStation(item) {
+  function focusStation(item, options = {}) {
     if (!item) return;
     state.selectedId = item.id;
     if (state.kakaoReady && state.map && window.kakao?.maps) {
-      state.map.setCenter(new window.kakao.maps.LatLng(item.lat, item.lng));
-      state.map.setLevel(4);
+      const position = new window.kakao.maps.LatLng(Number(item.lat), Number(item.lng));
+      if (typeof state.map.panTo === 'function') state.map.panTo(position);
+      else state.map.setCenter(position);
+      if (!options.keepLevel && typeof state.map.getLevel === 'function' && state.map.getLevel() > 4) state.map.setLevel(4);
     }
     setStatus(`${item.name} 위치를 지도 중심으로 이동했습니다. 실제 충전 가능 여부는 현장에서 다시 확인해 주세요.`, 'neutral');
     renderResults();
@@ -1362,6 +1414,13 @@
   function normalizeDistrictName(value) {
     return String(value || '').trim().replace(/^(경기도|경기)\s*/, '').replace(/\s+/g, '');
   }
+
+  function clamp(value, min, max) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return min;
+    return Math.min(max, Math.max(min, number));
+  }
+
   function distanceMeters(lat1, lng1, lat2, lng2) {
     if (![lat1, lng1, lat2, lng2].every(Number.isFinite)) return 0;
     const R = 6371000;

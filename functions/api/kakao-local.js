@@ -46,12 +46,28 @@ export async function onRequestGet({ request, env }) {
       return json({ ok: false, message: '검색어 또는 주소를 입력해 주세요.' }, { status: 400 });
     }
 
-    const endpoint = address ? KAKAO_ADDRESS_ENDPOINT : KAKAO_KEYWORDS_ENDPOINT;
     const q = address || query;
-    const data = await kakaoFetch(`${endpoint}?query=${encodeURIComponent(q)}&size=10`, key);
-    const documents = (Array.isArray(data.documents) ? data.documents : []).map((item) => normalizePlace(item));
+    const documents = [];
+    const seen = new Set();
+    const add = (items) => {
+      (Array.isArray(items) ? items : []).map((item) => normalizePlace(item)).forEach((place) => {
+        const id = place.id || `${place.lng},${place.lat}`;
+        if (seen.has(id)) return;
+        seen.add(id);
+        documents.push(place);
+      });
+    };
 
-    return json({ ok: true, query: q, documents });
+    const primaryEndpoint = address ? KAKAO_ADDRESS_ENDPOINT : KAKAO_KEYWORDS_ENDPOINT;
+    const primary = await kakaoFetch(`${primaryEndpoint}?query=${encodeURIComponent(q)}&size=10`, key);
+    add(primary.documents);
+
+    if (!address && documents.length === 0) {
+      const secondary = await kakaoFetch(`${KAKAO_ADDRESS_ENDPOINT}?query=${encodeURIComponent(q)}&size=10`, key);
+      add(secondary.documents);
+    }
+
+    return json({ ok: true, query: q, documents: documents.slice(0, 10) });
   } catch (error) {
     return json({ ok: false, message: error?.message || '카카오 지역 검색 중 오류가 발생했습니다.' }, { status: 500 });
   }

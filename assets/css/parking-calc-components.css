@@ -11265,3 +11265,240 @@ body {
     grid-template-columns: minmax(0, 1fr) 50px !important;
   }
 }
+
+
+/* EV map v41 step1: core function fixes - map interaction, place popup, empty state */
+.parking-map::before,
+.parking-map::after {
+  pointer-events: none !important;
+}
+.parking-map:not(.is-fallback)::before,
+.parking-map:not(.is-fallback)::after {
+  display: none !important;
+}
+[data-ev-charger-map] #ev-map,
+[data-ev-charger-map] .parking-map {
+  pointer-events: auto !important;
+  touch-action: none !important;
+  overscroll-behavior: contain !important;
+}
+[data-ev-charger-map] .parking-map-markers {
+  pointer-events: none !important;
+}
+[data-ev-charger-map] .parking-empty-card {
+  min-height: auto !important;
+  align-content: start !important;
+  word-break: keep-all !important;
+}
+[data-ev-charger-map] .parking-empty-card .parking-result-head,
+[data-ev-charger-map] .parking-empty-card strong,
+[data-ev-charger-map] .parking-empty-card em {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  writing-mode: horizontal-tb !important;
+  white-space: normal !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  line-height: 1.55 !important;
+}
+.parking-place-popup__head > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+.parking-place-popup__head span {
+  color: #64748b;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+.parking-place-popup__close {
+  display: inline-grid !important;
+  place-items: center !important;
+  flex: 0 0 38px !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  padding: 0 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  color: #0f172a !important;
+  font-size: 1.25rem !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  writing-mode: horizontal-tb !important;
+  white-space: nowrap !important;
+}
+@media (max-width: 860px) {
+  [data-ev-charger-map] .parking-map-card {
+    touch-action: auto !important;
+  }
+  [data-ev-charger-map] .parking-mobile-list-toggle {
+    z-index: 35 !important;
+    bottom: 12px !important;
+  }
+  [data-ev-charger-map] .parking-bottom-sheet.is-collapsed {
+    pointer-events: none !important;
+  }
+  [data-ev-charger-map] .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-head,
+  [data-ev-charger-map] .parking-bottom-sheet.is-collapsed .parking-sheet-handle {
+    pointer-events: auto !important;
+  }
+  [data-ev-charger-map] .parking-map-popup.ev-map-popup {
+    z-index: 40 !important;
+  }
+}
+
+
+/* EV charger v42 step2: marker/card wording polish and mobile sheet clarity */
+[data-ev-charger-map] .parking-empty-card.ev-empty-card {
+  display: block;
+  min-height: auto;
+  padding: 18px;
+  text-align: left;
+  writing-mode: horizontal-tb;
+  white-space: normal;
+}
+[data-ev-charger-map] .ev-empty-card__title {
+  display: block;
+  margin-bottom: 6px;
+  color: #0f172a;
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+[data-ev-charger-map] .ev-empty-card__message {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+[data-ev-charger-map] .ev-map-label {
+  gap: 5px;
+  max-width: 112px;
+  white-space: nowrap;
+}
+[data-ev-charger-map] .ev-map-label .parking-marker-rank {
+  flex: 0 0 auto;
+}
+[data-ev-charger-map] .parking-kakao-link {
+  white-space: nowrap;
+}
+@media (max-width: 860px) {
+  [data-ev-charger-map] .parking-map-toolbar {
+    z-index: 35;
+  }
+  [data-ev-charger-map] .parking-mobile-list-toggle {
+    z-index: 36;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 74px);
+  }
+  [data-ev-charger-map] .parking-bottom-sheet.is-open + .parking-legal-note,
+  [data-ev-charger-map] .parking-bottom-sheet.is-expanded + .parking-legal-note {
+    margin-bottom: 240px;
+  }
+  [data-ev-charger-map] .parking-map-popup.ev-map-popup {
+    z-index: 38;
+  }
+}
+
+/* 한눈체크 지도형 도구 공통 헤더 정리 v43 */
+.parking-hero {
+  background:
+    linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0) 62%),
+    #f3f7fb;
+}
+.parking-hero .container > .breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  color: #64748b;
+  font-size: 0.92rem;
+}
+.parking-hero .container > .breadcrumb a {
+  color: #2563eb;
+  font-weight: 850;
+}
+.parking-hero .section-intro {
+  max-width: 760px;
+  margin-bottom: 0;
+}
+.parking-hero .section-intro .eyebrow {
+  color: #1e3a5f;
+  letter-spacing: 0.02em;
+}
+.parking-hero .section-intro h1 {
+  margin: 0.35rem 0 0.85rem;
+  color: #0f172a;
+  font-size: clamp(2.45rem, 5vw, 4.2rem);
+  line-height: 1.08;
+  letter-spacing: -0.07em;
+  word-break: keep-all;
+}
+.parking-hero .section-intro .lead,
+.parking-hero .section-intro > p:not(.eyebrow):not(.fine-print) {
+  max-width: 680px;
+  color: #334155;
+  font-size: clamp(1rem, 1.5vw, 1.16rem);
+  line-height: 1.75;
+}
+.parking-hero .strong-note {
+  max-width: max-content;
+}
+@media (max-width: 720px) {
+  .site-nav {
+    gap: 6px;
+    justify-content: flex-end;
+  }
+  .site-nav a,
+  .site-nav button {
+    min-height: 34px;
+    padding: 6px 10px;
+    font-size: 0.82rem;
+  }
+  .parking-hero {
+    padding-top: 30px;
+  }
+  .parking-hero .section-intro h1 {
+    font-size: clamp(2.2rem, 12vw, 3.1rem);
+    letter-spacing: -0.075em;
+  }
+  .parking-hero .strong-note {
+    max-width: 100%;
+  }
+}
+
+
+/* EV charger v44 final parity check: mobile toggle, sheet, and map interaction safeguards */
+@media (max-width: 860px) {
+  [data-ev-charger-map] .parking-mobile-list-toggle {
+    z-index: 78 !important;
+  }
+  [data-ev-charger-map] .parking-mobile-list-toggle[aria-expanded="true"] {
+    display: inline-flex !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    right: 12px !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+    max-width: 132px !important;
+  }
+  [data-ev-charger-map] .parking-bottom-sheet.is-open,
+  [data-ev-charger-map] .parking-bottom-sheet.is-expanded {
+    pointer-events: auto !important;
+  }
+  [data-ev-charger-map] .parking-bottom-sheet.is-collapsed {
+    pointer-events: none !important;
+  }
+  [data-ev-charger-map] .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-head,
+  [data-ev-charger-map] .parking-bottom-sheet.is-collapsed .parking-sheet-handle {
+    pointer-events: auto !important;
+  }
+  [data-ev-charger-map] .parking-map-toolbar__actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  [data-ev-charger-map] .parking-map-popup.ev-map-popup {
+    pointer-events: auto !important;
+  }
+}

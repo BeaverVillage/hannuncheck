@@ -4,6 +4,16 @@
 
   const $ = (selector) => root.querySelector(selector) || document.querySelector(selector);
   const $$ = (selector) => Array.from(root.querySelectorAll(selector));
+  const CLIENT_CACHE_TTL_MS = 5 * 60 * 1000;
+  const CLIENT_CACHE_PREFIX = 'hannuncheck:ev-charger:v2:';
+  const LOCAL_EV_CACHE_VERSION = 'v1';
+  const LOCAL_EV_DATA_BASE = '/assets/data/ev-chargers';
+  const LOCAL_EV_REGION_PREFIX = 'hannuncheck:ev-region:v1:';
+  const LOCAL_EV_REGION_TTL_MS = 24 * 60 * 60 * 1000;
+  const LOCAL_EV_STATUS_REFRESH_DELAY_MS = 80;
+  const ZCODE_BY_SIDO = { 서울: '11', 부산: '26', 대구: '27', 인천: '28', 광주: '29', 대전: '30', 울산: '31', 세종: '36', 경기: '41', 강원: '51', 충북: '43', 충남: '44', 전북: '52', 전남: '46', 경북: '47', 경남: '48', 제주: '50' };
+  const SIDO_BY_ZCODE = Object.fromEntries(Object.entries(ZCODE_BY_SIDO).map(([name, code]) => [code, name]));
+  const EV_TYPE_LABELS = { '01': 'DC차데모', '02': 'AC완속', '03': 'DC차데모+AC3상', '04': 'DC콤보', '05': 'DC차데모+DC콤보', '06': 'DC차데모+AC3상+DC콤보', '07': 'AC3상', '08': 'DC콤보(완속)', '09': 'NACS', '10': 'DC콤보+NACS', '11': 'DC콤보2(버스전용)' };
 
   const els = {
     form: $('#ev-search-form'),
@@ -73,7 +83,9 @@
     mapOverlays: [],
     lastSearchCenter: null,
     lastSearchZoom: null,
-    hasMapMoveEvents: false
+    hasMapMoveEvents: false,
+    dataSource: 'remote',
+    localRefreshToken: 0
   };
 
   init();
@@ -101,23 +113,38 @@
     els.recommend?.addEventListener('click', () => fetchChargers());
     els.quickButtons.forEach((button) => {
       button.addEventListener('click', () => {
+        const previousRadius = els.radius?.value || '3000';
         if (button.dataset.evReset) {
           els.radius.value = '3000';
           els.speed.value = 'all';
           els.type.value = '';
+          if (els.availabilityType) els.availabilityType.value = 'available';
         }
         if (button.dataset.evRadius) els.radius.value = button.dataset.evRadius;
         if (button.dataset.evSpeed) els.speed.value = button.dataset.evSpeed;
         if (button.dataset.evType) els.type.value = button.dataset.evType;
         syncQuickButtons();
-        if (state.stations.length) fetchChargers();
+        syncMapToolbar();
+        if (!state.stations.length) return;
+        if ((els.radius?.value || '3000') !== previousRadius) fetchChargers({ reason: 'radius' });
+        else renderResults();
       });
     });
-    [els.radius, els.speed, els.type, els.availabilityType, els.sort].filter(Boolean).forEach((input) => input.addEventListener('change', () => {
+    els.radius?.addEventListener('change', () => {
       syncQuickButtons();
-      syncSortButtons(els.sort.value || 'recommended');
-      if (state.stations.length) fetchChargers();
+      syncMapToolbar();
+      if (state.stations.length) fetchChargers({ reason: 'radius' });
+    });
+    [els.speed, els.type, els.availabilityType].filter(Boolean).forEach((input) => input.addEventListener('change', () => {
+      if (input === els.availabilityType) syncAvailabilityPreset();
+      syncQuickButtons();
+      syncMapToolbar();
+      if (state.stations.length) renderResults();
     }));
+    els.sort?.addEventListener('change', () => {
+      syncSortButtons(els.sort.value || 'recommended');
+      if (state.stations.length) renderResults();
+    });
     Object.values(els.filters).filter(Boolean).forEach((input) => input.addEventListener('change', () => renderResults()));
     els.preferenceCards.forEach((button) => button.addEventListener('click', () => setSort(button.dataset.evSortMode || 'recommended')));
     els.mapSortButtons.forEach((button) => button.addEventListener('click', () => {
@@ -133,16 +160,20 @@
     els.mapOptionsToggle?.addEventListener('click', () => toggleMapPopover(els.mapOptionsPanel, els.mapOptionsToggle));
     els.mapSortToggle?.addEventListener('click', () => toggleMapPopover(els.mapSortPanel, els.mapSortToggle));
     els.mapRadiusButtons.forEach((button) => button.addEventListener('click', () => {
+      const previousRadius = els.radius?.value || '3000';
       if (button.dataset.evMapRadius) els.radius.value = button.dataset.evMapRadius;
       if (button.dataset.evMapSpeed) els.speed.value = button.dataset.evMapSpeed;
       closeMapToolbarPopovers();
+      syncQuickButtons();
       syncMapToolbar();
-      fetchChargers();
+      if ((els.radius?.value || '3000') !== previousRadius) fetchChargers({ reason: 'radius' });
+      else renderResults();
     }));
     els.mapType?.addEventListener('change', () => {
       els.type.value = els.mapType.value;
+      syncQuickButtons();
       syncMapToolbar();
-      fetchChargers();
+      renderResults();
     });
     els.mapFilterInputs.forEach((input) => input.addEventListener('change', () => {
       const target = els.filters[input.dataset.evMapFilter];
@@ -160,11 +191,17 @@
       closeMobileSheet();
       scrollToMap();
     });
-    els.mobileTimeButton?.addEventListener('click', () => scrollToControls());
-    els.mobileConditionButton?.addEventListener('click', () => scrollToControls());
+    els.mobileTimeButton?.addEventListener('click', () => {
+      if (!openEvMobileActionSheet('radius')) scrollToControls();
+    });
+    els.mobileConditionButton?.addEventListener('click', () => {
+      if (!openEvMobileActionSheet('conditions')) scrollToControls();
+    });
     els.mobileSortButton?.addEventListener('click', () => {
-      if (els.mobileSheetSort) els.mobileSheetSort.hidden = !els.mobileSheetSort.hidden;
-      openMobileSheet('open');
+      if (!openEvMobileActionSheet('sort')) {
+        if (els.mobileSheetSort) els.mobileSheetSort.hidden = !els.mobileSheetSort.hidden;
+        openMobileSheet('open');
+      }
     });
     els.mobileSheet?.querySelector('.parking-sheet-handle')?.addEventListener('click', () => toggleMobileSheet());
   }
@@ -287,40 +324,56 @@
     if (runSearch) fetchChargers();
   }
 
-  async function fetchChargers() {
+  async function fetchChargers(options = {}) {
     const radius = els.radius?.value || '3000';
-    const speed = els.speed?.value || 'all';
-    const chargerType = els.type?.value || '';
-    const freeParking = els.filters.freeParking?.checked ? 'true' : 'false';
-    const noLimit = els.filters.noLimit?.checked ? 'true' : 'false';
-    setStatus('전기차 충전소 정보를 불러오는 중입니다.', 'neutral');
+    const clientCacheKey = buildClientCacheKey(radius);
+    const cached = readClientCache(clientCacheKey);
+    const hadCachedResult = Boolean(cached?.data?.ok);
+
+    if (hadCachedResult) {
+      applyChargerData(cached.data, { fromClientCache: true });
+      setStatus('방문 중 저장된 충전소 결과를 먼저 표시했습니다. 최신 상태를 확인하는 중입니다.', 'neutral');
+    } else {
+      setStatus('전국 로컬 캐시에서 주변 충전소를 찾는 중입니다.', 'neutral');
+      setListLoading();
+    }
+
     if (els.recommend) {
       els.recommend.disabled = true;
-      els.recommend.textContent = '충전소 찾는 중...';
+      els.recommend.textContent = hadCachedResult ? '최신 상태 확인 중...' : '충전소 찾는 중...';
     }
-    setListLoading();
+
     try {
-      const query = new URLSearchParams({
-        lat: state.center.lat,
-        lng: state.center.lng,
-        radius,
-        sido: state.center.sido || '서울',
-        speed,
-        chargerType,
-        freeParking,
-        noLimit
-      });
-      const data = await fetchJson(`/api/ev-charger?${query.toString()}`);
-      if (!data.ok) throw new Error(data.message || '충전소 조회에 실패했습니다.');
-      state.stations = Array.isArray(data.chargers) ? data.chargers : [];
-      state.lastSearchCenter = { lat: state.center.lat, lng: state.center.lng };
-      state.lastSearchZoom = state.map?.getLevel?.() ?? state.lastSearchZoom;
-      renderDataBadges(data);
-      renderResults();
-      setStatus('조회가 완료되었습니다. 충전기 상태는 현장 상황을 보장하지 않는 참고 정보입니다.', 'success');
+      const localData = await buildLocalChargerResult(radius);
+      if (localData?.ok && Array.isArray(localData.chargers) && localData.chargers.length) {
+        applyChargerData(localData, { fromLocalCache: true });
+        writeClientCache(clientCacheKey, localData);
+        setStatus('전국 로컬 캐시에서 주변 충전소를 먼저 표시했습니다. 최신 상태를 확인하는 중입니다.', 'success');
+        if (els.recommend) {
+          els.recommend.disabled = false;
+          els.recommend.textContent = '충전소 찾기';
+        }
+        const token = ++state.localRefreshToken;
+        window.setTimeout(() => {
+          refreshRemoteChargers(radius, clientCacheKey, { token, silent: true }).catch(() => {
+            if (token === state.localRefreshToken) setStatus('최신 상태 확인이 지연되어 로컬 캐시 결과를 유지했습니다. 현장 상태는 다시 확인해 주세요.', 'warning');
+          });
+        }, LOCAL_EV_STATUS_REFRESH_DELAY_MS);
+        return;
+      }
     } catch (error) {
+      // 로컬 캐시가 없거나 손상되면 기존 공공 API 조회로 자동 보강합니다.
+    }
+
+    try {
+      await refreshRemoteChargers(radius, clientCacheKey, { silent: false, hadCachedResult });
+    } catch (error) {
+      if (hadCachedResult) {
+        setStatus('최신 상태 확인이 지연되어 저장된 결과를 표시했습니다. 현장 상태는 다시 확인해 주세요.', 'warning');
+        return;
+      }
       setStatus(error?.message || '충전소 정보를 불러오지 못했습니다. API 키와 활용신청 상태를 확인해 주세요.', 'warning');
-      renderEmpty('충전소 정보를 불러오지 못했습니다. API 키와 활용신청 상태를 확인해 주세요.');
+      renderEmpty('충전소 정보를 불러오지 못했습니다. API 키와 활용신청 상태를 확인해 주세요. 로컬 캐시가 생성되어 있으면 더 빠르게 표시됩니다.');
       renderMapMarkers([]);
     } finally {
       if (els.recommend) {
@@ -328,6 +381,206 @@
         els.recommend.textContent = '충전소 찾기';
       }
     }
+  }
+
+  async function refreshRemoteChargers(radius, clientCacheKey, options = {}) {
+    const query = new URLSearchParams({
+      lat: state.center.lat,
+      lng: state.center.lng,
+      radius,
+      sido: state.center.sido || '서울'
+    });
+    const data = await fetchJson(`/api/ev-charger?${query.toString()}`, { timeoutMs: 9500 });
+    if (!data.ok) throw new Error(data.message || '충전소 조회에 실패했습니다.');
+    if (options.token && options.token !== state.localRefreshToken) return data;
+    writeClientCache(clientCacheKey, data);
+    applyChargerData(data);
+    if (!options.silent) {
+      setStatus(data?.cache?.hit ? '빠르게 조회했습니다. 저장된 지역 데이터를 기준으로 주변 충전소를 비교했습니다.' : '조회가 완료되었습니다. 충전기 상태는 현장 상황을 보장하지 않는 참고 정보입니다.', 'success');
+    } else {
+      setStatus('최신 제공기관 상태로 결과를 갱신했습니다. 실제 현장 상황은 도착 시점에 달라질 수 있습니다.', 'success');
+    }
+    return data;
+  }
+
+  async function buildLocalChargerResult(radiusValue) {
+    const radius = Number(radiusValue || 3000);
+    const zcode = zcodeForSido(state.center.sido || inferSido(state.center.address));
+    const region = await loadEvRegionChunk(zcode);
+    const stations = Array.isArray(region?.stations) ? region.stations : Array.isArray(region) ? region : [];
+    if (!stations.length) return null;
+    const center = { lat: Number(state.center.lat), lng: Number(state.center.lng) };
+    const normalized = stations
+      .map((station) => normalizeLocalStation(station, center))
+      .filter((station) => Number.isFinite(station.lat) && Number.isFinite(station.lng))
+      .filter((station) => station.distanceM <= radius)
+      .sort((a, b) => a.distanceM - b.distanceM)
+      .slice(0, 180);
+    if (!normalized.length) return null;
+    return {
+      ok: true,
+      checkedAt: new Date().toISOString(),
+      center: { lat: center.lat, lng: center.lng, radius, sido: state.center.sido || SIDO_BY_ZCODE[zcode] || '선택 지역', zcode },
+      cache: { hit: true, scope: 'local-static', ttlSeconds: Math.round(LOCAL_EV_REGION_TTL_MS / 1000), version: region?.version || LOCAL_EV_CACHE_VERSION },
+      totalInRegion: stations.length,
+      count: normalized.length,
+      chargers: normalized.slice(0, 60),
+      rawItems: []
+    };
+  }
+
+  async function loadEvRegionChunk(zcode) {
+    const code = zcode || '11';
+    const memoryKey = `${LOCAL_EV_REGION_PREFIX}${code}`;
+    const memory = readClientCache(memoryKey);
+    if (memory?.data) return memory.data;
+    const response = await fetch(`${LOCAL_EV_DATA_BASE}/chunks/${encodeURIComponent(code)}.json`, { cache: 'force-cache' });
+    if (!response.ok) throw new Error('전국 전기차 충전소 로컬 캐시가 아직 생성되지 않았습니다.');
+    const data = await response.json();
+    const stations = Array.isArray(data?.stations) ? data.stations : Array.isArray(data) ? data : [];
+    if (!stations.length) throw new Error('전국 전기차 충전소 로컬 캐시가 비어 있습니다.');
+    writeClientCache(memoryKey, { ...data, stations });
+    return { ...data, stations };
+  }
+
+  function normalizeLocalStation(station, center) {
+    const lat = Number(station.lat ?? station.latitude);
+    const lng = Number(station.lng ?? station.lon ?? station.longitude);
+    const distanceM = distanceMeters(center.lat, center.lng, lat, lng);
+    const chargers = Array.isArray(station.chargers) && station.chargers.length
+      ? station.chargers.map((charger, index) => normalizeLocalCharger(charger, station, index))
+      : buildLocalChargersFromSummary(station);
+    const rapidCount = Number(station.rapidCount ?? chargers.filter((charger) => charger.isRapid).length ?? 0);
+    const slowCount = Number(station.slowCount ?? chargers.filter((charger) => !charger.isRapid).length ?? 0);
+    const statusMode = String(station.statusMode || station.statusTone || 'unknown');
+    const availableCount = Number(station.availableCount ?? chargers.filter((charger) => charger.isAvailable).length ?? 0);
+    const chargingCount = Number(station.chargingCount ?? chargers.filter((charger) => charger.stat === '3').length ?? 0);
+    const troubleCount = Number(station.troubleCount ?? chargers.filter((charger) => ['1','4','5'].includes(charger.stat)).length ?? 0);
+    const unknownCount = Math.max(0, Number(station.unknownCount ?? (chargers.length - availableCount - chargingCount - troubleCount)));
+    const parkingFree = normalizeLocalBoolean(station.parkingFree ?? station.parkingFreeYn ?? station.freeParking);
+    const limitYn = normalizeLocalBoolean(station.limitYn ?? station.limitYnRaw ?? station.limit);
+    const bestScore = buildLocalScore({ distanceM, rapidCount, parkingFree, limitYn, availableCount, statusMode });
+    return {
+      id: String(station.statId || station.id || `${station.name || station.statNm}-${station.addr || station.address}`),
+      name: String(station.statNm || station.name || '전기차충전소').trim(),
+      address: String(station.addr || station.address || '').trim(),
+      useTime: String(station.useTime || station.useTimeText || '').trim(),
+      business: String(station.busiNm || station.business || station.operator || '').trim(),
+      lat,
+      lng,
+      distanceM,
+      parkingFree,
+      limitYn,
+      updatedAt: station.updatedAt || '',
+      chargers,
+      availableCount,
+      chargingCount,
+      troubleCount,
+      unknownCount,
+      rapidCount,
+      slowCount,
+      bestScore,
+      statusTone: availableCount > 0 ? 'good' : (chargingCount > 0 ? 'busy' : (troubleCount > 0 ? 'bad' : 'unknown')),
+      availabilityLabel: availableCount > 0 ? '사용 가능성 높음' : '상태 확인 필요'
+    };
+  }
+
+  function normalizeLocalCharger(charger, station, index) {
+    const typeCode = String(charger.typeCode || charger.chgerType || charger.type || '').padStart(2, '0');
+    const output = Number(charger.output || 0);
+    const stat = String(charger.stat || '').trim();
+    const isRapid = output >= 40 || ['01','03','04','05','06'].includes(typeCode);
+    return {
+      stationId: String(station.statId || station.id || ''),
+      chargerId: String(charger.chargerId || charger.chgerId || index + 1),
+      typeCode,
+      typeLabel: EV_TYPE_LABELS[typeCode] || charger.typeLabel || `타입 ${typeCode || '확인'}`,
+      output,
+      stat,
+      statLabel: charger.statLabel || '상태 확인 필요',
+      isAvailable: stat === '2',
+      isRapid,
+      updatedAt: charger.updatedAt || ''
+    };
+  }
+
+  function buildLocalChargersFromSummary(station) {
+    const typeCodes = Array.isArray(station.chgerTypes) ? station.chgerTypes : Array.isArray(station.typeCodes) ? station.typeCodes : [];
+    const rapidCount = Math.max(0, Number(station.rapidCount || 0));
+    const slowCount = Math.max(0, Number(station.slowCount || 0));
+    const total = Math.max(1, Number(station.chargerCount || rapidCount + slowCount || typeCodes.length || 1));
+    return Array.from({ length: total }).map((_, index) => {
+      const typeCode = String(typeCodes[index % Math.max(typeCodes.length, 1)] || (index < rapidCount ? '04' : '02')).padStart(2, '0');
+      const isRapid = index < rapidCount || ['01','03','04','05','06'].includes(typeCode);
+      return { stationId: String(station.statId || station.id || ''), chargerId: String(index + 1), typeCode, typeLabel: EV_TYPE_LABELS[typeCode] || `타입 ${typeCode}`, output: isRapid ? 50 : 7, stat: '', statLabel: '상태 확인 필요', isAvailable: false, isRapid, updatedAt: '' };
+    });
+  }
+
+  function buildLocalScore({ distanceM, rapidCount, parkingFree, limitYn, availableCount, statusMode }) {
+    let score = 65;
+    if (availableCount > 0) score += 25;
+    if (statusMode === 'unknown') score -= 4;
+    if (rapidCount > 0) score += 8;
+    if (parkingFree === true) score += 4;
+    if (limitYn === false) score += 4;
+    if (limitYn === true) score -= 8;
+    if (Number.isFinite(distanceM)) score += Math.max(-24, 20 - distanceM / 250);
+    return Math.round(score);
+  }
+
+  function zcodeForSido(sido) {
+    return ZCODE_BY_SIDO[inferSido(sido)] || ZCODE_BY_SIDO[sido] || '11';
+  }
+
+  function normalizeLocalBoolean(value) {
+    const text = String(value ?? '').trim().toUpperCase();
+    if (['Y','YES','TRUE','1','무료','가능'].includes(text)) return true;
+    if (['N','NO','FALSE','0','유료','불가'].includes(text)) return false;
+    if (value === true || value === false) return value;
+    return null;
+  }
+
+  function applyChargerData(data, options = {}) {
+    state.stations = Array.isArray(data.chargers) ? data.chargers : [];
+    state.dataSource = options.fromLocalCache || data?.cache?.scope === 'local-static' ? 'local-static' : (options.fromClientCache ? 'client-cache' : 'remote');
+    state.lastSearchCenter = { lat: state.center.lat, lng: state.center.lng };
+    state.lastSearchZoom = state.map?.getLevel?.() ?? state.lastSearchZoom;
+    renderDataBadges({ ...data, fromClientCache: options.fromClientCache, fromLocalCache: options.fromLocalCache || data?.cache?.scope === 'local-static' });
+    renderResults();
+  }
+
+  function buildClientCacheKey(radius) {
+    const latKey = roundCoord(state.center.lat);
+    const lngKey = roundCoord(state.center.lng);
+    const sido = state.center.sido || '서울';
+    return `${CLIENT_CACHE_PREFIX}${sido}:${latKey}:${lngKey}:${radius}`;
+  }
+
+  function readClientCache(key) {
+    try {
+      const raw = sessionStorage.getItem(key);
+      if (!raw) return null;
+      const payload = JSON.parse(raw);
+      if (!payload?.createdAt || Date.now() - payload.createdAt > CLIENT_CACHE_TTL_MS) {
+        sessionStorage.removeItem(key);
+        return null;
+      }
+      return payload;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeClientCache(key, data) {
+    try {
+      sessionStorage.setItem(key, JSON.stringify({ createdAt: Date.now(), data }));
+    } catch {}
+  }
+
+  function roundCoord(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '0';
+    return number.toFixed(3);
   }
 
   function renderResults() {
@@ -357,12 +610,19 @@
   }
 
   function applyFilters(list) {
+    const speed = els.speed?.value || 'all';
+    const type = els.type?.value || '';
+    const availabilityType = els.availabilityType?.value || 'available';
     return list.filter((item) => {
-      const availableOnly = els.filters.availableOnly?.checked;
+      const localStaticOnly = state.dataSource === 'local-static';
+      const availableOnly = (els.filters.availableOnly?.checked || availabilityType === 'available') && !localStaticOnly;
       if (availableOnly && item.availableCount <= 0) return false;
-      if (els.filters.freeParking?.checked && item.parkingFree !== true) return false;
+      if (speed === 'rapid' && item.rapidCount <= 0) return false;
+      if (speed === 'slow' && item.slowCount <= 0) return false;
+      if (type && !item.chargers?.some((charger) => charger.typeCode === type)) return false;
+      if ((availabilityType === 'rapid' || els.filters.rapidOnly?.checked) && item.rapidCount <= 0) return false;
+      if ((availabilityType === 'parkingFree' || els.filters.freeParking?.checked) && item.parkingFree !== true) return false;
       if (els.filters.noLimit?.checked && item.limitYn !== false) return false;
-      if (els.filters.rapidOnly?.checked && item.rapidCount <= 0) return false;
       if (els.filters.updatedOnly?.checked && !item.updatedAt) return false;
       if (els.filters.lowRiskOnly?.checked && item.statusTone !== 'good') return false;
       return true;
@@ -531,6 +791,13 @@
     if (els.mapSortToggle) els.mapSortToggle.textContent = sortLabel(mode);
   }
 
+  function syncAvailabilityPreset() {
+    const mode = els.availabilityType?.value || 'available';
+    if (els.filters.availableOnly) els.filters.availableOnly.checked = mode !== 'all';
+    if (mode === 'rapid' && els.filters.rapidOnly) els.filters.rapidOnly.checked = true;
+    if (mode === 'parkingFree' && els.filters.freeParking) els.filters.freeParking.checked = true;
+  }
+
   function syncQuickButtons() {
     els.quickButtons.forEach((button) => {
       const active = (button.dataset.evRadius && els.radius.value === button.dataset.evRadius) || (button.dataset.evSpeed && els.speed.value === button.dataset.evSpeed) || (button.dataset.evType && els.type.value === button.dataset.evType);
@@ -558,6 +825,149 @@
   function closeMapToolbarPopovers() {
     [els.mapRadiusPanel, els.mapOptionsPanel, els.mapSortPanel].forEach((panel) => { if (panel) panel.hidden = true; });
     [els.mapRadiusToggle, els.mapOptionsToggle, els.mapSortToggle].forEach((toggle) => toggle?.setAttribute('aria-expanded', 'false'));
+  }
+
+
+  function isMobileEvViewport() {
+    return window.matchMedia('(max-width: 860px)').matches;
+  }
+
+  function ensureEvMobileActionSheet() {
+    let sheet = document.querySelector('#ev-mobile-action-sheet');
+    if (sheet) return sheet;
+    sheet = document.createElement('div');
+    sheet.id = 'ev-mobile-action-sheet';
+    sheet.className = 'parking-mobile-action-sheet';
+    sheet.hidden = true;
+    sheet.innerHTML = `
+      <button type="button" class="parking-mobile-action-sheet__backdrop" data-ev-action-close aria-label="설정 닫기"></button>
+      <section class="parking-mobile-action-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="ev-mobile-action-sheet-title">
+        <div class="parking-mobile-action-sheet__grip" aria-hidden="true"></div>
+        <div class="parking-mobile-action-sheet__head">
+          <strong id="ev-mobile-action-sheet-title">설정</strong>
+          <button type="button" data-ev-action-close aria-label="설정 닫기">×</button>
+        </div>
+        <div class="parking-mobile-action-sheet__body"></div>
+      </section>`;
+    document.body.appendChild(sheet);
+    sheet.addEventListener('click', (event) => {
+      if (event.target.closest('[data-ev-action-close]')) closeEvMobileActionSheet();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !sheet.hidden) closeEvMobileActionSheet();
+    });
+    return sheet;
+  }
+
+  function closeEvMobileActionSheet() {
+    const sheet = document.querySelector('#ev-mobile-action-sheet');
+    if (!sheet) return;
+    sheet.classList.remove('is-open');
+    window.setTimeout(() => { sheet.hidden = true; }, 160);
+  }
+
+  function openEvMobileActionSheet(type) {
+    if (!isMobileEvViewport()) return false;
+    const sheet = ensureEvMobileActionSheet();
+    const title = sheet.querySelector('#ev-mobile-action-sheet-title');
+    const body = sheet.querySelector('.parking-mobile-action-sheet__body');
+    if (!title || !body) return false;
+    closeMapToolbarPopovers();
+
+    if (type === 'radius') {
+      title.textContent = '검색 반경 선택';
+      const radius = els.radius?.value || '3000';
+      const speed = els.speed?.value || 'all';
+      body.innerHTML = `
+        <div class="parking-mobile-action-sheet__section">
+          <span class="parking-mobile-action-sheet__label">검색 반경</span>
+          <div class="parking-mobile-action-sheet__quick-grid" role="group" aria-label="검색 반경">
+            ${[['1000','1km'], ['3000','3km'], ['5000','5km'], ['10000','10km']].map(([value, label]) => `<button type="button" data-ev-action-radius="${value}" class="${radius === value ? 'active' : ''}">${label}</button>`).join('')}
+          </div>
+        </div>
+        <div class="parking-mobile-action-sheet__section">
+          <span class="parking-mobile-action-sheet__label">충전 속도</span>
+          <div class="parking-mobile-action-sheet__quick-grid" role="group" aria-label="충전 속도">
+            ${[['all','전체'], ['rapid','급속'], ['slow','완속']].map(([value, label]) => `<button type="button" data-ev-action-speed="${value}" class="${speed === value ? 'active' : ''}">${label}</button>`).join('')}
+          </div>
+        </div>
+        <button type="button" class="primary-button wide-button" data-ev-action-close>적용하기</button>`;
+      body.querySelectorAll('[data-ev-action-radius]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const previous = els.radius?.value || '3000';
+          if (els.radius) els.radius.value = button.dataset.evActionRadius || '3000';
+          syncQuickButtons();
+          syncMapToolbar();
+          if (state.stations.length && previous !== els.radius.value) fetchChargers({ reason: 'radius' });
+          body.querySelectorAll('[data-ev-action-radius]').forEach((item) => item.classList.toggle('active', item === button));
+        });
+      });
+      body.querySelectorAll('[data-ev-action-speed]').forEach((button) => {
+        button.addEventListener('click', () => {
+          if (els.speed) els.speed.value = button.dataset.evActionSpeed || 'all';
+          syncQuickButtons();
+          syncMapToolbar();
+          renderResults();
+          body.querySelectorAll('[data-ev-action-speed]').forEach((item) => item.classList.toggle('active', item === button));
+        });
+      });
+    } else if (type === 'conditions') {
+      title.textContent = '충전 조건';
+      const typeValue = els.type?.value || '';
+      const checked = (key) => els.filters[key]?.checked ? 'checked' : '';
+      body.innerHTML = `
+        <div class="parking-mobile-action-sheet__section">
+          <span class="parking-mobile-action-sheet__label">충전 타입</span>
+          <div class="parking-mobile-action-sheet__quick-grid parking-mobile-action-sheet__quick-grid--vehicle" role="group" aria-label="충전 타입">
+            ${[['','전체'], ['04','DC콤보'], ['02','AC완속'], ['01','차데모'], ['07','AC3상']].map(([value, label]) => `<button type="button" data-ev-action-type="${value}" class="${typeValue === value ? 'active' : ''}">${label}</button>`).join('')}
+          </div>
+        </div>
+        <div class="parking-mobile-action-sheet__section">
+          <span class="parking-mobile-action-sheet__label">충전소 조건</span>
+          <div class="parking-mobile-action-sheet__check-grid">
+            <label><input type="checkbox" data-ev-action-filter="availableOnly" ${checked('availableOnly')}> 사용 가능</label>
+            <label><input type="checkbox" data-ev-action-filter="freeParking" ${checked('freeParking')}> 주차료 무료</label>
+            <label><input type="checkbox" data-ev-action-filter="noLimit" ${checked('noLimit')}> 이용 제한 없음</label>
+            <label><input type="checkbox" data-ev-action-filter="rapidOnly" ${checked('rapidOnly')}> 급속</label>
+            <label><input type="checkbox" data-ev-action-filter="updatedOnly" ${checked('updatedOnly')}> 갱신 정보</label>
+            <label><input type="checkbox" data-ev-action-filter="lowRiskOnly" ${checked('lowRiskOnly')}> 낮은 위험</label>
+          </div>
+        </div>
+        <button type="button" class="primary-button wide-button" data-ev-action-close>적용하기</button>`;
+      body.querySelectorAll('[data-ev-action-type]').forEach((button) => {
+        button.addEventListener('click', () => {
+          if (els.type) els.type.value = button.dataset.evActionType || '';
+          syncQuickButtons();
+          syncMapToolbar();
+          renderResults();
+          body.querySelectorAll('[data-ev-action-type]').forEach((item) => item.classList.toggle('active', item === button));
+        });
+      });
+      body.querySelectorAll('[data-ev-action-filter]').forEach((input) => {
+        input.addEventListener('change', () => {
+          const target = els.filters[input.dataset.evActionFilter];
+          if (target) target.checked = input.checked;
+          syncMapToolbar();
+          renderResults();
+        });
+      });
+    } else {
+      title.textContent = '정렬 기준';
+      const current = els.sort?.value || 'recommended';
+      body.innerHTML = `<div class="parking-mobile-action-sheet__sort-list">
+        ${[['recommended','사용 가능성순'], ['nearby','가까운순'], ['rapid','급속 우선'], ['available','사용 가능 대수'], ['updated','갱신 최신순']].map(([value, label]) => `<button type="button" data-ev-action-sort="${value}" class="${current === value ? 'active' : ''}"><span>${label}</span><strong>${current === value ? '✓' : ''}</strong></button>`).join('')}
+      </div>`;
+      body.querySelectorAll('[data-ev-action-sort]').forEach((button) => {
+        button.addEventListener('click', () => {
+          setSort(button.dataset.evActionSort || 'recommended');
+          closeEvMobileActionSheet();
+        });
+      });
+    }
+
+    sheet.hidden = false;
+    window.requestAnimationFrame(() => sheet.classList.add('is-open'));
+    return true;
   }
 
   function openMobileSheet(mode = 'open') {
@@ -599,7 +1009,11 @@
   function renderDataBadges(data) {
     if (!els.dataBadges) return;
     const badges = ['전기차 충전소 정보', '제공기관 데이터 기준'];
-    if (data?.count != null) badges.push(`반경 내 충전기 ${Number(data.count).toLocaleString()}개`);
+    if (data?.count != null) badges.push(`반경 내 충전소 ${Number(data.count).toLocaleString()}곳`);
+    if (data?.fromLocalCache) badges.push('전국 로컬 캐시');
+    else if (data?.fromClientCache) badges.push('방문 중 저장 결과');
+    else if (data?.cache?.hit) badges.push('빠른 캐시 조회');
+    if (data?.cache?.scope === 'local-static') badges.push('상태 최신 확인 중');
     if (data?.checkedAt) badges.push('상태 갱신 참고');
     els.dataBadges.innerHTML = badges.map((badge) => `<span>${escapeHtml(badge)}</span>`).join('');
   }
@@ -632,8 +1046,19 @@
     return `<a class="parking-kakao-link" href="https://map.kakao.com/link/to/${label},${item.lat},${item.lng}" target="_blank" rel="noopener">길찾기</a>`;
   }
 
-  async function fetchJson(url) {
-    const response = await fetch(url);
+  async function fetchJson(url, options = {}) {
+    const timeoutMs = Number(options.timeoutMs || 0);
+    const controller = timeoutMs ? new AbortController() : null;
+    const timer = timeoutMs ? window.setTimeout(() => controller.abort(), timeoutMs) : null;
+    let response;
+    try {
+      response = await fetch(url, controller ? { signal: controller.signal } : undefined);
+    } catch (error) {
+      if (error?.name === 'AbortError') throw new Error('응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.');
+      throw error;
+    } finally {
+      if (timer) window.clearTimeout(timer);
+    }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.message || `요청 오류가 발생했습니다. (${response.status})`);
     return data;

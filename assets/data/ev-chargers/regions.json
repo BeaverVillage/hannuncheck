@@ -1,0 +1,75 @@
+{
+  "version": "v1",
+  "updatedAt": null,
+  "description": "전기차 충전소 기본정보 로컬 캐시 지역 목록입니다. scripts/build-ev-charger-cache.js 실행 후 chunks/*.json이 채워집니다.",
+  "regions": [
+    {
+      "zcode": "11",
+      "name": "서울"
+    },
+    {
+      "zcode": "26",
+      "name": "부산"
+    },
+    {
+      "zcode": "27",
+      "name": "대구"
+    },
+    {
+      "zcode": "28",
+      "name": "인천"
+    },
+    {
+      "zcode": "29",
+      "name": "광주"
+    },
+    {
+      "zcode": "30",
+      "name": "대전"
+    },
+    {
+      "zcode": "31",
+      "name": "울산"
+    },
+    {
+      "zcode": "36",
+      "name": "세종"
+    },
+    {
+      "zcode": "41",
+      "name": "경기"
+    },
+    {
+      "zcode": "51",
+      "name": "강원"
+    },
+    {
+      "zcode": "43",
+      "name": "충북"
+    },
+    {
+      "zcode": "44",
+      "name": "충남"
+    },
+    {
+      "zcode": "52",
+      "name": "전북"
+    },
+    {
+      "zcode": "46",
+      "name": "전남"
+    },
+    {
+      "zcode": "47",
+      "name": "경북"
+    },
+    {
+      "zcode": "48",
+      "name": "경남"
+    },
+    {
+      "zcode": "50",
+      "name": "제주"
+    }
+  ]
+}

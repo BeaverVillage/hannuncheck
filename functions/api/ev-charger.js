@@ -1,10 +1,13 @@
 const EV_ENDPOINT = 'https://apis.data.go.kr/B552584/EvCharger/getChargerInfo';
-const MAX_ROWS = 9999;
+const EV_ENDPOINT_HTTP = 'http://apis.data.go.kr/B552584/EvCharger/getChargerInfo';
+const MAX_ROWS = 9000;
+const REGION_CACHE_TTL_SECONDS = 300;
+const API_TIMEOUT_MS = 8000;
 const ZCODE_MAP = {
-  서울: '11', 부산: '26', 대구: '27', 인천: '28', 광주: '29', 대전: '30', 울산: '31', 세종: '36', 경기: '41', 강원: '42', 충북: '43', 충남: '44', 전북: '45', 전남: '46', 경북: '47', 경남: '48', 제주: '50'
+  서울: '11', 부산: '26', 대구: '27', 인천: '28', 광주: '29', 대전: '30', 울산: '31', 세종: '36', 경기: '41', 강원: '51', 충북: '43', 충남: '44', 전북: '52', 전남: '46', 경북: '47', 경남: '48', 제주: '50'
 };
-const STATUS_LABELS = { '1': '통신이상', '2': '사용 가능', '3': '충전 중', '4': '운영중지', '5': '점검중', '9': '상태 미확인' };
-const TYPE_LABELS = { '01': 'DC차데모', '02': 'AC완속', '03': 'DC차데모+AC3상', '04': 'DC콤보', '05': 'DC차데모+DC콤보', '06': 'DC차데모+AC3상+DC콤보', '07': 'AC3상', '89': '수소', '99': '기타' };
+const STATUS_LABELS = { '0': '알수없음', '1': '통신이상', '2': '충전대기', '3': '충전 중', '4': '운영중지', '5': '점검중', '6': '예약중', '9': '상태 미확인' };
+const TYPE_LABELS = { '01': 'DC차데모', '02': 'AC완속', '03': 'DC차데모+AC3상', '04': 'DC콤보', '05': 'DC차데모+DC콤보', '06': 'DC차데모+AC3상+DC콤보', '07': 'AC3상', '08': 'DC콤보(완속)', '09': 'NACS', '10': 'DC콤보+NACS', '11': 'DC콤보2(버스전용)' };
 
 const json = (body, init = {}) => new Response(JSON.stringify(body), {
   status: init.status || 200,
@@ -19,7 +22,7 @@ export async function onRequestOptions() {
   return new Response(null, { status: 204 });
 }
 
-export async function onRequestGet({ request, env }) {
+export async function onRequestGet({ request, env, waitUntil }) {
   try {
     const key = getEnv(env, ['EV_CHARGER_API_KEY', 'DATA_GO_KR_SERVICE_KEY', 'PUBLIC_DATA_SERVICE_KEY']);
     if (!key) return json({ ok: false, message: '전기차 충전소 API 키가 설정되지 않았습니다.' }, { status: 500 });
@@ -34,15 +37,15 @@ export async function onRequestGet({ request, env }) {
     const speed = clean(url.searchParams.get('speed'), 12);
     const freeParking = url.searchParams.get('freeParking') === 'true';
     const noLimit = url.searchParams.get('noLimit') === 'true';
+    const zscode = clean(url.searchParams.get('zscode'), 10);
 
-    const apiUrl = new URL(EV_ENDPOINT);
-    apiUrl.searchParams.set('serviceKey', key);
-    apiUrl.searchParams.set('pageNo', '1');
-    apiUrl.searchParams.set('numOfRows', String(MAX_ROWS));
-    apiUrl.searchParams.set('zcode', zcode);
-    apiUrl.searchParams.set('dataType', 'JSON');
+    // PowerShell 실측 성공 URL과 동일하게 raw query string 방식으로 호출합니다.
+    // 일부 공공데이터 Gateway에서 URLSearchParams 조립 URL은 401을 반환하는 사례가 있어,
+    // 인증키는 추가 인코딩하지 않고 servicekey(raw) 우선으로 사용합니다.
+    const apiUrl = buildEvApiUrl({ endpoint: EV_ENDPOINT, key, keyParam: 'servicekey', pageNo: 1, numOfRows: MAX_ROWS, zcode, zscode, dataType: 'JSON' });
 
-    const data = await fetchJson(apiUrl.toString());
+    const regionResult = await fetchRegionData(apiUrl, { key, zcode, zscode, waitUntil });
+    const data = regionResult.data;
     const items = extractItems(data).map((item) => normalizeCharger(item, { lat, lng }));
     const filtered = items
       .filter((item) => Number.isFinite(item.lat) && Number.isFinite(item.lng))
@@ -58,7 +61,8 @@ export async function onRequestGet({ request, env }) {
     return json({
       ok: true,
       checkedAt: new Date().toISOString(),
-      center: { lat, lng, radius, sido, zcode },
+      center: { lat, lng, radius, sido, zcode, zscode },
+      cache: regionResult.cache,
       totalInRegion: items.length,
       count: filtered.length,
       chargers: groupByStation(filtered).slice(0, 60),
@@ -174,12 +178,100 @@ function buildScore({ isAvailable, stat, distanceM, isRapid, parkingFree, limitY
   return Math.round(score);
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url, { headers: { accept: 'application/json' } });
+
+async function fetchRegionData(apiUrl, { key, zcode, zscode, waitUntil }) {
+  const cacheId = `zcode=${encodeURIComponent(zcode || '')}&zscode=${encodeURIComponent(zscode || '')}&rows=${MAX_ROWS}`;
+  const cacheKey = new Request(`https://hannuncheck.internal/ev-charger-region?${cacheId}`);
+  const canUseCache = typeof caches !== 'undefined' && caches.default;
+
+  if (canUseCache) {
+    const cached = await caches.default.match(cacheKey);
+    if (cached) {
+      const cachedText = await cached.text();
+      try {
+        return { data: JSON.parse(cachedText), cache: { hit: true, ttlSeconds: REGION_CACHE_TTL_SECONDS, scope: zscode ? 'sigungu' : 'sido' } };
+      } catch {
+        // 손상된 캐시는 무시하고 최신 데이터를 다시 요청합니다.
+      }
+    }
+  }
+
+  const data = await fetchJsonWithFallback(apiUrl, { key, zcode, zscode, timeoutMs: API_TIMEOUT_MS });
+  if (canUseCache) {
+    const response = new Response(JSON.stringify(data), {
+      headers: {
+        'content-type': 'application/json; charset=utf-8',
+        'cache-control': `public, max-age=${REGION_CACHE_TTL_SECONDS}`,
+        'x-hannuncheck-cache-scope': zscode ? 'sigungu' : 'sido',
+        'x-hannuncheck-cache-created-at': new Date().toISOString()
+      }
+    });
+    // 캐시 저장 실패가 사용자 응답을 막지 않도록 백그라운드로 처리합니다.
+    try {
+      if (typeof waitUntil === 'function') waitUntil(caches.default.put(cacheKey, response.clone()));
+      else await caches.default.put(cacheKey, response.clone());
+    } catch {
+      try { await caches.default.put(cacheKey, response.clone()); } catch {}
+    }
+  }
+  return { data, cache: { hit: false, ttlSeconds: REGION_CACHE_TTL_SECONDS, scope: zscode ? 'sigungu' : 'sido' } };
+}
+
+function buildEvApiUrl({ endpoint, key, keyParam, pageNo, numOfRows, zcode, zscode, dataType }) {
+  const params = [
+    `${keyParam}=${cleanApiKey(key)}`,
+    `pageNo=${encodeURIComponent(String(pageNo || 1))}`,
+    `numOfRows=${encodeURIComponent(String(numOfRows || MAX_ROWS))}`,
+    zcode ? `zcode=${encodeURIComponent(String(zcode))}` : '',
+    zscode ? `zscode=${encodeURIComponent(String(zscode))}` : '',
+    `dataType=${encodeURIComponent(String(dataType || 'JSON'))}`
+  ].filter(Boolean).join('&');
+  return `${endpoint}?${params}`;
+}
+
+async function fetchJsonWithFallback(primaryUrl, { key, zcode, zscode, timeoutMs }) {
+  const candidates = [
+    primaryUrl,
+    buildEvApiUrl({ endpoint: EV_ENDPOINT, key, keyParam: 'serviceKey', pageNo: 1, numOfRows: MAX_ROWS, zcode, zscode, dataType: 'JSON' }),
+    buildEvApiUrl({ endpoint: EV_ENDPOINT_HTTP, key, keyParam: 'servicekey', pageNo: 1, numOfRows: MAX_ROWS, zcode, zscode, dataType: 'JSON' }),
+    buildEvApiUrl({ endpoint: EV_ENDPOINT_HTTP, key, keyParam: 'serviceKey', pageNo: 1, numOfRows: MAX_ROWS, zcode, zscode, dataType: 'JSON' })
+  ];
+  let lastError = null;
+  for (const url of unique(candidates)) {
+    try {
+      return await fetchJson(url, { timeoutMs });
+    } catch (error) {
+      lastError = error;
+      const message = String(error?.message || '');
+      if (!/401|Unauthorized|SERVICE_KEY|인증|KEY/i.test(message)) break;
+    }
+  }
+  throw lastError || new Error('전기차 충전소 API 요청에 실패했습니다.');
+}
+
+async function fetchJson(url, options = {}) {
+  const controller = new AbortController();
+  const timeoutMs = Number(options.timeoutMs || API_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort('timeout'), timeoutMs);
+  let response;
+  try {
+    // PowerShell 성공 호출과 최대한 비슷하게 만들기 위해 불필요한 custom header를 넣지 않습니다.
+    response = await fetch(url, { signal: controller.signal });
+  } catch (error) {
+    if (error?.name === 'AbortError' || String(error?.message || '').includes('timeout')) {
+      throw new Error('전기차 충전소 API 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
   const text = await response.text();
   let data = null;
   try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
-  if (!response.ok) throw new Error(`전기차 충전소 API 응답 오류가 발생했습니다. (${response.status})`);
+  if (!response.ok) {
+    const preview = typeof text === 'string' ? text.replace(/\s+/g, ' ').slice(0, 400) : '';
+    throw new Error(`전기차 충전소 API 응답 오류가 발생했습니다. (${response.status}) ${preview}`);
+  }
   if (typeof data?.raw === 'string' && data.raw.includes('<OpenAPI_ServiceResponse>')) {
     throw new Error('공공데이터포털 API 키 승인 또는 요청 파라미터를 확인해 주세요.');
   }
@@ -235,3 +327,6 @@ function getEnv(env, keys) {
   }
   return '';
 }
+
+function cleanApiKey(value) { return String(value || '').trim().replace(/^['\"]|['\"]$/g, ''); }
+function unique(list) { return Array.from(new Set(list.filter(Boolean))); }

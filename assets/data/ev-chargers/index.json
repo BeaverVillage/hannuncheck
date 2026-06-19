@@ -1,0 +1,7 @@
+{
+  "version": "v1",
+  "updatedAt": null,
+  "totalStations": 0,
+  "note": "전국 전기차 충전소 기본정보 캐시 색인입니다. scripts/build-ev-charger-cache.js 실행 후 갱신됩니다.",
+  "chunks": {}
+}

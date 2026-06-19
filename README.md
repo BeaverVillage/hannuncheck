@@ -75,7 +75,7 @@ FTC_SERVICE_KEY=공정위 API 키
 - `/tools/pc-spec.html`: 브라우저에서 확인 가능한 컴퓨터 사양, 직접 입력 사양 해석, CPU 간단 테스트를 제공합니다.
 
 
-## 전기차 충전소 전국 로컬 캐시 생성 안내 (v31)
+## 전기차 충전소 전국 로컬 캐시 생성 안내 (v32)
 
 이 버전은 Windows에서 실제로 성공한 `Invoke-RestMethod` 방식에 맞춰 **PowerShell 전용 캐시 생성 스크립트**를 사용합니다. Node.js가 없어도 실행할 수 있으며, `.cmd` 파일이 PowerShell 실행정책을 우회해서 실행합니다. 기본 요청 크기는 `numOfRows=9000`입니다.
 
@@ -152,3 +152,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-ev-charger-c
 ### 7. 데이터 성격
 
 로컬 캐시는 충전소명, 주소, 좌표, 충전기 타입 같은 기본정보를 빠르게 표시하기 위한 정적 캐시입니다. 사용 가능, 충전 중, 고장 같은 상태값은 제공기관 데이터 기준으로 짧게 다시 확인하며 실제 현장 상황과 다를 수 있습니다.
+
+
+## v32 PowerShell encoding fix
+
+Windows PowerShell 5.1에서 Korean strings in `.ps1` can be misread when the file is UTF-8 without BOM. This package saves `scripts/build-ev-charger-cache.ps1` as UTF-8 with BOM and sets the console code page in `build-ev-charger-cache-windows.cmd`.
+
+Recommended command:
+
+```powershell
+$env:DATA_GO_KR_SERVICE_KEY="YOUR_KEY"
+.\scripts\build-ev-charger-cache-windows.cmd -Region 11 -Test
+.\scripts\build-ev-charger-cache-windows.cmd -Region 11
+```

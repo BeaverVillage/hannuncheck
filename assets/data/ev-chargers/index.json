@@ -1,7 +1,1 @@
-{
-  "version": "v1",
-  "updatedAt": null,
-  "totalStations": 0,
-  "note": "전국 전기차 충전소 기본정보 캐시 색인입니다. scripts/build-ev-charger-cache.js 실행 후 갱신됩니다.",
-  "chunks": {}
-}
+{"version":"v32-powershell-bom","updatedAt":"2026-06-19T08:57:36.2396662Z","totalStations":99751,"chunks":{"11":{"name":"서울","file":"chunks/11.json","stationCount":12919,"bytes":22179567},"26":{"name":"부산","file":"chunks/26.json","stationCount":5177,"bytes":9271685},"27":{"name":"대구","file":"chunks/27.json","stationCount":4132,"bytes":7212220},"28":{"name":"인천","file":"chunks/28.json","stationCount":5129,"bytes":9234203},"29":{"name":"광주","file":"chunks/29.json","stationCount":3404,"bytes":5119552},"30":{"name":"대전","file":"chunks/30.json","stationCount":2769,"bytes":4528345},"31":{"name":"울산","file":"chunks/31.json","stationCount":2058,"bytes":3284762},"36":{"name":"세종","file":"chunks/36.json","stationCount":1036,"bytes":1858069},"41":{"name":"경기","file":"chunks/41.json","stationCount":24888,"bytes":44289059},"43":{"name":"충북","file":"chunks/43.json","stationCount":3733,"bytes":5669340},"44":{"name":"충남","file":"chunks/44.json","stationCount":4898,"bytes":7272894},"46":{"name":"전남","file":"chunks/46.json","stationCount":4525,"bytes":6003283},"47":{"name":"경북","file":"chunks/47.json","stationCount":5710,"bytes":7904093},"48":{"name":"경남","file":"chunks/48.json","stationCount":6928,"bytes":10154565},"50":{"name":"제주","file":"chunks/50.json","stationCount":3209,"bytes":3751529},"51":{"name":"강원","file":"chunks/51.json","stationCount":4404,"bytes":6153000},"52":{"name":"전북","file":"chunks/52.json","stationCount":4832,"bytes":6502012}}}

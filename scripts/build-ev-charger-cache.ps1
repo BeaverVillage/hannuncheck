@@ -1,3 +1,4 @@
+﻿# UTF-8 BOM file for Windows PowerShell 5.1 Korean text parsing
 param(
   [string]$Key = $env:DATA_GO_KR_SERVICE_KEY,
   [string]$Region = "",
@@ -27,7 +28,7 @@ $ChunkDir = Join-Path $OutDir "chunks"
 $ProgressDir = Join-Path $OutDir "progress"
 $EndpointHttps = "https://apis.data.go.kr/B552584/EvCharger/getChargerInfo"
 $EndpointHttp = "http://apis.data.go.kr/B552584/EvCharger/getChargerInfo"
-$Version = "v31-powershell-direct"
+$Version = "v32-powershell-bom"
 
 $Regions = @(
   @{ zcode = "11"; name = "서울" }, @{ zcode = "26"; name = "부산" }, @{ zcode = "27"; name = "대구" }, @{ zcode = "28"; name = "인천" },

@@ -14,6 +14,11 @@
   const ZCODE_BY_SIDO = { 서울: '11', 부산: '26', 대구: '27', 인천: '28', 광주: '29', 대전: '30', 울산: '31', 세종: '36', 경기: '41', 강원: '51', 충북: '43', 충남: '44', 전북: '52', 전남: '46', 경북: '47', 경남: '48', 제주: '50' };
   const SIDO_BY_ZCODE = Object.fromEntries(Object.entries(ZCODE_BY_SIDO).map(([name, code]) => [code, name]));
   const EV_TYPE_LABELS = { '01': 'DC차데모', '02': 'AC완속', '03': 'DC차데모+AC3상', '04': 'DC콤보', '05': 'DC차데모+DC콤보', '06': 'DC차데모+AC3상+DC콤보', '07': 'AC3상', '08': 'DC콤보(완속)', '09': 'NACS', '10': 'DC콤보+NACS', '11': 'DC콤보2(버스전용)' };
+  const EV_RESULT_DISPLAY_LIMIT = 20;
+  const EV_MAP_DISPLAY_LIMIT = 20;
+  const EV_MOBILE_DISPLAY_LIMIT = 12;
+  const EV_GROUP_DISTANCE_M = 80;
+  const EV_SPLIT_CHUNK_MARGIN_M = 1200;
 
   const els = {
     form: $('#ev-search-form'),
@@ -95,6 +100,7 @@
     loadKakaoMap().finally(() => {
       updateMapCenter();
       renderFallbackMarkers([]);
+      renderEmpty('목적지를 검색하면 주변 전기차 충전소 후보를 표시합니다.');
       setStatus('목적지를 검색하거나 충전소 찾기를 눌러 주변 충전소를 확인하세요.', 'neutral');
     });
   }
@@ -395,6 +401,22 @@
     const data = await fetchJson(`/api/ev-charger?${query.toString()}`, { timeoutMs: 9500 });
     if (!data.ok) throw new Error(data.message || '충전소 조회에 실패했습니다.');
     if (options.token && options.token !== state.localRefreshToken) return data;
+
+    if (state.dataSource === 'local-static' && state.stations.length) {
+      const merged = mergeRemoteStatusIntoLocal(data);
+      writeClientCache(clientCacheKey, merged);
+      applyChargerData(merged, { fromLocalCache: true });
+      const matched = Number(merged?.remoteMatchedCount || 0);
+      if (!options.silent) {
+        setStatus('전국 로컬 캐시 결과를 유지하고 최신 상태만 보강했습니다. 실제 현장 상황은 다시 확인해 주세요.', 'success');
+      } else if (matched > 0) {
+        setStatus(`전국 로컬 캐시 결과를 유지하고 ${matched}곳의 최신 상태만 보강했습니다.`, 'success');
+      } else {
+        setStatus('최신 상태 API가 일부 결과만 제공되어 로컬 캐시 결과를 유지했습니다. 실제 현장 상황은 다시 확인해 주세요.', 'warning');
+      }
+      return data;
+    }
+
     writeClientCache(clientCacheKey, data);
     applyChargerData(data);
     if (!options.silent) {
@@ -408,7 +430,7 @@
   async function buildLocalChargerResult(radiusValue) {
     const radius = Number(radiusValue || 3000);
     const zcode = zcodeForSido(state.center.sido || inferSido(state.center.address));
-    const region = await loadEvRegionChunk(zcode, state.center);
+    const region = await loadEvRegionChunk(zcode, state.center, radius);
     const stations = Array.isArray(region?.stations) ? region.stations : Array.isArray(region) ? region : [];
     if (!stations.length) return null;
     const center = { lat: Number(state.center.lat), lng: Number(state.center.lng) };
@@ -431,19 +453,15 @@
     };
   }
 
-  async function loadEvRegionChunk(zcode, center = {}) {
+  async function loadEvRegionChunk(zcode, center = {}, radius = 3000) {
     const code = zcode || '11';
     const index = await loadEvDataIndex();
     const regionEntry = index?.chunks?.[code];
     if (regionEntry?.split && regionEntry?.chunks) {
       const preferredZscode = center.zscode || zscodeFromRegionEntry(regionEntry, center.region2 || inferDistrict(center.address));
-      const selectedEntries = [];
-      if (preferredZscode && regionEntry.chunks[preferredZscode]) {
-        selectedEntries.push([preferredZscode, regionEntry.chunks[preferredZscode]]);
-      } else {
-        selectedEntries.push(...Object.entries(regionEntry.chunks));
-      }
-      const memoryKey = `${LOCAL_EV_REGION_PREFIX}${code}:${preferredZscode || 'all'}`;
+      const selectedEntries = selectSplitChunkEntries(regionEntry, center, radius, preferredZscode, code);
+      const chunkKey = selectedEntries.map(([subCode]) => subCode).sort().join(',') || 'all';
+      const memoryKey = `${LOCAL_EV_REGION_PREFIX}${code}:${chunkKey}`;
       const memory = readClientCache(memoryKey);
       if (memory?.data) return memory.data;
       const payloads = await Promise.all(selectedEntries.map(([subCode, entry]) => loadEvChunkFile(entry.file || `chunks/${code}/${subCode}.json`)));
@@ -471,6 +489,46 @@
     const payload = { ...data, stations };
     writeClientCache(memoryKey, payload);
     return payload;
+  }
+
+  function selectSplitChunkEntries(regionEntry, center, radius, preferredZscode, code) {
+    const entries = Object.entries(regionEntry?.chunks || {});
+    if (!entries.length) return [];
+    const centerLat = Number(center?.lat);
+    const centerLng = Number(center?.lng);
+    const radiusM = Number(radius || 3000) + EV_SPLIT_CHUNK_MARGIN_M;
+    const selected = new Map();
+
+    if (preferredZscode && regionEntry.chunks[preferredZscode]) {
+      selected.set(preferredZscode, regionEntry.chunks[preferredZscode]);
+    }
+
+    if (Number.isFinite(centerLat) && Number.isFinite(centerLng)) {
+      entries.forEach(([subCode, entry]) => {
+        if (!entry?.bbox) return;
+        if (distanceToBboxMeters(centerLat, centerLng, entry.bbox) <= radiusM) {
+          selected.set(subCode, entry);
+        }
+      });
+    }
+
+    if (!selected.size) {
+      if (preferredZscode && regionEntry.chunks[preferredZscode]) selected.set(preferredZscode, regionEntry.chunks[preferredZscode]);
+      else entries.forEach(([subCode, entry]) => selected.set(subCode, entry));
+    }
+
+    return Array.from(selected.entries());
+  }
+
+  function distanceToBboxMeters(lat, lng, bbox) {
+    const minLat = Number(bbox?.minLat);
+    const maxLat = Number(bbox?.maxLat);
+    const minLng = Number(bbox?.minLng);
+    const maxLng = Number(bbox?.maxLng);
+    if (![minLat, maxLat, minLng, maxLng].every(Number.isFinite)) return Infinity;
+    const clampedLat = Math.min(Math.max(lat, minLat), maxLat);
+    const clampedLng = Math.min(Math.max(lng, minLng), maxLng);
+    return distanceMeters(lat, lng, clampedLat, clampedLng);
   }
 
   async function loadEvDataIndex() {
@@ -600,6 +658,38 @@
     return null;
   }
 
+  function mergeRemoteStatusIntoLocal(remoteData) {
+    const remoteStations = Array.isArray(remoteData?.chargers) ? remoteData.chargers : [];
+    const byId = new Map(remoteStations.map((item) => [String(item.id || ''), item]).filter(([id]) => id));
+    let matched = 0;
+    const chargers = state.stations.map((local) => {
+      const remote = byId.get(String(local.id || ''));
+      if (!remote) return local;
+      matched += 1;
+      return {
+        ...local,
+        availableCount: Number(remote.availableCount ?? local.availableCount ?? 0),
+        chargingCount: Number(remote.chargingCount ?? local.chargingCount ?? 0),
+        troubleCount: Number(remote.troubleCount ?? local.troubleCount ?? 0),
+        unknownCount: Number(remote.unknownCount ?? local.unknownCount ?? 0),
+        chargers: Array.isArray(remote.chargers) && remote.chargers.length ? remote.chargers : local.chargers,
+        updatedAt: remote.updatedAt || local.updatedAt || '',
+        statusTone: remote.statusTone || local.statusTone,
+        availabilityLabel: remote.availabilityLabel || local.availabilityLabel
+      };
+    });
+    return {
+      ok: true,
+      checkedAt: remoteData?.checkedAt || new Date().toISOString(),
+      center: remoteData?.center || { lat: state.center.lat, lng: state.center.lng, radius: els.radius?.value || '3000', sido: state.center.sido || '선택 지역' },
+      cache: { ...(remoteData?.cache || {}), hit: true, scope: 'local-static', remoteStatusMerged: true },
+      count: chargers.length,
+      remoteMatchedCount: matched,
+      chargers,
+      rawItems: []
+    };
+  }
+
   function applyChargerData(data, options = {}) {
     state.stations = Array.isArray(data.chargers) ? data.chargers : [];
     state.dataSource = options.fromLocalCache || data?.cache?.scope === 'local-static' ? 'local-static' : (options.fromClientCache ? 'client-cache' : 'remote');
@@ -644,29 +734,122 @@
   }
 
   function renderResults() {
+    const mode = els.sort?.value || 'recommended';
     let list = [...state.stations];
     list = applyFilters(list);
-    list.sort(sorter(els.sort?.value || 'recommended'));
-    state.sortedStations = list;
+    list.sort(sorter(mode));
+    const displayList = groupStationsForDisplay(list);
+    displayList.sort(sorter(mode));
+    state.sortedStations = displayList;
     const radiusText = formatRadius(els.radius?.value || '3000');
     const typeText = selectedText(els.type) || '전체';
     if (els.summaryTitle) els.summaryTitle.textContent = `${state.center.name || '선택 위치'} · ${radiusText} · ${typeText}`;
-    if (els.summarySubtitle) els.summarySubtitle.textContent = `${state.center.sido || '선택 지역'} 기준 ${list.length}개 충전소 후보를 확인했습니다.`;
-    if (els.mobileSheetTitle) els.mobileSheetTitle.textContent = list.length ? `추천 충전소 ${list.length}곳` : '추천 결과';
+    if (els.summarySubtitle) {
+      const groupedText = displayList.length < list.length ? ` · 유사 장소 ${list.length - displayList.length}건 묶음` : '';
+      els.summarySubtitle.textContent = `${state.center.sido || '선택 지역'} 기준 ${displayList.length}개 충전소 후보를 확인했습니다${groupedText}.`;
+    }
+    if (els.mobileSheetTitle) els.mobileSheetTitle.textContent = displayList.length ? `추천 충전소 ${Math.min(displayList.length, EV_RESULT_DISPLAY_LIMIT)}곳` : '추천 결과';
     if (els.mobileSheetSubtitle) els.mobileSheetSubtitle.textContent = `${state.center.name || '선택 위치'} 주변 충전소 상태를 비교합니다.`;
-    if (!list.length) {
+    if (!displayList.length) {
       renderEmpty('조건에 맞는 충전소가 없습니다. 반경이나 필터를 조정해 주세요.');
       renderMapMarkers([]);
       return;
     }
-    const html = list.slice(0, 40).map((item, index) => renderStationCard(item, index)).join('');
+    const visibleList = displayList.slice(0, EV_RESULT_DISPLAY_LIMIT);
+    const mapList = displayList.slice(0, EV_MAP_DISPLAY_LIMIT);
+    const html = visibleList.map((item, index) => renderStationCard(item, index)).join('') + renderMoreNotice(displayList.length, visibleList.length);
     if (els.resultList) els.resultList.innerHTML = html;
-    if (els.mobileResults) els.mobileResults.innerHTML = list.slice(0, 20).map((item, index) => renderStationCard(item, index, true)).join('');
+    if (els.mobileResults) els.mobileResults.innerHTML = displayList.slice(0, EV_MOBILE_DISPLAY_LIMIT).map((item, index) => renderStationCard(item, index, true)).join('') + renderMoreNotice(displayList.length, Math.min(displayList.length, EV_MOBILE_DISPLAY_LIMIT));
     bindResultCardEvents();
-    renderMapMarkers(list.slice(0, 40));
+    renderMapMarkers(mapList);
     syncMapToolbar();
-    syncSortButtons(els.sort?.value || 'recommended');
+    syncSortButtons(mode);
     openMobileSheet('collapsed');
+  }
+
+  function renderMoreNotice(total, visible) {
+    if (total <= visible) return '';
+    return `<article class="parking-result-card parking-result-more"><strong>상위 ${visible}곳만 표시 중입니다.</strong><p>지도 혼잡을 줄이기 위해 가까운 후보를 우선 표시합니다. 반경을 줄이거나 지도를 확대해 다시 검색하면 더 좁은 범위로 볼 수 있습니다.</p></article>`;
+  }
+
+  function groupStationsForDisplay(list) {
+    const groups = [];
+    list.forEach((item) => {
+      const key = stationDisplayKey(item);
+      const match = key ? groups.find((group) => shouldGroupStation(group, item, key)) : null;
+      if (match) mergeStationIntoGroup(match, item);
+      else groups.push(makeStationDisplayGroup(item, key));
+    });
+    return groups.map(finalizeStationDisplayGroup);
+  }
+
+  function stationDisplayKey(item) {
+    const name = normalizeDisplayText(item?.name || '')
+      .replace(/전기차충전소|전기충전소|충전소|급속|완속/g, '');
+    if (name.length < 4) return '';
+    return name;
+  }
+
+  function normalizeDisplayText(value) {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/\([^)]*\)|\[[^\]]*\]|\{[^}]*\}/g, '')
+      .replace(/[\s·ㆍ,._\-–—/\\]/g, '')
+      .trim();
+  }
+
+  function shouldGroupStation(group, item, key) {
+    if (!group || !key || group.displayKey !== key) return false;
+    const distance = distanceMeters(group.lat, group.lng, item.lat, item.lng);
+    if (distance <= EV_GROUP_DISTANCE_M) return true;
+    const addressA = normalizeDisplayText(group.address || '').slice(0, 18);
+    const addressB = normalizeDisplayText(item.address || '').slice(0, 18);
+    return Boolean(addressA && addressB && addressA === addressB);
+  }
+
+  function makeStationDisplayGroup(item, key) {
+    return { ...item, displayKey: key, sourceStationCount: 1, sourceStationIds: [item.id], chargers: Array.isArray(item.chargers) ? [...item.chargers] : [] };
+  }
+
+  function mergeStationIntoGroup(group, item) {
+    group.sourceStationCount = Number(group.sourceStationCount || 1) + 1;
+    group.sourceStationIds = [...new Set([...(group.sourceStationIds || []), item.id].filter(Boolean))];
+    group.id = group.id || item.id;
+    group.distanceM = Math.min(Number(group.distanceM || Infinity), Number(item.distanceM || Infinity));
+    group.lat = Number.isFinite(group.lat) ? group.lat : item.lat;
+    group.lng = Number.isFinite(group.lng) ? group.lng : item.lng;
+    group.availableCount = Number(group.availableCount || 0) + Number(item.availableCount || 0);
+    group.chargingCount = Number(group.chargingCount || 0) + Number(item.chargingCount || 0);
+    group.troubleCount = Number(group.troubleCount || 0) + Number(item.troubleCount || 0);
+    group.unknownCount = Number(group.unknownCount || 0) + Number(item.unknownCount || 0);
+    group.rapidCount = Number(group.rapidCount || 0) + Number(item.rapidCount || 0);
+    group.slowCount = Number(group.slowCount || 0) + Number(item.slowCount || 0);
+    if (item.parkingFree === true) group.parkingFree = true;
+    else if (group.parkingFree == null) group.parkingFree = item.parkingFree;
+    if (item.limitYn === false) group.limitYn = false;
+    else if (group.limitYn == null) group.limitYn = item.limitYn;
+    if (item.bestScore > group.bestScore) group.bestScore = item.bestScore;
+    if (item.updatedAt && (!group.updatedAt || String(item.updatedAt) > String(group.updatedAt))) group.updatedAt = item.updatedAt;
+    const chargerMap = new Map((group.chargers || []).map((charger) => [`${charger.stationId || ''}:${charger.chargerId || ''}:${charger.typeCode || ''}`, charger]));
+    (item.chargers || []).forEach((charger, index) => {
+      const key = `${charger.stationId || item.id || ''}:${charger.chargerId || index}:${charger.typeCode || ''}`;
+      if (!chargerMap.has(key)) chargerMap.set(key, charger);
+    });
+    group.chargers = Array.from(chargerMap.values());
+  }
+
+  function finalizeStationDisplayGroup(group) {
+    const availableCount = Number(group.availableCount || 0);
+    const chargingCount = Number(group.chargingCount || 0);
+    const troubleCount = Number(group.troubleCount || 0);
+    const sourceCount = Number(group.sourceStationCount || 1);
+    return {
+      ...group,
+      id: sourceCount > 1 ? `group:${group.sourceStationIds?.[0] || group.id}` : group.id,
+      name: sourceCount > 1 ? `${group.name} 외 ${sourceCount - 1}건` : group.name,
+      statusTone: availableCount > 0 ? 'good' : (chargingCount > 0 ? 'busy' : (troubleCount > 0 ? 'bad' : 'unknown')),
+      availabilityLabel: availableCount > 0 ? '사용 가능성 높음' : '상태 확인 필요'
+    };
   }
 
   function applyFilters(list) {
@@ -747,6 +930,14 @@
     });
   }
 
+  function renderMapLabelHtml(item, index, style = '') {
+    const selected = state.selectedId === item.id;
+    const status = item.availableCount > 0 ? `가능 ${item.availableCount}기` : '상태 확인';
+    const rank = index < 10 ? `<span class="parking-marker-rank">${index + 1}</span>` : '';
+    const styleAttr = style ? ` style="${style}"` : '';
+    return `<button type="button" class="parking-map-label ev-map-label is-status-${item.statusTone || 'unknown'} ${index === 0 ? 'is-best' : ''} ${selected ? 'is-selected' : ''}"${styleAttr} data-ev-map-id="${escapeHtml(item.id)}" title="${escapeHtml(`${index + 1}순위 · ${item.name}`)}">${rank}<span>${escapeHtml(status)}</span></button>`;
+  }
+
   function renderMapMarkers(list) {
     clearKakaoMarkers();
     if (state.kakaoReady && state.map && window.kakao?.maps) {
@@ -769,7 +960,7 @@
         const overlay = new window.kakao.maps.CustomOverlay({
           position,
           yAnchor: 1.65,
-          content: `<button type="button" class="parking-map-label ev-map-label is-status-${item.statusTone || 'unknown'} ${index === 0 ? 'is-best' : ''} ${state.selectedId === item.id ? 'is-selected' : ''}" data-ev-map-id="${escapeHtml(item.id)}"><span class="parking-marker-rank">${index + 1}</span><span>${item.availableCount > 0 ? `가능 ${item.availableCount}` : '확인'}</span></button>`
+          content: renderMapLabelHtml(item, index)
         });
         overlay.setMap(state.map);
         state.mapOverlays.push(overlay);
@@ -784,7 +975,7 @@
     els.mapMarkers.innerHTML = `<div class="parking-destination-marker" style="left:50%; top:50%">목적지</div>` + list.slice(0, 18).map((item, index) => {
       const left = 18 + ((index * 17) % 68);
       const top = 18 + ((index * 29) % 62);
-      return `<button type="button" class="parking-map-label ev-map-label is-status-${item.statusTone || 'unknown'} ${index === 0 ? 'is-best' : ''} ${state.selectedId === item.id ? 'is-selected' : ''}" style="left:${left}%; top:${top}%" data-ev-map-id="${escapeHtml(item.id)}"><span class="parking-marker-rank">${index + 1}</span><span>${item.availableCount > 0 ? `가능 ${item.availableCount}` : '확인'}</span></button>`;
+      return renderMapLabelHtml(item, index, `left:${left}%; top:${top}%`);
     }).join('');
     els.mapMarkers.querySelectorAll('[data-ev-map-id]').forEach((button) => button.addEventListener('click', () => {
       const item = state.sortedStations.find((station) => station.id === button.dataset.evMapId);
@@ -1104,6 +1295,8 @@
   }
 
   function buildReason(item) {
+    if (item.sourceStationCount > 1 && item.availableCount > 0) return `같은 장소로 보이는 충전소 ${item.sourceStationCount}건을 묶어 사용 가능 충전기 ${item.availableCount}기를 표시합니다.`;
+    if (item.sourceStationCount > 1) return `같은 장소로 보이는 충전소 ${item.sourceStationCount}건을 묶어 표시합니다.`;
     if (item.availableCount > 0) return `현재 제공 데이터 기준 사용 가능 충전기 ${item.availableCount}기가 확인됩니다.`;
     if (item.chargingCount > 0) return '충전 중인 충전기가 있어 도착 시점의 상태 확인이 필요합니다.';
     if (item.troubleCount > 0) return '고장·점검 또는 통신 이상 상태가 포함되어 현장 확인이 필요합니다.';

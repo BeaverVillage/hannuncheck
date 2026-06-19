@@ -6,9 +6,9 @@
   const $$ = (selector) => Array.from(root.querySelectorAll(selector));
   const CLIENT_CACHE_TTL_MS = 5 * 60 * 1000;
   const CLIENT_CACHE_PREFIX = 'hannuncheck:ev-charger:v2:';
-  const LOCAL_EV_CACHE_VERSION = 'v1';
+  const LOCAL_EV_CACHE_VERSION = 'v2-split';
   const LOCAL_EV_DATA_BASE = '/assets/data/ev-chargers';
-  const LOCAL_EV_REGION_PREFIX = 'hannuncheck:ev-region:v1:';
+  const LOCAL_EV_REGION_PREFIX = 'hannuncheck:ev-region:v2:';
   const LOCAL_EV_REGION_TTL_MS = 24 * 60 * 60 * 1000;
   const LOCAL_EV_STATUS_REFRESH_DELAY_MS = 80;
   const ZCODE_BY_SIDO = { 서울: '11', 부산: '26', 대구: '27', 인천: '28', 광주: '29', 대전: '30', 울산: '31', 세종: '36', 경기: '41', 강원: '51', 충북: '43', 충남: '44', 전북: '52', 전남: '46', 경북: '47', 경남: '48', 제주: '50' };
@@ -72,7 +72,7 @@
   };
 
   const state = {
-    center: { lat: 37.4979, lng: 127.0276, name: '강남역', address: '서울 강남구 강남대로', sido: '서울' },
+    center: { lat: 37.4979, lng: 127.0276, name: '강남역', address: '서울 강남구 강남대로', sido: '서울', region2: '강남구', zscode: '11680' },
     places: [],
     stations: [],
     sortedStations: [],
@@ -314,7 +314,9 @@
       lng: Number(place.lng),
       name: place.name || '선택한 위치',
       address: place.address || place.roadAddress || '',
-      sido: place.region1 || inferSido(place.address || place.roadAddress)
+      sido: place.region1 || inferSido(place.address || place.roadAddress),
+      region2: place.region2 || inferDistrict(place.address || place.roadAddress),
+      zscode: place.zscode || ''
     };
     if (els.destination) els.destination.value = state.center.name;
     if (els.mapDestination) els.mapDestination.value = state.center.name;
@@ -406,7 +408,7 @@
   async function buildLocalChargerResult(radiusValue) {
     const radius = Number(radiusValue || 3000);
     const zcode = zcodeForSido(state.center.sido || inferSido(state.center.address));
-    const region = await loadEvRegionChunk(zcode);
+    const region = await loadEvRegionChunk(zcode, state.center);
     const stations = Array.isArray(region?.stations) ? region.stations : Array.isArray(region) ? region : [];
     if (!stations.length) return null;
     const center = { lat: Number(state.center.lat), lng: Number(state.center.lng) };
@@ -420,7 +422,7 @@
     return {
       ok: true,
       checkedAt: new Date().toISOString(),
-      center: { lat: center.lat, lng: center.lng, radius, sido: state.center.sido || SIDO_BY_ZCODE[zcode] || '선택 지역', zcode },
+      center: { lat: center.lat, lng: center.lng, radius, sido: state.center.sido || SIDO_BY_ZCODE[zcode] || '선택 지역', zcode, region2: state.center.region2 || '', zscode: region?.zscode || state.center.zscode || '' },
       cache: { hit: true, scope: 'local-static', ttlSeconds: Math.round(LOCAL_EV_REGION_TTL_MS / 1000), version: region?.version || LOCAL_EV_CACHE_VERSION },
       totalInRegion: stations.length,
       count: normalized.length,
@@ -429,18 +431,76 @@
     };
   }
 
-  async function loadEvRegionChunk(zcode) {
+  async function loadEvRegionChunk(zcode, center = {}) {
     const code = zcode || '11';
+    const index = await loadEvDataIndex();
+    const regionEntry = index?.chunks?.[code];
+    if (regionEntry?.split && regionEntry?.chunks) {
+      const preferredZscode = center.zscode || zscodeFromRegionEntry(regionEntry, center.region2 || inferDistrict(center.address));
+      const selectedEntries = [];
+      if (preferredZscode && regionEntry.chunks[preferredZscode]) {
+        selectedEntries.push([preferredZscode, regionEntry.chunks[preferredZscode]]);
+      } else {
+        selectedEntries.push(...Object.entries(regionEntry.chunks));
+      }
+      const memoryKey = `${LOCAL_EV_REGION_PREFIX}${code}:${preferredZscode || 'all'}`;
+      const memory = readClientCache(memoryKey);
+      if (memory?.data) return memory.data;
+      const payloads = await Promise.all(selectedEntries.map(([subCode, entry]) => loadEvChunkFile(entry.file || `chunks/${code}/${subCode}.json`)));
+      const stations = payloads.flatMap((payload) => Array.isArray(payload?.stations) ? payload.stations : Array.isArray(payload) ? payload : []);
+      if (!stations.length) throw new Error('전국 전기차 충전소 로컬 캐시가 비어 있습니다.');
+      const data = {
+        version: LOCAL_EV_CACHE_VERSION,
+        zcode: code,
+        zscode: preferredZscode || '',
+        regionName: regionEntry.name || SIDO_BY_ZCODE[code] || '선택 지역',
+        split: true,
+        selectedChunks: selectedEntries.map(([subCode]) => subCode),
+        stations
+      };
+      writeClientCache(memoryKey, data);
+      return data;
+    }
+
     const memoryKey = `${LOCAL_EV_REGION_PREFIX}${code}`;
     const memory = readClientCache(memoryKey);
     if (memory?.data) return memory.data;
-    const response = await fetch(`${LOCAL_EV_DATA_BASE}/chunks/${encodeURIComponent(code)}.json`, { cache: 'force-cache' });
-    if (!response.ok) throw new Error('전국 전기차 충전소 로컬 캐시가 아직 생성되지 않았습니다.');
-    const data = await response.json();
+    const data = await loadEvChunkFile(regionEntry?.file || `chunks/${code}.json`);
     const stations = Array.isArray(data?.stations) ? data.stations : Array.isArray(data) ? data : [];
     if (!stations.length) throw new Error('전국 전기차 충전소 로컬 캐시가 비어 있습니다.');
-    writeClientCache(memoryKey, { ...data, stations });
-    return { ...data, stations };
+    const payload = { ...data, stations };
+    writeClientCache(memoryKey, payload);
+    return payload;
+  }
+
+  async function loadEvDataIndex() {
+    const memoryKey = `${LOCAL_EV_REGION_PREFIX}index`;
+    const memory = readClientCache(memoryKey);
+    if (memory?.data) return memory.data;
+    const data = await loadEvJson('index.json');
+    writeClientCache(memoryKey, data);
+    return data;
+  }
+
+  async function loadEvChunkFile(file) {
+    return loadEvJson(file);
+  }
+
+  async function loadEvJson(path) {
+    const normalized = String(path || '').replace(/^\/+/, '');
+    const response = await fetch(`${LOCAL_EV_DATA_BASE}/${normalized}`, { cache: 'force-cache' });
+    if (!response.ok) throw new Error('전국 전기차 충전소 로컬 캐시가 아직 생성되지 않았습니다.');
+    return response.json();
+  }
+
+  function zscodeFromRegionEntry(regionEntry, districtName) {
+    const text = normalizeDistrictName(districtName);
+    if (!text || !regionEntry?.chunks) return '';
+    for (const [zscode, entry] of Object.entries(regionEntry.chunks)) {
+      const name = normalizeDistrictName(entry?.name || '');
+      if (name && (name === text || name.includes(text) || text.includes(name))) return zscode;
+    }
+    return '';
   }
 
   function normalizeLocalStation(station, center) {
@@ -770,7 +830,22 @@
   async function researchCurrentMapArea() {
     if (state.map && window.kakao?.maps) {
       const center = state.map.getCenter();
-      state.center = { lat: center.getLat(), lng: center.getLng(), name: '현재 지도 중심', address: '지도에서 다시 검색한 위치', sido: state.center.sido || '서울' };
+      const lat = center.getLat();
+      const lng = center.getLng();
+      let region = {};
+      try {
+        region = await fetchJson(`/api/kakao-local?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`, { timeoutMs: 5000 });
+      } catch (_) {}
+      const address = region?.addressName || '지도에서 다시 검색한 위치';
+      state.center = {
+        lat,
+        lng,
+        name: '현재 지도 중심',
+        address,
+        sido: region?.region1 || inferSido(address) || state.center.sido || '서울',
+        region2: region?.region2 || inferDistrict(address) || state.center.region2 || '',
+        zscode: ''
+      };
       if (els.destination) els.destination.value = state.center.name;
       if (els.mapDestination) els.mapDestination.value = state.center.name;
     }
@@ -1086,6 +1161,13 @@
     const token = String(address || '').trim().split(/\s+/)[0] || '서울';
     const map = { 서울특별시: '서울', 서울: '서울', 경기도: '경기', 부산광역시: '부산', 부산: '부산', 대구광역시: '대구', 대구: '대구', 인천광역시: '인천', 인천: '인천', 광주광역시: '광주', 광주: '광주', 대전광역시: '대전', 대전: '대전', 울산광역시: '울산', 울산: '울산', 세종특별자치시: '세종', 세종: '세종', 강원특별자치도: '강원', 강원도: '강원', 강원: '강원', 충청북도: '충북', 충북: '충북', 충청남도: '충남', 충남: '충남', 전북특별자치도: '전북', 전라북도: '전북', 전북: '전북', 전라남도: '전남', 전남: '전남', 경상북도: '경북', 경북: '경북', 경상남도: '경남', 경남: '경남', 제주특별자치도: '제주', 제주도: '제주', 제주: '제주' };
     return map[token] || token || '서울';
+  }
+  function inferDistrict(address) {
+    const parts = String(address || '').trim().split(/\s+/).filter(Boolean);
+    return parts[1] || '';
+  }
+  function normalizeDistrictName(value) {
+    return String(value || '').trim().replace(/^(경기도|경기)\s*/, '').replace(/\s+/g, '');
   }
   function distanceMeters(lat1, lng1, lat2, lng2) {
     if (![lat1, lng1, lat2, lng2].every(Number.isFinite)) return 0;

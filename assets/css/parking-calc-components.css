@@ -12108,3 +12108,197 @@ body {
     text-align: center !important;
   }
 }
+
+/* v54: 지도형 페이지 상단바·breadcrumb를 일반 기능 페이지와 완전히 동일하게 고정 */
+:root {
+  --hc-navy: #1e3a5f;
+  --hc-blue: #2563eb;
+  --hc-blue-dark: #1d4ed8;
+  --hc-blue-soft: #eff6ff;
+  --hc-blue-border: #bfdbfe;
+  --hc-border: #d8e2ee;
+  --hc-surface: #ffffff;
+  --hc-bg: #f3f7fb;
+  --hc-text: #0f172a;
+  --hc-muted: #64748b;
+  --hc-radius-pill: 999px;
+}
+
+body .site-header {
+  min-height: 66px !important;
+  padding: 14px max(16px, calc((100vw - 1120px) / 2)) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 24px !important;
+  background: rgba(243, 247, 251, 0.96) !important;
+  border-top: 0 !important;
+  border-bottom: 1px solid rgba(216, 226, 238, 0.92) !important;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02) !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+body .brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: max-content !important;
+  color: inherit !important;
+}
+
+body .brand-mark {
+  width: 38px !important;
+  height: 38px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #fff !important;
+  background: var(--hc-navy) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 22px rgba(30, 58, 95, 0.20) !important;
+  font-size: 1rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+body .brand strong {
+  color: var(--hc-text) !important;
+  font-size: 1.02rem !important;
+  font-weight: 900 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.02em !important;
+}
+
+body .brand small {
+  color: var(--hc-muted) !important;
+  font-size: 0.73rem !important;
+  font-weight: 650 !important;
+  line-height: 1.2 !important;
+}
+
+body .site-nav {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  width: auto !important;
+  margin-left: auto !important;
+}
+
+body .site-nav a,
+body .site-nav button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 38px !important;
+  padding: 7px 14px !important;
+  color: var(--hc-navy) !important;
+  background: #fff !important;
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-pill) !important;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04) !important;
+  font-size: 0.94rem !important;
+  font-weight: 850 !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+  text-decoration: none !important;
+}
+
+body .site-nav a:hover,
+body .site-nav button:hover,
+body .site-nav a:focus-visible,
+body .site-nav button:focus-visible {
+  color: var(--hc-blue) !important;
+  background: var(--hc-blue-soft) !important;
+  border-color: var(--hc-blue-border) !important;
+  outline: none !important;
+}
+
+body .breadcrumb,
+body nav.breadcrumb,
+body .map-tool-hero .container > .breadcrumb,
+body .parking-hero .container > .breadcrumb {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 0 18px !important;
+  padding: 0 !important;
+  color: var(--hc-muted) !important;
+  font-size: 0.92rem !important;
+  font-weight: 650 !important;
+  line-height: 1.4 !important;
+}
+
+body .breadcrumb a,
+body nav.breadcrumb a,
+body .map-tool-hero .container > .breadcrumb a,
+body .parking-hero .container > .breadcrumb a {
+  color: var(--hc-blue) !important;
+  font-weight: 850 !important;
+  text-decoration: none !important;
+}
+
+body .breadcrumb span,
+body nav.breadcrumb span,
+body .map-tool-hero .container > .breadcrumb span,
+body .parking-hero .container > .breadcrumb span {
+  color: var(--hc-muted) !important;
+}
+
+@media (max-width: 720px) {
+  body .site-header {
+    min-height: 58px !important;
+    padding: 10px 14px !important;
+    gap: 10px !important;
+    overflow: visible !important;
+  }
+
+  body .brand-mark {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 10px !important;
+    font-size: 0.92rem !important;
+  }
+
+  body .brand strong { font-size: 0.96rem !important; }
+  body .brand small { font-size: 0.66rem !important; }
+
+  body .site-nav {
+    display: grid !important;
+    grid-template-columns: repeat(3, max-content) !important;
+    gap: 6px !important;
+    width: auto !important;
+    margin-left: auto !important;
+    overflow: visible !important;
+  }
+
+  body .site-nav a,
+  body .site-nav button {
+    min-height: 34px !important;
+    padding: 6px 10px !important;
+    font-size: 0.83rem !important;
+    width: auto !important;
+  }
+}
+
+@media (max-width: 430px) {
+  body .site-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  body .brand { width: 100% !important; }
+
+  body .site-nav {
+    width: 100% !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  body .site-nav a,
+  body .site-nav button {
+    width: 100% !important;
+    padding-inline: 6px !important;
+    text-align: center !important;
+  }
+}

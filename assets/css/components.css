@@ -2862,3 +2862,242 @@ body.parking-place-popup-open {
     text-align: center;
   }
 }
+
+/* v54: 상단바·breadcrumb·미세먼지 콘솔을 기준 디자인으로 최종 통일 */
+:root {
+  --hc-navy: #1e3a5f;
+  --hc-blue: #2563eb;
+  --hc-blue-dark: #1d4ed8;
+  --hc-blue-soft: #eff6ff;
+  --hc-blue-border: #bfdbfe;
+  --hc-border: #d8e2ee;
+  --hc-surface: #ffffff;
+  --hc-bg: #f3f7fb;
+  --hc-text: #0f172a;
+  --hc-muted: #64748b;
+  --hc-radius-card: 28px;
+  --hc-radius-pill: 999px;
+  --hc-shadow-soft: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+body .site-header {
+  min-height: 66px;
+  padding: 14px max(16px, calc((100vw - 1120px) / 2));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: rgba(243, 247, 251, 0.96);
+  border-top: 0;
+  border-bottom: 1px solid rgba(216, 226, 238, 0.92);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+  backdrop-filter: blur(14px);
+}
+
+body .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: max-content;
+  color: inherit;
+}
+
+body .brand-mark {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--hc-navy);
+  border-radius: 12px;
+  box-shadow: 0 10px 22px rgba(30, 58, 95, 0.20);
+  font-size: 1rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+body .brand strong,
+body .brand small {
+  display: block;
+}
+
+body .brand strong {
+  color: var(--hc-text);
+  font-size: 1.02rem;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+body .brand small {
+  color: var(--hc-muted);
+  font-size: 0.73rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+body .site-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: auto;
+  margin-left: auto;
+}
+
+body .site-nav a,
+body .site-nav button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 7px 14px;
+  color: var(--hc-navy);
+  background: #fff;
+  border: 1px solid var(--hc-border);
+  border-radius: var(--hc-radius-pill);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+  font-size: 0.94rem;
+  font-weight: 850;
+  line-height: 1.1;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+body .site-nav a:hover,
+body .site-nav button:hover,
+body .site-nav a:focus-visible,
+body .site-nav button:focus-visible {
+  color: var(--hc-blue);
+  background: var(--hc-blue-soft);
+  border-color: var(--hc-blue-border);
+  outline: none;
+}
+
+body .breadcrumb,
+body nav.breadcrumb,
+body .map-tool-hero .container > .breadcrumb,
+body .parking-hero .container > .breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 0;
+  color: var(--hc-muted);
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+body .breadcrumb a,
+body nav.breadcrumb a,
+body .map-tool-hero .container > .breadcrumb a,
+body .parking-hero .container > .breadcrumb a {
+  color: var(--hc-blue);
+  font-weight: 850;
+  text-decoration: none;
+}
+
+body .breadcrumb span,
+body nav.breadcrumb span,
+body .map-tool-hero .container > .breadcrumb span,
+body .parking-hero .container > .breadcrumb span {
+  color: var(--hc-muted);
+}
+
+/* 미세먼지 기능 카드도 홈페이지 '자주 쓰는 기능' 콘솔과 같은 라운드 윈도우 톤으로 통일 */
+.outdoor-layout-v51 .outdoor-console,
+.outdoor-console.check-console {
+  border-radius: var(--hc-radius-card);
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--hc-blue-border);
+  box-shadow: var(--hc-shadow-soft);
+}
+
+.outdoor-layout-v51 .outdoor-console .console-header,
+.outdoor-console.check-console .console-header {
+  border-radius: var(--hc-radius-card) var(--hc-radius-card) 0 0;
+  padding: 18px 22px;
+  color: #fff;
+  background: var(--hc-navy);
+}
+
+.outdoor-layout-v51 .outdoor-form-v19 {
+  padding: 22px;
+}
+
+.outdoor-layout-v51 .preview-note {
+  border-radius: 18px;
+}
+
+.outdoor-layout-v51 .air-summary-panel {
+  padding: 0 22px 22px;
+}
+
+.outdoor-layout-v51 .notice-card,
+.outdoor-layout-v51 .api-status-card {
+  border-radius: 22px;
+  border: 1px solid var(--hc-blue-border);
+  box-shadow: var(--hc-shadow-soft);
+}
+
+@media (max-width: 720px) {
+  body .site-header {
+    min-height: 58px;
+    padding: 10px 14px;
+    gap: 10px;
+    overflow: visible;
+  }
+
+  body .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    font-size: 0.92rem;
+  }
+
+  body .brand strong { font-size: 0.96rem; }
+  body .brand small { font-size: 0.66rem; }
+
+  body .site-nav {
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
+    gap: 6px;
+    width: auto;
+    margin-left: auto;
+    overflow: visible;
+  }
+
+  body .site-nav a,
+  body .site-nav button {
+    min-height: 34px;
+    padding: 6px 10px;
+    font-size: 0.83rem;
+  }
+}
+
+@media (max-width: 430px) {
+  body .site-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  body .brand {
+    width: 100%;
+  }
+
+  body .site-nav {
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body .site-nav a,
+  body .site-nav button {
+    width: 100%;
+    padding-inline: 6px;
+    text-align: center;
+  }
+}

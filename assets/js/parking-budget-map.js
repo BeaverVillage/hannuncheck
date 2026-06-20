@@ -1345,14 +1345,43 @@ function bindResultCardEvents(container, els) {
 }
 
 function kakaoMapUrl(row) {
-  const url = row?.kakaoPlaceUrl || (row?.isKakaoLocalCandidate ? row?.sourceUrl : "");
-  if (!url) return "";
-  return /^https?:\/\/place\.map\.kakao\.com\//.test(url) || /^https?:\/\/map\.kakao\.com\//.test(url) ? url : "";
+  const link = kakaoMapLinkInfo(row);
+  return link.url;
+}
+
+function kakaoMapLinkInfo(row) {
+  const placeUrl = normalizeKakaoUrl(row?.kakaoPlaceUrl || (row?.isKakaoLocalCandidate ? row?.sourceUrl : "") || row?.place_url || row?.placeUrl || "");
+  if (placeUrl) {
+    return { url: placeUrl, label: "카카오맵 장소 바로가기", type: "place" };
+  }
+  const searchUrl = normalizeKakaoUrl(row?.kakaoSearchUrl || buildKakaoSearchUrl(row));
+  if (searchUrl) {
+    return { url: searchUrl, label: "카카오맵에서 검색하기", type: "search" };
+  }
+  return { url: "", label: "", type: "" };
+}
+
+function normalizeKakaoUrl(url) {
+  const value = String(url || "").trim();
+  if (!value) return "";
+  return /^https?:\/\/place\.map\.kakao\.com\//.test(value) || /^https?:\/\/map\.kakao\.com\//.test(value) ? value : "";
+}
+
+function buildKakaoSearchUrl(row) {
+  const query = buildKakaoSearchQuery(row);
+  return query ? `https://map.kakao.com/link/search/${encodeURIComponent(query)}` : "";
+}
+
+function buildKakaoSearchQuery(row) {
+  const name = String(row?.name || "").trim();
+  const address = String(row?.roadAddress || row?.jibunAddress || row?.address || "").trim();
+  const label = name && /주차/.test(name) ? name : [name, "주차장"].filter(Boolean).join(" " ).trim();
+  return [label, address].filter(Boolean).join(" " ).replace(/\s+/g, " " ).trim() || label || address;
 }
 
 function renderKakaoMapLink(row, className = "parking-kakao-map-link") {
-  const url = kakaoMapUrl(row);
-  return url ? `<a class="${className}" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">카카오맵 보기</a>` : "";
+  const link = kakaoMapLinkInfo(row);
+  return link.url ? `<a class="${className}" href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" data-kakao-map-link-type="${escapeHtml(link.type)}">${escapeHtml(link.label)}</a>` : "";
 }
 
 function renderResultCard(row) {

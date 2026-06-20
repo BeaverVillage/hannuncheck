@@ -214,3 +214,57 @@ v65 핵심 변경:
 - KAMIS에서 강한 매칭이 없으면 `openapi.price.go.kr/openApiImpl/ProductPriceInfoService`의 상품정보/생필품 가격정보를 사용합니다.
 - 참가격 보조 조회 결과는 `참가격 생필품 가격` 출처로 표시합니다.
 - 참가격 가격정보는 조사일과 판매점 기준 자료이므로 실제 매장 가격, 행사 가격, 판매 가능 여부와 차이가 있을 수 있습니다.
+
+## v66 주차비 확인 지도: 공공데이터 주차장 카카오맵 링크 로컬 캐시
+
+공공데이터 기반 주차장은 카카오 장소 ID가 없기 때문에, 사이트 런타임에서 카카오 Local API를 매번 호출하지 않고 로컬 캐시 JSON으로 장소 링크를 보강합니다.
+
+### 기본 동작
+
+- `kakaoPlaceUrl`이 있는 주차장: `카카오맵 장소 바로가기` 버튼을 표시합니다.
+- 정확 매칭 캐시가 없는 공공데이터 주차장: `카카오맵에서 검색하기` 버튼을 표시합니다.
+- 런타임에서는 `assets/data/parking/kakao-place-cache.json`만 읽고, 장소 링크 보강용 카카오 API 호출은 하지 않습니다.
+
+### 로컬 매칭 캐시 생성
+
+루트에 `.env.local`을 만들고 카카오 REST API 키를 넣습니다.
+
+```env
+KAKAO_REST_API_KEY=카카오_REST_API_키
+```
+
+처음에는 적은 개수로 테스트합니다.
+
+```bash
+node scripts/enrich-parking-kakao-places.js --limit=10
+node scripts/enrich-parking-kakao-places.js --region=대전 --limit=100
+```
+
+전체 매칭은 아래처럼 실행합니다.
+
+```bash
+node scripts/enrich-parking-kakao-places.js
+```
+
+실행 결과는 아래 파일에 저장됩니다.
+
+```txt
+assets/data/parking/kakao-place-cache.json
+```
+
+이 파일을 포함해서 배포하면, 정확 매칭된 공공데이터 주차장은 `카카오맵 장소 바로가기`로 표시되고, 매칭 실패 또는 불확실한 항목은 `카카오맵에서 검색하기`로 표시됩니다.
+
+### 옵션
+
+```bash
+node scripts/enrich-parking-kakao-places.js --limit=500
+node scripts/enrich-parking-kakao-places.js --region=서울 --limit=500
+node scripts/enrich-parking-kakao-places.js --force --limit=50
+node scripts/enrich-parking-kakao-places.js --dry-run --limit=10
+```
+
+- `--limit=N`: 이번 실행에서 새로 조회할 최대 주차장 수
+- `--region=대전`: 주소/지역 문자열에 해당 단어가 포함된 주차장만 처리
+- `--force`: 기존 매칭 캐시가 있어도 다시 조회
+- `--dry-run`: 결과 파일을 쓰지 않고 테스트
+

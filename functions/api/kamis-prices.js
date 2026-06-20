@@ -32,6 +32,27 @@ const REGION_CODES = {
   제주: '3911',
 };
 const WHOLESALE_REGION_CODES = new Set(['', '1101', '2100', '2200', '2401', '2501']);
+const NATIONAL_RETAIL_FALLBACK_REGIONS = [
+  ['1101', '서울'],
+  ['2100', '부산'],
+  ['2200', '대구'],
+  ['2300', '인천'],
+  ['2401', '광주'],
+  ['2501', '대전'],
+  ['2601', '울산'],
+  ['3111', '수원'],
+  ['3613', '순천'],
+  ['3714', '안동'],
+  ['3814', '창원'],
+  ['3911', '제주'],
+];
+const NATIONAL_WHOLESALE_FALLBACK_REGIONS = [
+  ['1101', '서울'],
+  ['2100', '부산'],
+  ['2200', '대구'],
+  ['2401', '광주'],
+  ['2501', '대전'],
+];
 const ITEM_CATEGORY_HINTS = {
   쌀: '100', 찹쌀: '100', 콩: '100', 팥: '100', 녹두: '100', 고구마: '100', 감자: '100',
   배추: '200', 양배추: '200', 시금치: '200', 상추: '200', 얼갈이배추: '200', 수박: '200', 참외: '200', 오이: '200', 호박: '200', 토마토: '200', 딸기: '200', 무: '200', 무우: '200', 당근: '200', 열무: '200', 건고추: '200', 풋고추: '200', 붉은고추: '200', 마늘: '200', 양파: '200', 파: '200', 대파: '200', 생강: '200', 미나리: '200', 깻잎: '200', 피망: '200', 파프리카: '200', 멜론: '200', 방울토마토: '200',
@@ -144,25 +165,52 @@ async function fetchKamisDaily({ certKey, certId, item, region, marketType, cate
     warnings.push(`${region} 지역은 KAMIS 도매가격 지역 조회가 제한되어 전체지역 기준으로 확인했습니다.`);
   }
 
-  const url = new URL(KAMIS_DAILY_ENDPOINT);
-  url.searchParams.set('p_cert_key', certKey);
-  url.searchParams.set('p_cert_id', certId);
-  url.searchParams.set('p_returntype', 'json');
-  url.searchParams.set('p_product_cls_code', marketInfo.code);
-  url.searchParams.set('p_item_category_code', category);
-  url.searchParams.set('p_convert_kg_yn', 'N');
-  if (requestCountryCode) url.searchParams.set('p_country_code', requestCountryCode);
-  if (regday) url.searchParams.set('p_regday', regday);
-
-  const data = await fetchKamisJson(url.toString());
-  const apiCondition = readCondition(data);
+  let data = await fetchKamisDailyPayload({
+    certKey,
+    certId,
+    marketCode: marketInfo.code,
+    category,
+    countryCode: requestCountryCode,
+    regday,
+  });
+  let apiCondition = readCondition(data);
   if (apiCondition.code && apiCondition.code !== '000') {
     throw new Error(apiCondition.message || `KAMIS API 오류가 발생했습니다. (${apiCondition.code})`);
   }
 
-  const rawRows = extractRows(data);
+  let rawRows = extractRows(data);
+  let effectiveRegion = region;
+  let fallbackUsed = false;
+
+  if (!rawRows.length && region === '전국') {
+    const fallbackRegions = marketType === 'wholesale' ? NATIONAL_WHOLESALE_FALLBACK_REGIONS : NATIONAL_RETAIL_FALLBACK_REGIONS;
+    for (const [fallbackCode, fallbackLabel] of fallbackRegions) {
+      const fallbackData = await fetchKamisDailyPayload({
+        certKey,
+        certId,
+        marketCode: marketInfo.code,
+        category,
+        countryCode: fallbackCode,
+        regday,
+      });
+      const fallbackCondition = readCondition(fallbackData);
+      if (fallbackCondition.code && fallbackCondition.code !== '000') continue;
+
+      const fallbackRows = extractRows(fallbackData);
+      if (!fallbackRows.length) continue;
+
+      data = fallbackData;
+      apiCondition = fallbackCondition;
+      rawRows = fallbackRows;
+      effectiveRegion = `${fallbackLabel} 기준`;
+      fallbackUsed = true;
+      warnings.push(`KAMIS 전국 기준 응답이 비어 있어 ${fallbackLabel} 지역 기준으로 확인했습니다.`);
+      break;
+    }
+  }
+
   const normalizedRows = rawRows
-    .map((row) => normalizeKamisRow(row, { marketType, marketLabel: marketInfo.label, region, category }))
+    .map((row) => normalizeKamisRow(row, { marketType, marketLabel: marketInfo.label, region: effectiveRegion, category }))
     .filter(hasItemIdentity);
   const matchedRows = normalizedRows.filter((row) => isItemMatch(row, item));
   const usableRows = matchedRows.filter(hasUsablePriceRow);
@@ -178,12 +226,27 @@ async function fetchKamisDaily({ certKey, certId, item, region, marketType, cate
     normalizedRows,
     matchedRows,
     usableRows,
+    fallbackUsed,
+    effectiveRegion,
   });
 
   if (matchedRows.length && !usableRows.length) {
     warnings.push('KAMIS에서 품목명은 확인됐지만 최근 가격 필드가 비어 있어 결과에서 제외했습니다.');
   }
   return { results: usableRows, warnings };
+}
+
+async function fetchKamisDailyPayload({ certKey, certId, marketCode, category, countryCode, regday }) {
+  const url = new URL(KAMIS_DAILY_ENDPOINT);
+  url.searchParams.set('p_cert_key', certKey);
+  url.searchParams.set('p_cert_id', certId);
+  url.searchParams.set('p_returntype', 'json');
+  url.searchParams.set('p_product_cls_code', marketCode);
+  url.searchParams.set('p_item_category_code', category);
+  url.searchParams.set('p_convert_kg_yn', 'N');
+  if (countryCode) url.searchParams.set('p_country_code', countryCode);
+  if (regday) url.searchParams.set('p_regday', regday);
+  return fetchKamisJson(url.toString());
 }
 
 async function fetchKamisJson(url) {
@@ -246,6 +309,15 @@ function collectPriceLikeRows(value, depth = 0) {
     }
   }
   if (nestedRows.length) return nestedRows;
+
+  const genericChildRows = [];
+  for (const [key, child] of Object.entries(value)) {
+    if (nestedKeys.includes(key)) continue;
+    if (child && typeof child === 'object') {
+      genericChildRows.push(...collectPriceLikeRows(child, depth + 1));
+    }
+  }
+  if (genericChildRows.length) return genericChildRows;
 
   return isPriceLikeRow(value) ? [value] : [];
 }
@@ -472,7 +544,7 @@ function formatPrice(number, fallback) {
   return text && text !== '-' ? text : '가격 정보 없음';
 }
 
-function logKamisDiagnostics({ item, region, marketType, category, condition, rawData, rawRows, normalizedRows, matchedRows, usableRows }) {
+function logKamisDiagnostics({ item, region, marketType, category, condition, rawData, rawRows, normalizedRows, matchedRows, usableRows, fallbackUsed = false, effectiveRegion = region }) {
   try {
     const firstRawRow = rawRows?.[0] || null;
     const firstMatchedRow = matchedRows?.[0] || null;
@@ -482,7 +554,11 @@ function logKamisDiagnostics({ item, region, marketType, category, condition, ra
       marketType,
       category,
       conditionCode: condition?.code || '',
+      fallbackUsed,
+      effectiveRegion,
       topLevelKeys: rawData && typeof rawData === 'object' ? Object.keys(rawData).slice(0, 20) : [],
+      dataShape: describeShape(rawData?.data),
+      priceShape: describeShape(rawData?.price),
       firstRawRowKeys: firstRawRow && typeof firstRawRow === 'object' ? Object.keys(firstRawRow).slice(0, 40) : [],
       extractedRowCount: rawRows?.length || 0,
       normalizedRowCount: normalizedRows?.length || 0,
@@ -501,6 +577,20 @@ function logKamisDiagnostics({ item, region, marketType, category, condition, ra
   } catch (error) {
     console.log('[KAMIS grocery diagnostics failed]', error?.message || error);
   }
+}
+
+function describeShape(value) {
+  if (Array.isArray(value)) {
+    const first = value[0];
+    return { type: 'array', length: value.length, firstKeys: first && typeof first === 'object' ? Object.keys(first).slice(0, 20) : [] };
+  }
+  if (value && typeof value === 'object') {
+    return { type: 'object', keys: Object.keys(value).slice(0, 30) };
+  }
+  if (typeof value === 'string') {
+    return { type: 'string', length: value.length, preview: value.slice(0, 120) };
+  }
+  return { type: value === null ? 'null' : typeof value };
 }
 
 function buildChange(current, past) {

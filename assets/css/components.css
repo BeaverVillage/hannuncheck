@@ -2353,3 +2353,318 @@ body.parking-place-popup-open {
     line-height: 1.55;
   }
 }
+
+/* v50: 한눈체크 공통 UI 토큰·상단바·버튼 톤 통일 */
+:root {
+  --hc-navy: #1e3a5f;
+  --hc-navy-dark: #172e4a;
+  --hc-blue: #2563eb;
+  --hc-blue-dark: #1d4ed8;
+  --hc-blue-soft: #eff6ff;
+  --hc-blue-border: #bfdbfe;
+  --hc-surface: #ffffff;
+  --hc-bg: #f3f7fb;
+  --hc-text: #0f172a;
+  --hc-muted: #64748b;
+  --hc-border: #d8e2ee;
+  --hc-shadow-soft: 0 12px 32px rgba(15, 23, 42, 0.08);
+  --hc-radius-pill: 999px;
+  --hc-radius-card: 20px;
+}
+
+.site-header {
+  min-height: 66px;
+  gap: 18px;
+  background: rgba(243, 247, 251, 0.96);
+  border-bottom: 1px solid rgba(216, 226, 238, 0.92);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+}
+
+.brand {
+  gap: 10px;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--hc-navy);
+  box-shadow: 0 10px 22px rgba(30, 58, 95, 0.20);
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.brand strong {
+  color: var(--hc-text);
+  font-size: 1.02rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.brand small {
+  color: var(--hc-muted);
+  font-size: 0.73rem;
+  font-weight: 650;
+}
+
+.site-nav {
+  gap: 8px;
+}
+
+.site-nav a,
+.site-nav button {
+  min-height: 38px;
+  padding: 7px 14px;
+  color: var(--hc-navy);
+  background: var(--hc-surface);
+  border: 1px solid var(--hc-border);
+  border-radius: var(--hc-radius-pill);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+  font-size: 0.94rem;
+  font-weight: 850;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.site-nav a:hover,
+.site-nav button:hover,
+.site-nav a:focus-visible,
+.site-nav button:focus-visible {
+  color: var(--hc-blue);
+  background: var(--hc-blue-soft);
+  border-color: var(--hc-blue-border);
+  outline: none;
+}
+
+.primary-link,
+.submit-button,
+.primary-button {
+  background: var(--hc-blue);
+  border-color: var(--hc-blue);
+  color: #fff;
+  font-weight: 950;
+}
+
+.primary-link:hover,
+.submit-button:hover,
+.primary-button:hover {
+  background: var(--hc-blue-dark);
+  border-color: var(--hc-blue-dark);
+}
+
+.secondary-link,
+.ghost-link,
+.secondary-action-button {
+  color: var(--hc-navy);
+  background: #fff;
+  border-color: var(--hc-border);
+  font-weight: 850;
+}
+
+.secondary-link:hover,
+.ghost-link:hover,
+.secondary-action-button:hover {
+  color: var(--hc-blue);
+  background: var(--hc-blue-soft);
+  border-color: var(--hc-blue-border);
+}
+
+@media (max-width: 720px) {
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 80;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 58px;
+    padding: 10px 14px;
+    overflow: visible;
+  }
+
+  .brand {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    font-size: 0.92rem;
+  }
+
+  .brand strong {
+    font-size: 0.96rem;
+  }
+
+  .brand small {
+    display: block;
+    font-size: 0.66rem;
+  }
+
+  .site-nav {
+    width: auto;
+    margin-left: auto;
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
+    gap: 6px;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .site-nav a,
+  .site-nav button {
+    min-height: 34px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.83rem;
+    line-height: 1.1;
+  }
+}
+
+@media (max-width: 430px) {
+  .site-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .brand {
+    width: 100%;
+  }
+
+  .site-nav {
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .site-nav a,
+  .site-nav button {
+    width: 100%;
+    padding-inline: 6px;
+    text-align: center;
+  }
+}
+
+/* v51: 미세먼지·외출 체크 입력 레이아웃 재정리 */
+.outdoor-layout-v51 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.outdoor-layout-v51 .outdoor-console {
+  width: 100%;
+  overflow: visible;
+}
+
+.outdoor-layout-v51 .outdoor-form-v19 {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+}
+
+.outdoor-layout-v51 .outdoor-search-panel {
+  display: grid;
+  grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.outdoor-layout-v51 .outdoor-action-panel {
+  display: grid;
+  grid-template-columns: minmax(150px, 190px) minmax(0, 1fr) minmax(180px, auto);
+  gap: 12px;
+  align-items: end;
+}
+
+.outdoor-layout-v51 .outdoor-action-panel .form-row,
+.outdoor-layout-v51 .outdoor-search-panel .form-row {
+  min-width: 0;
+}
+
+.outdoor-layout-v51 .outdoor-search-panel select,
+.outdoor-layout-v51 .outdoor-search-panel input,
+.outdoor-layout-v51 .outdoor-action-panel select,
+.outdoor-layout-v51 .outdoor-action-panel button,
+.outdoor-layout-v51 .air-search-box button {
+  min-width: 0;
+  width: 100%;
+  min-height: 54px;
+}
+
+.outdoor-layout-v51 .air-search-box {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(112px, auto);
+  gap: 10px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.outdoor-layout-v51 .preview-note {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #eef6ff;
+  border: 1px solid var(--hc-blue-border, #bfdbfe);
+  color: var(--hc-navy, #1e3a5f);
+  line-height: 1.55;
+}
+
+.outdoor-layout-v51 .air-summary-panel {
+  padding: 0 24px 24px;
+}
+
+.outdoor-layout-v51 .outdoor-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.outdoor-layout-v51 .outdoor-info-grid > * {
+  height: 100%;
+}
+
+.outdoor-layout-v51 .notice-card,
+.outdoor-layout-v51 .api-status-card {
+  box-shadow: var(--hc-shadow-soft, 0 12px 32px rgba(15, 23, 42, 0.08));
+}
+
+@media (max-width: 980px) {
+  .outdoor-layout-v51 .outdoor-search-panel,
+  .outdoor-layout-v51 .outdoor-action-panel,
+  .outdoor-layout-v51 .outdoor-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .outdoor-layout-v51 .outdoor-form-v19 {
+    padding: 20px;
+  }
+
+  .outdoor-layout-v51 .air-summary-panel {
+    padding: 0 20px 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .outdoor-layout-v51 .outdoor-form-v19 {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .outdoor-layout-v51 .air-search-box {
+    grid-template-columns: 1fr;
+  }
+
+  .outdoor-layout-v51 .air-summary-panel {
+    padding: 0 16px 16px;
+  }
+
+  .outdoor-layout-v51 .preview-note {
+    padding: 13px 14px;
+    font-size: 0.9rem;
+  }
+}

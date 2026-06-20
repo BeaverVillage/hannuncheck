@@ -17,7 +17,7 @@
     <meta property="og:url" content="https://hannuncheck.com/tools/outdoor-air.html">
     <link rel="stylesheet" href="/assets/css/base.css">
     <link rel="stylesheet" href="/assets/css/layout.css">
-    <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/components.css?v=51">
       <script data-schema="faqpage" type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"미세먼지·외출 체크는 무엇을 확인하나요?","acceptedAnswer":{"@type":"Answer","text":"지역별 미세먼지, 초미세먼지, 오존, 통합대기환경지수와 기상특보를 함께 확인하고 외출 목적별 참고 포인트를 정리합니다."}},{"@type":"Question","name":"PM10과 PM2.5는 어떻게 다른가요?","acceptedAnswer":{"@type":"Answer","text":"PM10은 미세먼지, PM2.5는 초미세먼지입니다. PM2.5는 입자가 더 작아 민감군이나 야외활동 전 별도로 확인하는 것이 좋습니다."}},{"@type":"Question","name":"장소 검색을 하면 지역이 자동으로 바뀌나요?","acceptedAnswer":{"@type":"Answer","text":"장소 검색 결과의 주소에서 시·도를 판별해 기존 지역 선택값을 자동으로 바꿉니다. 사용자는 이후 직접 다른 지역으로 다시 변경할 수 있습니다."}},{"@type":"Question","name":"이 결과가 건강 판단을 대신하나요?","acceptedAnswer":{"@type":"Answer","text":"아닙니다. 공개 대기질·기상특보 기준의 참고 자료이며, 개인 건강 상태나 질환에 대한 의학적 판단을 대신하지 않습니다."}},{"@type":"Question","name":"같은 지역 안에서도 실제 대기질이 다를 수 있나요?","acceptedAnswer":{"@type":"Answer","text":"네. 관측소 위치, 지형, 도로, 시간대, 실내외 환경에 따라 실제 체감 대기질이 달라질 수 있습니다."}}]}</script>
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6340743169950430"
@@ -37,16 +37,19 @@
       </section>
 
       <section class="content-band tool-content-band">
-        <div class="container outdoor-layout" id="outdoor-air-tool">
+        <div class="container outdoor-layout outdoor-layout-v51" id="outdoor-air-tool">
           <article class="check-console tool-console outdoor-console">
             <div class="console-header"><span class="console-dots" aria-hidden="true"><span></span><span></span><span></span></span><strong>외출 전 확인</strong></div>
             <form class="outdoor-form outdoor-form-v19" id="outdoor-air-form">
               <div class="outdoor-search-panel">
                 <div class="form-row air-region-field"><label for="air-sido">지역</label><select id="air-sido"><option>서울</option><option>부산</option><option>대구</option><option>인천</option><option>광주</option><option>대전</option><option>울산</option><option>세종</option><option>경기</option><option>강원</option><option>충북</option><option>충남</option><option>전북</option><option>전남</option><option>경북</option><option>경남</option><option>제주</option></select></div>
                 <div class="form-row air-place-field"><label for="air-place-query">장소 검색</label><div class="inline-input-button air-search-box"><input id="air-place-query" type="search" placeholder="예: 한밭대, 강남역, 해운대"><button type="button" class="secondary-action-button" id="air-place-search">지역 찾기</button></div><small>카카오 장소 검색 결과에서 후보를 선택하면 주소의 시·도를 자동으로 맞춥니다.</small></div>
-                <div class="form-row air-purpose-field"><label for="air-purpose">확인 목적</label><select id="air-purpose"><option value="commute">출근·등교</option><option value="child">아이 외출</option><option value="exercise">운동</option><option value="walk" selected>산책</option><option value="drive">운전</option></select></div>
               </div>
-              <div class="pc-action-row outdoor-actions"><button class="submit-button" type="submit">외출 체크하기</button><button class="secondary-action-button" type="button" id="air-current-location">현재 위치로 확인</button></div>
+              <div class="outdoor-action-panel">
+                <div class="form-row air-purpose-field"><label for="air-purpose">확인 목적</label><select id="air-purpose"><option value="commute">출근·등교</option><option value="child">아이 외출</option><option value="exercise">운동</option><option value="walk" selected>산책</option><option value="drive">운전</option></select></div>
+                <button class="submit-button" type="submit">외출 체크하기</button>
+                <button class="secondary-action-button" type="button" id="air-current-location">현재 위치로 확인</button>
+              </div>
               <p class="preview-note" id="air-status" aria-live="polite">지역을 직접 선택하거나 장소를 검색하면 해당 시·도 기준으로 외출 정보를 확인합니다.</p>
             </form>
 
@@ -57,7 +60,7 @@
             </section>
           </article>
 
-          <aside class="tool-sidebar">
+          <aside class="tool-sidebar outdoor-info-grid">
             <div class="notice-card blue"><p class="eyebrow">확인 기준</p><h2>외출 목적별로 다르게 해석합니다</h2><p>같은 대기질이라도 출근·등교, 아이 외출, 운동, 산책, 운전 목적에 따라 확인해야 할 포인트가 달라집니다.</p></div>
             <div class="notice-card warning"><p class="eyebrow">주의</p><h2>건강 판단을 대신하지 않습니다</h2><p>호흡기 질환, 알레르기, 증상, 민감군 여부에 대한 판단은 의료 전문가 또는 공식 안내를 우선 확인해야 합니다.</p></div>
             <div class="api-status-card"><h3>데이터 출처</h3><p>한국환경공단 에어코리아 대기오염정보와 기상청 기상특보 조회서비스를 기준으로 확인합니다.</p></div>
@@ -72,6 +75,6 @@
     </main>
     <footer class="site-footer"><div class="container footer-grid"><div class="footer-note"><strong>한눈체크</strong><p>생활 속에서 확인이 필요한 정보를 한눈에 정리하고, 결과의 의미와 한계를 함께 설명하는 생활 확인 도구입니다.</p></div><nav aria-label="푸터 메뉴"><a href="/about.html">소개</a><a href="/privacy.html">개인정보처리방침</a><a href="/disclaimer.html">면책 안내</a><a href="/data-sources.html">데이터 출처</a><a href="/contact.html">문의·정정 요청</a></nav></div></footer>
     <script src="/assets/js/app.js"></script>
-    <script src="/assets/js/outdoor-air.js?v=48" defer></script>
+    <script src="/assets/js/outdoor-air.js?v=51" defer></script>
   </body>
 </html>

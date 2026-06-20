@@ -12302,3 +12302,22 @@ body .parking-hero .container > .breadcrumb span {
     text-align: center !important;
   }
 }
+
+
+/* v67 parking popup compact Kakao link labels/layout */
+@media (min-width: 861px) {
+  .parking-map-popup__selected-row {
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 0.36rem !important;
+  }
+
+  .parking-map-popup__selected-row .parking-pinned-badge,
+  .parking-map-popup__selected-row .parking-kakao-map-link {
+    white-space: nowrap !important;
+  }
+
+  .parking-map-popup__selected-row .parking-kakao-map-link {
+    flex: 0 0 auto !important;
+  }
+}

@@ -1352,11 +1352,11 @@ function kakaoMapUrl(row) {
 function kakaoMapLinkInfo(row) {
   const placeUrl = normalizeKakaoUrl(row?.kakaoPlaceUrl || (row?.isKakaoLocalCandidate ? row?.sourceUrl : "") || row?.place_url || row?.placeUrl || "");
   if (placeUrl) {
-    return { url: placeUrl, label: "카카오맵 장소 바로가기", type: "place" };
+    return { url: placeUrl, label: "카카오맵 바로가기", type: "place" };
   }
   const searchUrl = normalizeKakaoUrl(row?.kakaoSearchUrl || buildKakaoSearchUrl(row));
   if (searchUrl) {
-    return { url: searchUrl, label: "카카오맵에서 검색하기", type: "search" };
+    return { url: searchUrl, label: "카카오맵 검색", type: "search" };
   }
   return { url: "", label: "", type: "" };
 }

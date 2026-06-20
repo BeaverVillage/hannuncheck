@@ -87,22 +87,24 @@
       return;
     }
     if (!data.results?.length) {
+      const warningItems = (data.warnings || []).filter(Boolean).map((item) => `<li>${escape(item)}</li>`).join('');
       els.result.innerHTML = `
-        <article class="grocery-placeholder-card grocery-empty-card">
+        <article class="grocery-placeholder-card grocery-empty-card grocery-empty-card-compact">
           <div class="grocery-result-head compact">
             <div>
               <p class="eyebrow">KAMIS 조회 결과</p>
-              <h2>조회 가능한 가격정보를 찾지 못했습니다</h2>
-              <p>해당 품목·지역·시장 유형 조합에 제공 자료가 없거나 품목명이 KAMIS 표기와 다를 수 있습니다.</p>
+              <h2>${escape(data.item || '선택 품목')} 가격정보를 찾지 못했습니다</h2>
+              <p>KAMIS에서 현재 조건의 실제 가격값을 확인하지 못했습니다. 전국 기준 또는 다른 시장 유형으로 다시 확인해 주세요.</p>
             </div>
             <span class="grocery-change-pill tone-unknown">자료 없음</span>
           </div>
+          ${warningItems ? `<ul class="grocery-warning-list compact">${warningItems}</ul>` : ''}
           <div class="grocery-action-pills">
             <button type="button" data-grocery-action="national">전국 기준 보기</button>
             <button type="button" data-grocery-action="choose-item">품목 다시 선택</button>
           </div>
         </article>`;
-      setStatus('조회 가능한 가격정보를 찾지 못했습니다. 전국 기준이나 다른 품목명으로 다시 확인해 주세요.');
+      setStatus(`${data.item || '선택 품목'} 가격값을 찾지 못했습니다. 전국 기준이나 다른 품목명으로 다시 확인해 주세요.`);
       return;
     }
 

@@ -3456,7 +3456,7 @@ body .parking-hero .container > .breadcrumb span {
   }
 }
 
-/* v58: Grocery KAMIS parser fix support + compact full-width layout */
+/* v59: Grocery KAMIS usable-price validation + compact full-width layout */
 .grocery-tool-layout {
   grid-template-columns: minmax(0, 1fr);
   gap: 22px;
@@ -3577,6 +3577,16 @@ body .parking-hero .container > .breadcrumb span {
 .grocery-empty-card {
   display: grid;
   gap: 14px;
+}
+
+.grocery-empty-card-compact {
+  padding: 18px;
+}
+.grocery-warning-list.compact {
+  margin: 0;
+  padding: 10px 14px 10px 30px;
+  border-radius: 14px;
+  font-size: 0.9rem;
 }
 .grocery-change-pill.tone-unknown {
   border-color: #e2e8f0;

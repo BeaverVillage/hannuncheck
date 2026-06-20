@@ -159,11 +159,31 @@ async function fetchKamisDaily({ certKey, certId, item, region, marketType, cate
   if (apiCondition.code && apiCondition.code !== '000') {
     throw new Error(apiCondition.message || `KAMIS API 오류가 발생했습니다. (${apiCondition.code})`);
   }
-  const rows = extractRows(data)
+
+  const rawRows = extractRows(data);
+  const normalizedRows = rawRows
     .map((row) => normalizeKamisRow(row, { marketType, marketLabel: marketInfo.label, region, category }))
-    .filter((row) => row.itemName || row.kindName || Number.isFinite(row.price));
-  const matched = rows.filter((row) => isItemMatch(row, item));
-  return { results: matched, warnings };
+    .filter(hasItemIdentity);
+  const matchedRows = normalizedRows.filter((row) => isItemMatch(row, item));
+  const usableRows = matchedRows.filter(hasUsablePriceRow);
+
+  logKamisDiagnostics({
+    item,
+    region,
+    marketType,
+    category,
+    condition: apiCondition,
+    rawData: data,
+    rawRows,
+    normalizedRows,
+    matchedRows,
+    usableRows,
+  });
+
+  if (matchedRows.length && !usableRows.length) {
+    warnings.push('KAMIS에서 품목명은 확인됐지만 최근 가격 필드가 비어 있어 결과에서 제외했습니다.');
+  }
+  return { results: usableRows, warnings };
 }
 
 async function fetchKamisJson(url) {
@@ -181,10 +201,10 @@ async function fetchKamisJson(url) {
 }
 
 function readCondition(data) {
-  const condition = data?.condition || data?.response?.condition || null;
+  const condition = data?.condition || data?.response?.condition || data?.data?.condition || null;
   const first = Array.isArray(condition) ? condition[0] : condition;
-  const code = String(first?.code || first?.CODE || '').trim();
-  const message = String(first?.message || first?.Message || first?.msg || '').trim();
+  const code = String(first?.code || first?.CODE || data?.error_code || data?.data?.error_code || '').trim();
+  const message = String(first?.message || first?.Message || first?.msg || data?.error_msg || data?.data?.error_msg || '').trim();
   if (!code && typeof data?.error === 'string') return { code: 'error', message: data.error };
   return { code, message };
 }
@@ -212,49 +232,51 @@ function extractRows(data) {
 }
 
 function collectPriceLikeRows(value, depth = 0) {
-  if (!value || depth > 4) return [];
+  if (!value || depth > 5) return [];
   if (Array.isArray(value)) {
     return value.flatMap((entry) => collectPriceLikeRows(entry, depth + 1));
   }
   if (typeof value !== 'object') return [];
-  if (isPriceLikeRow(value)) return [value];
 
   const nestedKeys = ['price', 'prices', 'data', 'list', 'result', 'rows', 'row', 'items', 'item', 'body'];
-  const rows = [];
+  const nestedRows = [];
   for (const key of nestedKeys) {
     if (Object.prototype.hasOwnProperty.call(value, key)) {
-      rows.push(...collectPriceLikeRows(value[key], depth + 1));
+      nestedRows.push(...collectPriceLikeRows(value[key], depth + 1));
     }
   }
-  return rows;
+  if (nestedRows.length) return nestedRows;
+
+  return isPriceLikeRow(value) ? [value] : [];
 }
 
 function isPriceLikeRow(row) {
   if (!row || typeof row !== 'object') return false;
-  const item = row.item_name || row.itemName || row.itemname || row.ITEM_NAME || row.productName || row.product_name || row.product_name_kor || row['품목명'];
-  const kind = row.kind_name || row.kindName || row.kindname || row.KIND_NAME || row.kind || row.variety_name || row['품종명'];
-  const unit = row.unit || row.UNIT || row.unit_name || row['단위'];
-  const price = row.dpr1 || row.price || row.PRICE || row.latest_price || row.latestPrice || row['가격'];
-  return Boolean(item || kind || unit || price);
+  const item = firstValue(row, ITEM_NAME_KEYS);
+  const kind = firstValue(row, KIND_NAME_KEYS);
+  const unit = firstValue(row, UNIT_KEYS);
+  const price = firstValue(row, PRICE_KEYS);
+  const day = firstValue(row, DAY_KEYS);
+  return Boolean(item || kind || unit || price || day);
 }
 
 function normalizeKamisRow(row, meta) {
-  const priceRaw = firstValue(row, ['dpr1', 'price', 'PRICE', 'latest_price', 'latestPrice', '가격']);
+  const priceRaw = firstValue(row, PRICE_KEYS);
   const price = parsePrice(priceRaw);
-  const weekAgo = parsePrice(firstValue(row, ['dpr3', 'weekAgo', 'week_ago']));
-  const monthAgo = parsePrice(firstValue(row, ['dpr5', 'monthAgo', 'month_ago']));
-  const oneDayAgo = parsePrice(firstValue(row, ['dpr2', 'oneDayAgo', 'one_day_ago']));
-  const yearAgo = parsePrice(firstValue(row, ['dpr6', 'yearAgo', 'year_ago']));
-  const average = parsePrice(firstValue(row, ['dpr7', 'average', 'avg_price']));
+  const weekAgo = parsePrice(firstValue(row, WEEK_PRICE_KEYS));
+  const monthAgo = parsePrice(firstValue(row, MONTH_PRICE_KEYS));
+  const oneDayAgo = parsePrice(firstValue(row, ONE_DAY_PRICE_KEYS));
+  const yearAgo = parsePrice(firstValue(row, YEAR_PRICE_KEYS));
+  const average = parsePrice(firstValue(row, AVERAGE_PRICE_KEYS));
   const weekChange = buildChange(price, weekAgo);
   const monthChange = buildChange(price, monthAgo);
-  const itemName = clean(firstValue(row, ['item_name', 'itemName', 'itemname', 'ITEM_NAME', 'productName', 'product_name', 'product_name_kor', '품목명']), 40);
-  const kindName = clean(firstValue(row, ['kind_name', 'kindName', 'kindname', 'KIND_NAME', 'kind', 'variety_name', '품종명']), 40);
-  const itemCode = clean(firstValue(row, ['itemcode', 'item_code', 'itemCode', 'ITEM_CODE', 'productno', 'product_no']), 20);
-  const kindCode = clean(firstValue(row, ['kindcode', 'kind_code', 'kindCode', 'KIND_CODE']), 20);
-  const rank = clean(firstValue(row, ['rank', 'product_rank_name', 'RANK', 'rank_name', 'productRankName', '등급']), 20);
-  const unit = clean(firstValue(row, ['unit', 'UNIT', 'unit_name', '단위']), 30);
-  const day = clean(firstValue(row, ['day1', 'regday', 'REGDAY', 'lastest_day', 'latest_day', 'date', '조사일']), 20);
+  const itemName = clean(firstValue(row, ITEM_NAME_KEYS), 40);
+  const kindName = clean(firstValue(row, KIND_NAME_KEYS), 40);
+  const itemCode = clean(firstValue(row, ITEM_CODE_KEYS), 20);
+  const kindCode = clean(firstValue(row, KIND_CODE_KEYS), 20);
+  const rank = clean(firstValue(row, RANK_KEYS), 20);
+  const unit = clean(firstValue(row, UNIT_KEYS), 30);
+  const day = clean(firstValue(row, DAY_KEYS), 20);
   return {
     id: [meta.marketType, meta.category, itemCode, kindCode, rank, unit, day].map((v) => String(v || '')).join('-'),
     marketType: meta.marketType,
@@ -280,6 +302,14 @@ function normalizeKamisRow(row, meta) {
     monthChange,
     raw: row,
   };
+}
+
+function hasItemIdentity(row) {
+  return Boolean(row?.itemName || row?.kindName);
+}
+
+function hasUsablePriceRow(row) {
+  return Boolean(hasItemIdentity(row) && Number.isFinite(row.price));
 }
 
 function compareResult(a, b) {
@@ -380,18 +410,59 @@ function normalizeDate(value) {
 }
 
 
+const ITEM_NAME_KEYS = ['item_name', 'itemName', 'itemname', 'ITEM_NAME', 'productName', 'product_name', 'product_name_kor', 'productname', '품목명', '품목', 'item'];
+const KIND_NAME_KEYS = ['kind_name', 'kindName', 'kindname', 'KIND_NAME', 'kind', 'variety_name', 'varietyName', 'kindnm', '품종명', '품종', '규격'];
+const ITEM_CODE_KEYS = ['itemcode', 'item_code', 'itemCode', 'ITEM_CODE', 'productno', 'product_no', 'productNo', '품목코드'];
+const KIND_CODE_KEYS = ['kindcode', 'kind_code', 'kindCode', 'KIND_CODE', 'kindno', 'kind_no', '품종코드'];
+const RANK_KEYS = ['rank', 'product_rank_name', 'productRankName', 'rank_name', 'RANK', '등급'];
+const UNIT_KEYS = ['unit', 'UNIT', 'unit_name', 'unitName', 'units', '단위', '거래단위'];
+const DAY_KEYS = ['day1', 'DAY1', 'regday', 'REGDAY', 'latest_day', 'latestDay', 'lastest_day', 'date', 'base_date', 'baseDate', '조사일', '기준일'];
+const PRICE_KEYS = ['dpr1', 'DPR1', 'dpr_1', 'price', 'PRICE', 'price_value', 'priceValue', 'latest_price', 'latestPrice', 'recent_price', 'recentPrice', 'amount', 'amt', 'value', '조사가격', '가격', '최근가격'];
+const ONE_DAY_PRICE_KEYS = ['dpr2', 'DPR2', 'dpr_2', 'oneDayAgo', 'one_day_ago', 'previous_price', 'previousPrice', '전일가격'];
+const WEEK_PRICE_KEYS = ['dpr3', 'DPR3', 'dpr_3', 'weekAgo', 'week_ago', 'oneWeekAgo', 'one_week_ago', '전주가격'];
+const MONTH_PRICE_KEYS = ['dpr5', 'DPR5', 'dpr_5', 'monthAgo', 'month_ago', 'oneMonthAgo', 'one_month_ago', '전월가격'];
+const YEAR_PRICE_KEYS = ['dpr6', 'DPR6', 'dpr_6', 'yearAgo', 'year_ago', 'oneYearAgo', 'one_year_ago', '전년가격'];
+const AVERAGE_PRICE_KEYS = ['dpr7', 'DPR7', 'dpr_7', 'average', 'avg_price', 'avgPrice', '평균가격', '평년가격'];
+
 function firstValue(row, keys) {
+  if (!row || typeof row !== 'object') return '';
   for (const key of keys) {
-    const value = row?.[key];
-    if (value !== undefined && value !== null && String(value).trim() !== '') return value;
+    const value = row[key];
+    if (isPresentValue(value)) return value;
+  }
+
+  const normalizedMap = getNormalizedKeyMap(row);
+  for (const key of keys) {
+    const actualKey = normalizedMap.get(normalizeKey(key));
+    if (!actualKey) continue;
+    const value = row[actualKey];
+    if (isPresentValue(value)) return value;
   }
   return '';
 }
 
+function getNormalizedKeyMap(row) {
+  const map = new Map();
+  for (const key of Object.keys(row || {})) {
+    map.set(normalizeKey(key), key);
+  }
+  return map;
+}
+
+function normalizeKey(value) {
+  return String(value || '').replace(/[\s_\-\.]/g, '').toLowerCase();
+}
+
+function isPresentValue(value) {
+  return value !== undefined && value !== null && String(value).trim() !== '';
+}
+
 function parsePrice(value) {
-  const text = String(value ?? '').replace(/,/g, '').replace(/원/g, '').trim();
-  if (!text || text === '-' || text.toLowerCase() === 'null') return null;
-  const number = Number(text);
+  const text = String(value ?? '').replace(/원/g, '').trim();
+  if (!text || text === '-' || text.toLowerCase() === 'null' || text === '가격 정보 없음') return null;
+  const matched = text.match(/-?\d[\d,]*(?:\.\d+)?/);
+  if (!matched) return null;
+  const number = Number(matched[0].replace(/,/g, ''));
   return Number.isFinite(number) ? number : null;
 }
 
@@ -399,6 +470,37 @@ function formatPrice(number, fallback) {
   if (Number.isFinite(number)) return `${number.toLocaleString('ko-KR')}원`;
   const text = String(fallback || '').trim();
   return text && text !== '-' ? text : '가격 정보 없음';
+}
+
+function logKamisDiagnostics({ item, region, marketType, category, condition, rawData, rawRows, normalizedRows, matchedRows, usableRows }) {
+  try {
+    const firstRawRow = rawRows?.[0] || null;
+    const firstMatchedRow = matchedRows?.[0] || null;
+    console.log('[KAMIS grocery diagnostics]', {
+      item,
+      region,
+      marketType,
+      category,
+      conditionCode: condition?.code || '',
+      topLevelKeys: rawData && typeof rawData === 'object' ? Object.keys(rawData).slice(0, 20) : [],
+      firstRawRowKeys: firstRawRow && typeof firstRawRow === 'object' ? Object.keys(firstRawRow).slice(0, 40) : [],
+      extractedRowCount: rawRows?.length || 0,
+      normalizedRowCount: normalizedRows?.length || 0,
+      matchedRowCount: matchedRows?.length || 0,
+      usableRowCount: usableRows?.length || 0,
+      firstMatchedNormalized: firstMatchedRow ? {
+        itemName: firstMatchedRow.itemName,
+        kindName: firstMatchedRow.kindName,
+        rank: firstMatchedRow.rank,
+        unit: firstMatchedRow.unit,
+        day: firstMatchedRow.day,
+        price: firstMatchedRow.price,
+        priceText: firstMatchedRow.priceText,
+      } : null,
+    });
+  } catch (error) {
+    console.log('[KAMIS grocery diagnostics failed]', error?.message || error);
+  }
 }
 
 function buildChange(current, past) {

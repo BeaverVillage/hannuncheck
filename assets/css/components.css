@@ -3455,3 +3455,157 @@ body .parking-hero .container > .breadcrumb span {
     flex: 1 1 100%;
   }
 }
+
+/* v58: Grocery KAMIS parser fix support + compact full-width layout */
+.grocery-tool-layout {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+}
+.grocery-tool-layout > .grocery-console {
+  width: 100%;
+  min-width: 0;
+}
+.grocery-tool-layout > .tool-sidebar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  min-width: 0;
+}
+.grocery-tool-layout > .tool-sidebar .notice-card,
+.grocery-tool-layout > .tool-sidebar .api-status-card {
+  height: 100%;
+}
+.grocery-form-grid .form-row,
+.grocery-form-grid input,
+.grocery-form-grid select {
+  min-width: 0;
+}
+.grocery-result-card-compact {
+  gap: 12px;
+  padding: 18px;
+}
+.grocery-result-head.compact {
+  align-items: center;
+}
+.grocery-result-head.compact .eyebrow {
+  margin: 0 0 6px;
+}
+.grocery-price-summary-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background: #f8fbff;
+}
+.grocery-price-summary-row .price-value {
+  margin: 0;
+}
+.grocery-price-summary-row > span {
+  color: var(--hc-muted, #64748b);
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: right;
+  word-break: keep-all;
+}
+.grocery-insight-grid.compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.grocery-insight-grid.compact article {
+  padding: 10px 12px;
+  border-radius: 15px;
+}
+.grocery-insight-grid.compact span {
+  margin-bottom: 4px;
+}
+.grocery-insight-grid.compact strong {
+  font-size: 0.95rem;
+}
+.grocery-insight-grid.compact small {
+  margin-top: 4px;
+  font-size: 0.78rem;
+}
+.grocery-detail-drawer {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fff;
+  overflow: hidden;
+}
+.grocery-detail-drawer > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 13px 16px;
+  color: var(--hc-blue-dark, #1d4ed8);
+  font-weight: 900;
+  background: #f8fbff;
+}
+.grocery-detail-drawer > summary::-webkit-details-marker {
+  display: none;
+}
+.grocery-detail-drawer > summary::after {
+  content: '펼치기';
+  float: right;
+  color: var(--hc-muted, #64748b);
+  font-size: 0.82rem;
+}
+.grocery-detail-drawer[open] > summary::after {
+  content: '접기';
+}
+.grocery-detail-drawer .grocery-trend-card,
+.grocery-detail-drawer .grocery-table-wrap {
+  margin: 12px;
+}
+.grocery-trend-card.compact {
+  padding: 14px;
+  border-radius: 16px;
+}
+.grocery-trend-card.compact h3 {
+  font-size: 1rem;
+}
+.grocery-trend-card.compact p {
+  font-size: 0.9rem;
+}
+.grocery-dev-note {
+  margin: 0;
+  padding: 11px 13px;
+  font-size: 0.9rem;
+}
+.grocery-empty-card {
+  display: grid;
+  gap: 14px;
+}
+.grocery-change-pill.tone-unknown {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+}
+
+@media (max-width: 920px) {
+  .grocery-tool-layout > .tool-sidebar {
+    grid-template-columns: 1fr;
+  }
+  .grocery-insight-grid.compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .grocery-price-summary-row {
+    display: grid;
+    align-items: start;
+  }
+  .grocery-price-summary-row > span {
+    text-align: left;
+  }
+  .grocery-insight-grid.compact {
+    grid-template-columns: 1fr;
+  }
+  .grocery-detail-drawer .grocery-trend-card,
+  .grocery-detail-drawer .grocery-table-wrap {
+    margin: 10px;
+  }
+}

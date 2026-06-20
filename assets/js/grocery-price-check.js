@@ -88,15 +88,21 @@
     }
     if (!data.results?.length) {
       els.result.innerHTML = `
-        <article class="grocery-placeholder-card">
-          <h2>조회 가능한 가격정보를 찾지 못했습니다</h2>
-          <p>품목명을 조금 더 짧게 입력하거나 인기 품목을 선택해 다시 확인해 주세요.</p>
+        <article class="grocery-placeholder-card grocery-empty-card">
+          <div class="grocery-result-head compact">
+            <div>
+              <p class="eyebrow">KAMIS 조회 결과</p>
+              <h2>조회 가능한 가격정보를 찾지 못했습니다</h2>
+              <p>해당 품목·지역·시장 유형 조합에 제공 자료가 없거나 품목명이 KAMIS 표기와 다를 수 있습니다.</p>
+            </div>
+            <span class="grocery-change-pill tone-unknown">자료 없음</span>
+          </div>
           <div class="grocery-action-pills">
-            <button type="button" data-grocery-action="choose-item">품목 다시 선택</button>
             <button type="button" data-grocery-action="national">전국 기준 보기</button>
+            <button type="button" data-grocery-action="choose-item">품목 다시 선택</button>
           </div>
         </article>`;
-      setStatus('조회 가능한 가격정보를 찾지 못했습니다. 품목명을 바꿔 다시 확인해 주세요.');
+      setStatus('조회 가능한 가격정보를 찾지 못했습니다. 전국 기준이나 다른 품목명으로 다시 확인해 주세요.');
       return;
     }
 
@@ -137,37 +143,42 @@
     const warnings = (data.warnings || []).filter(Boolean).map((item) => `<li>${escape(item)}</li>`).join('');
 
     els.result.innerHTML = `
-      <article class="grocery-result-card">
-        <p class="eyebrow">KAMIS PRICE DATA</p>
-        <div class="grocery-result-head">
+      <article class="grocery-result-card grocery-result-card-compact">
+        <div class="grocery-result-head compact">
           <div>
+            <p class="eyebrow">KAMIS PRICE DATA</p>
             <h2>${escape(summary.title || `${data.item} 가격정보`)}</h2>
             <p>${escape(summary.message || '최근 조사 가격 기준으로 참고할 수 있는 가격정보입니다.')}</p>
           </div>
           <span class="grocery-change-pill ${escape(trendDirectionClass(first))}">${escape(changeTone(first.weekChange?.direction))}</span>
         </div>
-        <p class="price-value">${escape(summary.primaryPrice || first.priceText || '가격 정보 없음')}</p>
-        <div class="grocery-insight-grid">${insightCards}</div>
+        <div class="grocery-price-summary-row">
+          <p class="price-value">${escape(summary.primaryPrice || first.priceText || '가격 정보 없음')}</p>
+          <span>${escape(first.unit || '단위 정보 없음')} · ${escape(first.day || '조사일 정보 없음')}</span>
+        </div>
+        <div class="grocery-insight-grid compact">${insightCards}</div>
         <div class="grocery-action-pills" aria-label="장보기 가격 확인 보조 기능">
           <button type="button" data-grocery-action="national">전국 기준 보기</button>
-          <button type="button" data-grocery-action="trend">최근 추이 보기</button>
           <button type="button" data-grocery-action="choose-item">품목 다시 선택</button>
         </div>
-        <section class="grocery-trend-card">
-          <div>
-            <h3>최근 가격 흐름</h3>
-            <p>제공 데이터에 포함된 최근·전주·전월 기준값을 함께 보여줍니다.</p>
+        <details class="grocery-detail-drawer">
+          <summary>최근 추이·상세 가격표 보기</summary>
+          <section class="grocery-trend-card compact">
+            <div>
+              <h3>최근 가격 흐름</h3>
+              <p>제공 데이터에 포함된 최근·전주·전월 기준값입니다.</p>
+            </div>
+            <ol class="grocery-trend-list">${trendItems}</ol>
+          </section>
+          <div class="grocery-table-wrap">
+            <table class="grocery-price-table">
+              <thead><tr><th>#</th><th>품목</th><th>유형</th><th>단위</th><th>최근 가격</th><th>전주 대비</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
           </div>
-          <ol class="grocery-trend-list">${trendItems}</ol>
-        </section>
-        <div class="grocery-table-wrap">
-          <table class="grocery-price-table">
-            <thead><tr><th>#</th><th>품목</th><th>유형</th><th>단위</th><th>최근 가격</th><th>전주 대비</th></tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
+        </details>
         ${warnings ? `<ul class="grocery-warning-list">${warnings}</ul>` : ''}
-        <p class="grocery-dev-note">KAMIS 공개 가격정보 기준입니다. 실제 매장 가격, 행사 가격, 판매 단위와 조사 시점에 따라 차이가 있을 수 있습니다.</p>
+        <p class="grocery-dev-note">KAMIS 공개 가격정보 기준이며 실제 매장 가격·행사 가격·판매 단위와 다를 수 있습니다.</p>
       </article>`;
     setStatus(`${data.item} ${data.region} 기준 가격정보 ${data.count}건을 확인했습니다.`);
   }
@@ -217,9 +228,12 @@
       return;
     }
     if (action === 'trend') {
-      if (els.period) els.period.value = 'trend';
-      setStatus('최근 추이 기준으로 다시 확인합니다.');
-      fetchPrice();
+      const drawer = els.result?.querySelector('.grocery-detail-drawer');
+      if (drawer) {
+        drawer.open = true;
+        drawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        setStatus('최근 추이와 상세 가격표를 펼쳤습니다.');
+      }
     }
   });
 

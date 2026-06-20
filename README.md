@@ -194,3 +194,23 @@ KAMIS_CERT_ID=KAMIS 요청자 ID
 - `배`/`배추`, `무`/`무화과`, `파`/`대파`/`쪽파`처럼 혼동 가능성이 있는 품목은 단순 포함 검색을 막고 후보 선택 상태를 반환합니다.
 - 프론트는 `ambiguous_item` 응답을 받으면 후보 카드로 품목을 다시 선택하게 합니다.
 - 지역을 선택한 경우에는 코드표 후보에 품목·품종·등급 코드가 있을 때 `periodRetailProductList` 또는 `periodWholesaleProductList`로 보조 조회합니다.
+
+
+### 장보기 물가 확인 v65
+
+`/api/kamis-prices`는 v65부터 KAMIS 농축수산물 가격을 우선 조회하고, KAMIS에서 강한 매칭이 없거나 가격값이 없을 때 한국소비자원 참가격 생필품 가격 정보 API를 보조 조회합니다.
+
+Cloudflare Pages Production 환경변수에 아래 값을 추가합니다.
+
+```env
+KAMIS_API_KEY=발급받은 KAMIS 인증 key 원문 그대로 입력
+KAMIS_CERT_ID=KAMIS 요청자 ID
+PRICE_GO_KR_API_KEY=한국소비자원_생필품 가격 정보 일반 인증키 원문 그대로 입력
+```
+
+v65 핵심 변경:
+
+- 낮은 점수의 KAMIS 후보를 자동 확정하지 않도록 오탐 차단 기준을 추가했습니다. 예: `밀가루`가 `쌀/20kg`으로 표시되는 문제 방지.
+- KAMIS에서 강한 매칭이 없으면 `openapi.price.go.kr/openApiImpl/ProductPriceInfoService`의 상품정보/생필품 가격정보를 사용합니다.
+- 참가격 보조 조회 결과는 `참가격 생필품 가격` 출처로 표시합니다.
+- 참가격 가격정보는 조사일과 판매점 기준 자료이므로 실제 매장 가격, 행사 가격, 판매 가능 여부와 차이가 있을 수 있습니다.

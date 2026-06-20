@@ -39,7 +39,7 @@
     els.result.innerHTML = `
       <article class="grocery-placeholder-card is-loading">
         <h2>${escape(item)} 가격정보를 확인하고 있습니다</h2>
-        <p>KAMIS 코드표와 최근 가격정보를 기준으로 품목을 찾는 중입니다.</p>
+        <p>KAMIS와 참가격 공공데이터를 기준으로 품목을 찾는 중입니다.</p>
       </article>`;
   }
 
@@ -142,9 +142,9 @@
       <article class="grocery-placeholder-card grocery-empty-card grocery-empty-card-compact">
         <div class="grocery-result-head compact">
           <div>
-            <p class="eyebrow">KAMIS 조회 결과</p>
+            <p class="eyebrow">${escape(data.sourceTag || '공공데이터 조회 결과')}</p>
             <h2>${escape(data.item || '선택 품목')} 가격정보를 찾지 못했습니다</h2>
-            <p>${escape(data.summary?.message || 'KAMIS에서 현재 조건의 실제 가격값을 확인하지 못했습니다. 시장 유형이나 지역 기준을 바꿔 다시 확인해 주세요.')}</p>
+            <p>${escape(data.summary?.message || '현재 연결된 공공데이터에서 조건에 맞는 실제 가격값을 확인하지 못했습니다. 품목명, 지역 또는 시장 유형을 바꿔 다시 확인해 주세요.')}</p>
           </div>
           <span class="grocery-change-pill tone-unknown">자료 없음</span>
         </div>
@@ -218,13 +218,13 @@
     `).join('');
 
     const warnings = (data.warnings || []).filter(Boolean).map((item) => `<li>${escape(item)}</li>`).join('');
-    const matched = data.matchedItem ? `<p class="grocery-match-note">코드표 매칭: ${escape(data.matchedItem.label || data.matchedItem.displayName || data.matchedItem.itemName || '')}</p>` : '';
+    const matched = data.matchedItem ? `<p class="grocery-match-note">품목 매칭: ${escape(data.matchedItem.label || data.matchedItem.displayName || data.matchedItem.itemName || '')}</p>` : '';
 
     els.result.innerHTML = `
       <article class="grocery-result-card grocery-result-card-compact">
         <div class="grocery-result-head compact">
           <div>
-            <p class="eyebrow">KAMIS PRICE DATA</p>
+            <p class="eyebrow">${escape(data.sourceTag || '공공데이터 가격정보')}</p>
             <h2>${escape(summary.title || `${data.item} 가격정보`)}</h2>
             <p>${escape(summary.message || '최근 조사 가격 기준으로 참고할 수 있는 가격정보입니다.')}</p>
             ${matched}
@@ -258,7 +258,7 @@
           </div>
         </details>
         ${warnings ? `<ul class="grocery-warning-list">${warnings}</ul>` : ''}
-        <p class="grocery-dev-note">KAMIS 공개 가격정보 기준이며 실제 매장 가격·행사 가격·판매 단위와 다를 수 있습니다.</p>
+        <p class="grocery-dev-note">${escape(data.sourceLabel || data.source || '공개 가격정보')} 기준이며 실제 매장 가격·행사 가격·판매 단위와 다를 수 있습니다.</p>
       </article>`;
     setStatus(`${data.item} ${data.region} 기준 가격정보 ${data.count}건을 확인했습니다.`);
   }
@@ -275,7 +275,7 @@
       item,
       market: els.market?.value || 'retail',
       period: els.period?.value || 'latest',
-      _v: 'v64',
+      _v: 'v65',
       _ts: Date.now().toString()
     });
     if (selectedCandidate?.productNo) params.set('productNo', selectedCandidate.productNo);
@@ -348,5 +348,5 @@
     fetchPrice();
   });
 
-  setStatus('품목을 입력하거나 인기 품목을 선택하면 KAMIS 코드표 기준으로 가격정보를 확인합니다.');
+  setStatus('품목을 입력하거나 인기 품목을 선택하면 KAMIS와 참가격 기준으로 가격정보를 확인합니다.');
 })();

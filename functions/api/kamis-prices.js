@@ -1,5 +1,6 @@
 const KAMIS_BASE_ENDPOINT = 'https://www.kamis.or.kr/service/price/xml.do';
-const KAMIS_GROCERY_API_VERSION = 'v64-daily-sales-first-match';
+const KAMIS_GROCERY_API_VERSION = 'v65-pricego-fallback';
+const PRICE_GO_BASE_ENDPOINT = 'https://openapi.price.go.kr/openApiImpl/ProductPriceInfoService';
 
 const ACTIONS = {
   dailySales: 'dailySalesList',
@@ -71,9 +72,20 @@ const ITEM_ALIASES = {
   배: ['배', '신고배'],
   사과: ['사과', '후지', '홍로'],
   고등어: ['고등어'],
+  밀가루: ['밀가루', '소맥분', '중력분', '박력분', '강력분'],
+  소맥분: ['소맥분', '밀가루'],
+  식용유: ['식용유', '콩기름', '대두유', '카놀라유'],
+  라면: ['라면', '봉지라면'],
+  두부: ['두부'],
 };
 
 const DANGEROUS_ONE_CHAR_QUERY = new Set(['배', '무', '파', '김']);
+const KAMIS_MIN_RESOLVED_SCORE = 70;
+const KAMIS_STRONG_MATCH_SCORE = 95;
+const PRICE_GO_MIN_MATCH_SCORE = 92;
+const PRICE_GO_MAX_PRODUCT_CANDIDATES = 8;
+const PRICE_GO_SOURCE_LABEL = '한국소비자원 참가격 생필품 가격 정보 OpenAPI';
+const PRICE_GO_SOURCE_TAG = '참가격 생필품 가격';
 
 const json = (body, init = {}) => new Response(JSON.stringify(body), {
   status: init.status || 200,
@@ -96,6 +108,7 @@ export async function onRequestGet({ request, env }) {
   try {
     const certKey = getEnv(env, ['KAMIS_API_KEY', 'KAMIS_CERT_KEY']);
     const certId = getEnv(env, ['KAMIS_CERT_ID', 'KAMIS_USER_ID', 'KAMIS_API_ID']);
+    const priceGoKey = getEnv(env, ['PRICE_GO_KR_API_KEY', 'PRICE_GO_API_KEY', 'GOODPRICE_API_KEY', 'KCA_PRICE_API_KEY']);
     if (!certKey || !certId) {
       return json({
         ok: false,
@@ -174,7 +187,10 @@ export async function onRequestGet({ request, env }) {
     });
 
     if (resolution.status === 'unsupported') {
-      return json(buildNoPriceResponse({ requestId, item, region, market, warnings, code: 'unsupported_item', message: `'${item}'은 현재 KAMIS 조사대상 품목 코드표에서 찾지 못했습니다. 인기 품목 또는 더 일반적인 품목명으로 다시 확인해 주세요.` }));
+      const priceGoResponse = await tryBuildPriceGoFallbackResponse({ priceGoKey, requestId, item, region, market, warnings, reason: resolution.reason });
+      if (priceGoResponse) return json(priceGoResponse);
+      const missingPriceGoWarning = priceGoKey ? [] : ['한국소비자원 참가격 API 키가 설정되지 않아 생필품 보조 조회를 건너뛰었습니다.'];
+      return json(buildNoPriceResponse({ requestId, item, region, market, warnings: [...warnings, ...missingPriceGoWarning], code: 'unsupported_item', message: `'${item}'은 현재 연결된 KAMIS 가격 목록에서 강하게 매칭되지 않았습니다. 생필품 가격까지 확인하려면 PRICE_GO_KR_API_KEY 설정을 확인해 주세요.` }));
     }
 
     if (resolution.status === 'ambiguous') {
@@ -203,6 +219,8 @@ export async function onRequestGet({ request, env }) {
         results: [],
         warnings: ['입력어가 여러 품목과 연결될 수 있어 자동 조회하지 않았습니다.'],
         source: 'KAMIS 농산물유통정보 가격정보 Open API',
+        sourceTag: 'KAMIS PRICE DATA',
+        sourceLabel: 'KAMIS 농산물유통정보 가격정보 Open API',
       });
     }
 
@@ -262,10 +280,13 @@ export async function onRequestGet({ request, env }) {
     }
 
     if (!results.length) {
+      const priceGoResponse = await tryBuildPriceGoFallbackResponse({ priceGoKey, requestId, item, region, market, warnings, reason: 'kamis_no_price' });
+      if (priceGoResponse) return json(priceGoResponse);
       const candidateMessage = resolvedCandidates.length
         ? 'KAMIS 코드표에서 품목은 찾았지만 현재 조건의 실제 가격값을 확인하지 못했습니다. 시장 유형 또는 지역 기준을 바꿔 다시 확인해 주세요.'
         : '현재 조건의 실제 가격값을 확인하지 못했습니다.';
-      return json(buildNoPriceResponse({ requestId, item, region, market, warnings, code: 'no_recent_price', message: candidateMessage, candidates: resolvedCandidates.slice(0, 5).map(publicCandidate) }));
+      const missingPriceGoWarning = priceGoKey ? [] : ['한국소비자원 참가격 API 키가 설정되지 않아 생필품 보조 조회를 건너뛰었습니다.'];
+      return json(buildNoPriceResponse({ requestId, item, region, market, warnings: [...warnings, ...missingPriceGoWarning], code: 'no_recent_price', message: candidateMessage, candidates: resolvedCandidates.slice(0, 5).map(publicCandidate) }));
     }
 
     const summary = buildSummary({ requestId, item, region, market, results, warnings, resolution, elapsedMs: Date.now() - startedAt });
@@ -285,6 +306,8 @@ export async function onRequestGet({ request, env }) {
       results: results.slice(0, 40),
       warnings: [...new Set(warnings)].slice(0, 8),
       source: 'KAMIS 농산물유통정보 가격정보 Open API',
+      sourceTag: 'KAMIS PRICE DATA',
+      sourceLabel: 'KAMIS 농산물유통정보 가격정보 Open API',
     });
   } catch (error) {
     console.log('[KAMIS grocery fatal]', { requestId, version: KAMIS_GROCERY_API_VERSION, message: error?.message || String(error) });
@@ -317,7 +340,448 @@ function buildNoPriceResponse({ requestId, item, region, market, warnings = [], 
     results: [],
     warnings: [...new Set(warnings)].slice(0, 8),
     source: 'KAMIS 농산물유통정보 가격정보 Open API',
+    sourceTag: 'KAMIS PRICE DATA',
+    sourceLabel: 'KAMIS 농산물유통정보 가격정보 Open API',
   };
+}
+
+
+async function tryBuildPriceGoFallbackResponse({ priceGoKey, requestId, item, region, market, warnings = [], reason = '' }) {
+  if (!priceGoKey) return null;
+  if (market === 'wholesale') return null;
+  try {
+    const fallback = await fetchPriceGoFallback({ apiKey: priceGoKey, requestId, item, region });
+    if (!fallback?.results?.length) {
+      console.log('[PRICE_GO grocery fallback empty]', {
+        requestId,
+        version: KAMIS_GROCERY_API_VERSION,
+        item,
+        region,
+        reason,
+        productCandidateCount: fallback?.candidateCount || 0,
+        latestCheckedDays: fallback?.checkedDays || [],
+      });
+      return null;
+    }
+    const priceGoWarnings = [
+      ...warnings,
+      'KAMIS 농축수산물 가격에서 강한 매칭을 찾지 못해 한국소비자원 참가격 생필품 가격으로 보조 조회했습니다.',
+      ...(fallback.warnings || []),
+    ];
+    const summary = buildPriceGoSummary({ requestId, item, region, market, fallback, warnings: priceGoWarnings, reason });
+    return {
+      ok: true,
+      code: 'price_found_price_go_kr',
+      requestId,
+      serverVersion: KAMIS_GROCERY_API_VERSION,
+      checkedAt: new Date().toISOString(),
+      item,
+      region,
+      market: 'retail',
+      matchedItem: fallback.matchedItem,
+      candidates: fallback.candidates.slice(0, 5),
+      count: fallback.results.length,
+      summary,
+      results: fallback.results.slice(0, 40),
+      warnings: [...new Set(priceGoWarnings)].slice(0, 8),
+      source: PRICE_GO_SOURCE_LABEL,
+      sourceTag: PRICE_GO_SOURCE_TAG,
+      sourceLabel: PRICE_GO_SOURCE_LABEL,
+    };
+  } catch (error) {
+    console.log('[PRICE_GO grocery fallback failed]', {
+      requestId,
+      version: KAMIS_GROCERY_API_VERSION,
+      item,
+      region,
+      reason,
+      message: error?.message || String(error),
+    });
+    warnings.push('한국소비자원 참가격 생필품 가격 보조 조회 중 오류가 발생했습니다.');
+    return null;
+  }
+}
+
+async function fetchPriceGoFallback({ apiKey, requestId, item, region }) {
+  const productPayload = await fetchPriceGoPayload({ apiKey, endpoint: 'getProductInfoSvc.do', requestId });
+  const productRows = normalizePriceGoProducts(productPayload);
+  const productCandidates = findPriceGoProductCandidates(productRows, item);
+  if (!productCandidates.length) {
+    return { results: [], candidates: [], candidateCount: 0, checkedDays: [], warnings: [] };
+  }
+
+  const selectedCandidates = productCandidates.slice(0, PRICE_GO_MAX_PRODUCT_CANDIDATES);
+  const candidateIds = new Set(selectedCandidates.map((candidate) => candidate.goodId).filter(Boolean));
+  const checkedDays = buildPriceGoInspectDays(8);
+  let priceRows = [];
+  let usedDay = '';
+
+  for (const day of checkedDays) {
+    const payload = await fetchPriceGoPayload({ apiKey, endpoint: 'getProductPriceInfoSvc.do', requestId, extraParams: { goodInspectDay: day } });
+    const normalized = normalizePriceGoPriceRows(payload, selectedCandidates)
+      .filter((row) => candidateIds.has(row.productNo));
+    if (normalized.length) {
+      priceRows = normalized;
+      usedDay = day;
+      break;
+    }
+  }
+
+  const warnings = [];
+  if (!priceRows.length) {
+    return {
+      results: [],
+      candidates: selectedCandidates.map(publicPriceGoCandidate),
+      candidateCount: productCandidates.length,
+      checkedDays,
+      warnings,
+    };
+  }
+
+  let scopedRows = filterPriceGoRowsByRegion(priceRows, region);
+  if (region !== '전국' && !scopedRows.length) {
+    scopedRows = priceRows;
+    warnings.push(`${region} 지역 참가격 판매점 자료가 충분하지 않아 전국 판매점 기준으로 표시했습니다.`);
+  }
+
+  const aggregateRows = buildPriceGoAggregateRows(scopedRows, selectedCandidates, region, usedDay);
+  const storeRows = scopedRows
+    .sort((a, b) => a.price - b.price || normalizeText(a.region).localeCompare(normalizeText(b.region), 'ko'))
+    .slice(0, 24);
+  const results = [...aggregateRows, ...storeRows];
+  const primary = aggregateRows[0] || storeRows[0];
+
+  console.log('[PRICE_GO grocery fallback match]', {
+    requestId,
+    version: KAMIS_GROCERY_API_VERSION,
+    item,
+    region,
+    productCandidateCount: productCandidates.length,
+    selectedCandidates: selectedCandidates.map((candidate) => ({ goodId: candidate.goodId, goodName: candidate.goodName, score: candidate.score })).slice(0, 8),
+    checkedDays,
+    usedDay,
+    priceRowCount: priceRows.length,
+    scopedRowCount: scopedRows.length,
+    firstResult: primary ? { productNo: primary.productNo, itemName: primary.itemName, price: primary.price, unit: primary.unit, region: primary.region } : null,
+  });
+
+  return {
+    results,
+    candidates: selectedCandidates.map(publicPriceGoCandidate),
+    matchedItem: primary ? publicPriceGoCandidate(candidateFromPriceGoResult(primary)) : publicPriceGoCandidate(selectedCandidates[0]),
+    candidateCount: productCandidates.length,
+    checkedDays,
+    usedDay,
+    warnings,
+  };
+}
+
+async function fetchPriceGoPayload({ apiKey, endpoint, requestId, extraParams = {} }) {
+  const url = new URL(`${PRICE_GO_BASE_ENDPOINT}/${endpoint}`);
+  url.searchParams.set('ServiceKey', apiKey);
+  for (const [key, value] of Object.entries(extraParams || {})) {
+    if (isPresentValue(value)) url.searchParams.set(key, value);
+  }
+  const response = await fetch(url.toString(), {
+    headers: { accept: 'application/xml,text/xml,text/plain,*/*', 'cache-control': 'no-cache' },
+    cf: { cacheTtl: 0, cacheEverything: false },
+  });
+  const text = await response.text();
+  if (!response.ok) throw new Error(`참가격 API 응답 오류가 발생했습니다. (${response.status})`);
+  const payload = parsePriceGoXml(text);
+  const condition = readPriceGoCondition(payload);
+  if (condition.code && condition.code !== '00') {
+    console.log('[PRICE_GO grocery condition]', { requestId, version: KAMIS_GROCERY_API_VERSION, endpoint, condition });
+    if (condition.code === '90' || /auth|key|인증/i.test(condition.message)) throw new Error('참가격 API 인증키를 확인해 주세요.');
+  }
+  return payload;
+}
+
+function parsePriceGoXml(text) {
+  const source = String(text || '');
+  const rows = [
+    ...allXmlBlocks(source, 'item'),
+    ...allXmlBlocks(source, 'row'),
+  ].map(parseXmlFlatObject).filter((row) => Object.keys(row).length && isPotentialPriceGoRow(row));
+  const root = parseXmlFlatObject(source);
+  return {
+    data: rows,
+    resultCode: root.resultCode || '',
+    resultMsg: root.resultMsg || '',
+    _priceGoFormat: 'xml',
+    _xmlShape: {
+      itemBlockCount: allXmlBlocks(source, 'item').length,
+      rowBlockCount: allXmlBlocks(source, 'row').length,
+      rowCount: rows.length,
+      previewTags: extractXmlTagNames(source).slice(0, 60),
+    },
+  };
+}
+
+function isPotentialPriceGoRow(row) {
+  return Boolean(firstValue(row, ['goodId', 'goodName', 'goodPrice', 'goodInspectDay', 'entpId', 'entpName', 'goodSmlclsCode']));
+}
+
+function readPriceGoCondition(payload) {
+  const code = clean(payload?.resultCode || firstValue(payload?.data?.[0], ['resultCode']), 10);
+  const message = clean(payload?.resultMsg || firstValue(payload?.data?.[0], ['resultMsg']), 120);
+  return { code, message };
+}
+
+function normalizePriceGoProducts(payload) {
+  return (payload?.data || [])
+    .map((row) => {
+      const goodId = clean(firstValue(row, ['goodId', 'GOOD_ID', '상품아이디']), 30);
+      const goodName = clean(firstValue(row, ['goodName', 'GOOD_NAME', '상품명']), 120);
+      const detail = clean(firstValue(row, ['detailMean', 'DETAIL_MEAN', '상품설명상세']), 200);
+      const categoryCode = clean(firstValue(row, ['goodSmlclsCode', 'GOOD_SMLCLS_CODE', '상품소분류코드']), 30);
+      const unit = buildPriceGoUnit(row);
+      const makerCode = clean(firstValue(row, ['productEntpCode', 'PRODUCT_ENTP_CODE', '제조업체코드']), 30);
+      return {
+        goodId,
+        goodName,
+        detail,
+        categoryCode,
+        itemCategoryName: '생필품',
+        unit,
+        makerCode,
+        normalizedTokens: buildPriceGoTokens({ goodName, detail, unit }),
+        source: 'priceGoProductInfo',
+      };
+    })
+    .filter((row) => row.goodId && row.goodName);
+}
+
+function buildPriceGoUnit(row) {
+  const baseCnt = clean(firstValue(row, ['goodBaseCnt', 'GOOD_BASE_CNT', '상품단위량']), 20);
+  const baseCode = clean(firstValue(row, ['goodUnitDivCode', 'GOOD_UNIT_DIV_CODE', '상품단위구분코드']), 20);
+  const totalCnt = clean(firstValue(row, ['goodTotalCnt', 'GOOD_TOTAL_CNT', '상품용량']), 20);
+  const totalCode = clean(firstValue(row, ['goodTotalDivCode', 'GOOD_TOTAL_DIV_CODE', '상품용량구분코드']), 20);
+  const unit = [totalCnt, normalizePriceGoUnitCode(totalCode)].filter(Boolean).join('') || [baseCnt, normalizePriceGoUnitCode(baseCode)].filter(Boolean).join('');
+  return unit || '상품 단위';
+}
+
+function normalizePriceGoUnitCode(value) {
+  const text = clean(value, 20).toUpperCase();
+  const map = { G: 'g', KG: 'kg', ML: 'ml', L: 'L', EA: '개', M: 'm' };
+  return map[text] || text;
+}
+
+function findPriceGoProductCandidates(products, query) {
+  return products
+    .map((product) => ({ ...product, score: scorePriceGoProduct(product, query), matchLabel: buildPriceGoMatchLabel(product) }))
+    .filter((product) => product.score >= PRICE_GO_MIN_MATCH_SCORE)
+    .sort((a, b) => b.score - a.score || normalizeText(a.goodName).localeCompare(normalizeText(b.goodName), 'ko'));
+}
+
+function scorePriceGoProduct(product, query) {
+  const q = normalizeText(query);
+  if (!q) return 0;
+  const aliases = getItemAliases(query).map(normalizeText).filter(Boolean);
+  const name = normalizeText(product.goodName);
+  const detail = normalizeText(product.detail);
+  const tokens = new Set([name, detail, ...(product.normalizedTokens || [])].filter(Boolean));
+  let score = 0;
+
+  if (name === q) score = Math.max(score, 170);
+  if (tokens.has(q)) score = Math.max(score, 150);
+  if (q.length >= 2 && name.includes(q)) score = Math.max(score, 132);
+  if (q.length >= 2 && detail.includes(q)) score = Math.max(score, 112);
+
+  for (const alias of aliases) {
+    if (!alias || alias === q) continue;
+    if (name === alias) score = Math.max(score, 145);
+    if (tokens.has(alias)) score = Math.max(score, 125);
+    if (alias.length >= 2 && name.includes(alias)) score = Math.max(score, 108);
+    if (alias.length >= 2 && detail.includes(alias)) score = Math.max(score, 96);
+  }
+
+  if (product.goodId) score += 5;
+  if (product.unit && product.unit !== '상품 단위') score += 2;
+  return score;
+}
+
+function buildPriceGoTokens({ goodName, detail, unit }) {
+  const raw = [goodName, detail, unit].filter(Boolean).join(' ');
+  const chunks = raw
+    .split(/[\s,()\[\]{}·ㆍ\/]+/)
+    .map(normalizeText)
+    .filter((token) => token.length >= 2);
+  return [...new Set([normalizeText(goodName), ...chunks])];
+}
+
+function buildPriceGoMatchLabel(product) {
+  return ['생필품', product.goodName, product.unit].filter(Boolean).join(' · ');
+}
+
+function normalizePriceGoPriceRows(payload, candidates) {
+  const productMap = new Map(candidates.map((candidate) => [candidate.goodId, candidate]));
+  return (payload?.data || [])
+    .map((row) => {
+      const goodId = clean(firstValue(row, ['goodId', 'GOOD_ID', '상품아이디']), 30);
+      const product = productMap.get(goodId);
+      const goodName = clean(firstValue(row, ['goodName', 'GOOD_NAME', '상품명']) || product?.goodName || '', 120);
+      const priceRaw = firstValue(row, ['goodPrice', 'GOOD_PRICE', 'price', '가격', '판매가격']);
+      const price = parsePrice(priceRaw);
+      const inspectDay = clean(firstValue(row, ['goodInspectDay', 'GOOD_INSPECT_DAY', '조사일']), 20);
+      const entpName = clean(firstValue(row, ['entpName', 'ENTP_NAME', '판매업소', '업체명']), 80);
+      const entpId = clean(firstValue(row, ['entpId', 'ENTP_ID', '판매점아이디']), 30);
+      const regionName = clean(firstValue(row, ['entpAreaName', 'areaName', 'cityName', 'regionName', 'ENTP_AREA_NAME', '지역명']), 40);
+      const saleYn = clean(firstValue(row, ['plusoneYn', 'PLUSONE_YN', 'saleYn', 'SALE_YN', '세일여부', '원플러스원']), 20);
+      return {
+        id: ['priceGo', goodId, entpId, inspectDay, price].join('-'),
+        sourceApi: 'priceGoProductPriceInfo',
+        dataSource: 'price.go.kr',
+        marketType: 'retail',
+        marketLabel: '생필품 가격',
+        region: regionName || '전국',
+        categoryCode: product?.categoryCode || '',
+        categoryLabel: '생필품',
+        productNo: goodId,
+        itemName: goodName,
+        productName: goodName,
+        itemCode: goodId,
+        kindName: entpName || '판매점 가격',
+        kindCode: entpId,
+        rank: saleYn ? `행사정보 ${saleYn}` : '',
+        unit: product?.unit || '상품 단위',
+        day: formatInspectDay(inspectDay),
+        price,
+        priceText: formatPrice(price, priceRaw),
+        oneDayAgo: null,
+        weekAgo: null,
+        monthAgo: null,
+        yearAgo: null,
+        average: null,
+        weekChange: buildChange(null, null),
+        monthChange: buildChange(null, null),
+        yearChange: buildChange(null, null),
+        raw: row,
+      };
+    })
+    .filter(hasUsablePriceRow);
+}
+
+function filterPriceGoRowsByRegion(rows, region) {
+  if (region === '전국') return rows;
+  const targets = getPriceGoRegionAliases(region);
+  if (!targets.length) return rows;
+  return rows.filter((row) => targets.some((target) => normalizeText(row.region).includes(normalizeText(target))));
+}
+
+function getPriceGoRegionAliases(region) {
+  const map = {
+    서울: ['서울', '서울특별시'], 부산: ['부산', '부산광역시'], 대구: ['대구', '대구광역시'], 인천: ['인천', '인천광역시'],
+    광주: ['광주', '광주광역시'], 대전: ['대전', '대전광역시'], 울산: ['울산', '울산광역시'], 세종: ['세종', '세종특별자치시'],
+    경기: ['경기', '경기도'], 강원: ['강원', '강원특별자치도', '강원도'], 충북: ['충북', '충청북도'], 충남: ['충남', '충청남도'],
+    전북: ['전북', '전라북도', '전북특별자치도'], 전남: ['전남', '전라남도'], 경북: ['경북', '경상북도'], 경남: ['경남', '경상남도'], 제주: ['제주', '제주특별자치도'],
+  };
+  return map[region] || [];
+}
+
+function buildPriceGoAggregateRows(rows, candidates, region, usedDay) {
+  const byProduct = new Map();
+  for (const row of rows) {
+    if (!Number.isFinite(row.price)) continue;
+    const group = byProduct.get(row.productNo) || [];
+    group.push(row);
+    byProduct.set(row.productNo, group);
+  }
+  const candidateMap = new Map(candidates.map((candidate) => [candidate.goodId, candidate]));
+  return [...byProduct.entries()].map(([goodId, group]) => {
+    const product = candidateMap.get(goodId);
+    const prices = group.map((row) => row.price).filter(Number.isFinite);
+    const average = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const representative = group[0];
+    return {
+      ...representative,
+      id: ['priceGoAverage', goodId, usedDay, region].join('-'),
+      sourceApi: 'priceGoAverage',
+      region: region === '전국' ? '전국' : `${region} 또는 전국 판매점`,
+      kindName: `${group.length}개 판매점 평균`,
+      rank: `최저 ${formatPrice(min)} · 최고 ${formatPrice(max)}`,
+      price: Math.round(average),
+      priceText: formatPrice(Math.round(average)),
+      average: Math.round(average),
+      productName: product?.goodName || representative.productName,
+      itemName: product?.goodName || representative.itemName,
+      raw: { rows: group.map((row) => row.raw), min, max, count: group.length },
+    };
+  }).sort((a, b) => a.price - b.price);
+}
+
+function candidateFromPriceGoResult(row) {
+  return {
+    goodId: row?.productNo || '',
+    goodName: row?.itemName || row?.productName || '',
+    unit: row?.unit || '',
+    categoryCode: row?.categoryCode || '',
+    score: 0,
+    matchLabel: ['생필품', row?.itemName || row?.productName, row?.unit].filter(Boolean).join(' · '),
+  };
+}
+
+function publicPriceGoCandidate(candidate) {
+  if (!candidate) return null;
+  return {
+    productNo: candidate.goodId || '',
+    itemCategoryCode: candidate.categoryCode || '',
+    itemCategoryName: '생필품',
+    itemCode: candidate.goodId || '',
+    itemName: candidate.goodName || '',
+    kindCode: '',
+    kindName: '',
+    retailRankCode: '',
+    wholesaleRankCode: '',
+    displayName: candidate.goodName || '',
+    label: candidate.goodName || '',
+    marketTypes: ['retail'],
+    score: candidate.score || 0,
+    matchLabel: candidate.matchLabel || buildPriceGoMatchLabel(candidate),
+  };
+}
+
+function buildPriceGoSummary({ requestId, item, region, market, fallback, warnings, reason }) {
+  const first = fallback.results[0];
+  return {
+    tone: 'normal',
+    title: `${first.itemName || item} 참가격 기준`,
+    message: `${first.day || fallback.usedDay || '최근 조사일'} 기준 한국소비자원 참가격 생필품 판매가격입니다. 판매점·행사 여부에 따라 실제 가격과 차이가 있을 수 있습니다.`,
+    primaryPrice: first.priceText,
+    unit: first.unit,
+    day: first.day,
+    representative: first,
+    warning: warnings[0] || '',
+    resolution: `price_go_fallback:${reason || 'kamis_no_match'}`,
+    requestId,
+    version: KAMIS_GROCERY_API_VERSION,
+    item,
+    region,
+    market,
+  };
+}
+
+function buildPriceGoInspectDays(count = 8) {
+  const seoulNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  seoulNow.setUTCHours(0, 0, 0, 0);
+  const day = seoulNow.getUTCDay();
+  const daysBack = (day - 5 + 7) % 7;
+  const latestFriday = new Date(seoulNow.getTime() - daysBack * 24 * 60 * 60 * 1000);
+  return Array.from({ length: count }, (_, index) => {
+    const date = new Date(latestFriday.getTime() - index * 7 * 24 * 60 * 60 * 1000);
+    const yyyy = date.getUTCFullYear();
+    const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(date.getUTCDate()).padStart(2, '0');
+    return `${yyyy}${mm}${dd}`;
+  });
+}
+
+function formatInspectDay(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (digits.length >= 8) return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+  return clean(value, 20) || '최근 조사일';
 }
 
 async function safeFetchProductInfo({ certKey, certId, requestId }) {
@@ -744,7 +1208,10 @@ function resolveItemCandidate({ query, selectedProductNo, selectedItemCode, sele
   if (!scored.length) return { status: 'unsupported', candidates: [], reason: 'no_code_match' };
 
   const topScore = scored[0].score;
-  const strong = scored.filter((candidate) => candidate.score >= Math.max(60, topScore - 15));
+  if (topScore < KAMIS_MIN_RESOLVED_SCORE) {
+    return { status: 'unsupported', candidates: [], reason: 'low_score_no_strong_match' };
+  }
+  const strong = scored.filter((candidate) => candidate.score >= Math.max(KAMIS_MIN_RESOLVED_SCORE, topScore - 15));
   const distinctNames = [...new Set(strong.map((candidate) => canonicalCandidateName(candidate)).filter(Boolean))];
   const normalizedQuery = normalizeText(query);
 
@@ -753,6 +1220,9 @@ function resolveItemCandidate({ query, selectedProductNo, selectedItemCode, sele
   }
 
   const chosenName = canonicalCandidateName(scored[0]);
+  if (topScore < KAMIS_STRONG_MATCH_SCORE && strong.length > 1) {
+    return { status: 'ambiguous', candidates: uniqueCandidateChoices(strong).slice(0, 8), reason: 'weak_multiple_candidates' };
+  }
   const sameItemCandidates = scored.filter((candidate) => canonicalCandidateName(candidate) === chosenName || candidate.score >= topScore + 1).slice(0, 12);
   return { status: 'resolved', candidates: sameItemCandidates, reason: 'best_match' };
 }

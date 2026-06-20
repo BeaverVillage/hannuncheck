@@ -196,12 +196,14 @@
       region: els.region?.value || '전국',
       item,
       market: els.market?.value || 'retail',
-      period: els.period?.value || 'latest'
+      period: els.period?.value || 'latest',
+      _v: 'v61',
+      _ts: Date.now().toString()
     });
     setStatus(`${item} 가격정보를 불러오고 있습니다.`);
     setLoading(item);
     try {
-      const response = await fetch(`/api/kamis-prices?${params.toString()}`, { headers: { accept: 'application/json' } });
+      const response = await fetch(`/api/kamis-prices?${params.toString()}`, { cache: 'no-store', headers: { accept: 'application/json', 'cache-control': 'no-cache' } });
       const data = await response.json().catch(() => null);
       if (!response.ok || !data?.ok) throw new Error(data?.message || `가격정보 조회에 실패했습니다. (${response.status})`);
       renderResults(data);

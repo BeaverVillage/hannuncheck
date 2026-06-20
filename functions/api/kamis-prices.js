@@ -1,4 +1,5 @@
 const KAMIS_DAILY_ENDPOINT = 'https://www.kamis.or.kr/service/price/xml.do?action=dailyPriceByCategoryList';
+const KAMIS_GROCERY_API_VERSION = 'v61-kamis-cache-xml-fallback';
 const CATEGORY_LABELS = {
   '100': '식량작물',
   '200': '채소류',
@@ -84,7 +85,9 @@ const json = (body, init = {}) => new Response(JSON.stringify(body), {
   status: init.status || 200,
   headers: {
     'content-type': 'application/json; charset=utf-8',
-    'cache-control': init.cacheControl || 'max-age=1800',
+    'cache-control': init.cacheControl || 'no-store, no-cache, must-revalidate, max-age=0',
+    'pragma': 'no-cache',
+    'expires': '0',
     ...init.headers,
   },
 });
@@ -102,9 +105,11 @@ export async function onRequestGet({ request, env }) {
         ok: false,
         code: 'missing_key',
         message: 'KAMIS API 인증 정보가 설정되지 않았습니다. Cloudflare 환경변수 KAMIS_API_KEY와 KAMIS_CERT_ID를 확인해 주세요.',
+        serverVersion: KAMIS_GROCERY_API_VERSION,
       }, { status: 500, cacheControl: 'no-store' });
     }
 
+    const requestId = createRequestId();
     const url = new URL(request.url);
     const item = clean(url.searchParams.get('item'), 30);
     const region = normalizeRegion(url.searchParams.get('region') || '전국');
@@ -112,14 +117,24 @@ export async function onRequestGet({ request, env }) {
     const category = clean(url.searchParams.get('category'), 3) || guessCategory(item);
     const regday = normalizeDate(url.searchParams.get('regday'));
 
-    if (!item) return json({ ok: false, code: 'missing_item', message: '품목명을 입력해 주세요.' }, { status: 400, cacheControl: 'no-store' });
+    console.log('[KAMIS grocery request]', {
+      requestId,
+      version: KAMIS_GROCERY_API_VERSION,
+      item,
+      region,
+      market,
+      category,
+      regday: regday || 'latest',
+    });
+
+    if (!item) return json({ ok: false, code: 'missing_item', message: '품목명을 입력해 주세요.', requestId, serverVersion: KAMIS_GROCERY_API_VERSION }, { status: 400, cacheControl: 'no-store' });
 
     const categories = category ? [category] : Object.keys(CATEGORY_LABELS);
     const marketTypes = market === 'all' ? ['retail', 'wholesale'] : [market];
     const calls = [];
     for (const marketType of marketTypes) {
       for (const cat of categories) {
-        calls.push(fetchKamisDaily({ certKey, certId, item, region, marketType, category: cat, regday }));
+        calls.push(fetchKamisDaily({ certKey, certId, item, region, marketType, category: cat, regday, requestId }));
       }
     }
 
@@ -140,6 +155,8 @@ export async function onRequestGet({ request, env }) {
 
     return json({
       ok: true,
+      requestId,
+      serverVersion: KAMIS_GROCERY_API_VERSION,
       checkedAt: new Date().toISOString(),
       item,
       region,
@@ -152,11 +169,11 @@ export async function onRequestGet({ request, env }) {
       source: 'KAMIS 농산물유통정보 가격정보 Open API',
     });
   } catch (error) {
-    return json({ ok: false, message: error?.message || '장보기 물가 정보를 불러오지 못했습니다.' }, { status: 500, cacheControl: 'no-store' });
+    return json({ ok: false, message: error?.message || '장보기 물가 정보를 불러오지 못했습니다.', serverVersion: KAMIS_GROCERY_API_VERSION }, { status: 500, cacheControl: 'no-store' });
   }
 }
 
-async function fetchKamisDaily({ certKey, certId, item, region, marketType, category, regday }) {
+async function fetchKamisDaily({ certKey, certId, item, region, marketType, category, regday, requestId }) {
   const marketInfo = MARKET_TYPES[marketType] || MARKET_TYPES.retail;
   const countryCode = REGION_CODES[region] ?? '';
   const warnings = [];
@@ -165,13 +182,14 @@ async function fetchKamisDaily({ certKey, certId, item, region, marketType, cate
     warnings.push(`${region} 지역은 KAMIS 도매가격 지역 조회가 제한되어 전체지역 기준으로 확인했습니다.`);
   }
 
-  let data = await fetchKamisDailyPayload({
+  let data = await fetchKamisDailyPayloadWithFallback({
     certKey,
     certId,
     marketCode: marketInfo.code,
     category,
     countryCode: requestCountryCode,
     regday,
+    requestId,
   });
   let apiCondition = readCondition(data);
   if (apiCondition.code && apiCondition.code !== '000') {
@@ -185,13 +203,14 @@ async function fetchKamisDaily({ certKey, certId, item, region, marketType, cate
   if (!rawRows.length && region === '전국') {
     const fallbackRegions = marketType === 'wholesale' ? NATIONAL_WHOLESALE_FALLBACK_REGIONS : NATIONAL_RETAIL_FALLBACK_REGIONS;
     for (const [fallbackCode, fallbackLabel] of fallbackRegions) {
-      const fallbackData = await fetchKamisDailyPayload({
+      const fallbackData = await fetchKamisDailyPayloadWithFallback({
         certKey,
         certId,
         marketCode: marketInfo.code,
         category,
         countryCode: fallbackCode,
         regday,
+        requestId,
       });
       const fallbackCondition = readCondition(fallbackData);
       if (fallbackCondition.code && fallbackCondition.code !== '000') continue;
@@ -216,6 +235,7 @@ async function fetchKamisDaily({ certKey, certId, item, region, marketType, cate
   const usableRows = matchedRows.filter(hasUsablePriceRow);
 
   logKamisDiagnostics({
+    requestId,
     item,
     region,
     marketType,
@@ -236,31 +256,110 @@ async function fetchKamisDaily({ certKey, certId, item, region, marketType, cate
   return { results: usableRows, warnings };
 }
 
-async function fetchKamisDailyPayload({ certKey, certId, marketCode, category, countryCode, regday }) {
+async function fetchKamisDailyPayloadWithFallback(args) {
+  const jsonData = await fetchKamisDailyPayload({ ...args, returnType: 'json' });
+  const jsonRows = extractRows(jsonData);
+  if (jsonRows.length) return jsonData;
+
+  console.log('[KAMIS grocery empty json response]', {
+    requestId: args.requestId,
+    version: KAMIS_GROCERY_API_VERSION,
+    marketCode: args.marketCode,
+    category: args.category,
+    countryCode: args.countryCode || 'default',
+    topLevelKeys: jsonData && typeof jsonData === 'object' ? Object.keys(jsonData).slice(0, 20) : [],
+    dataShape: describeShape(jsonData?.data),
+    condition: readCondition(jsonData),
+  });
+
+  const xmlData = await fetchKamisDailyPayload({ ...args, returnType: 'xml' });
+  const xmlRows = extractRows(xmlData);
+  if (xmlRows.length) return xmlData;
+  return jsonData;
+}
+
+async function fetchKamisDailyPayload({ certKey, certId, marketCode, category, countryCode, regday, returnType = 'json' }) {
   const url = new URL(KAMIS_DAILY_ENDPOINT);
   url.searchParams.set('p_cert_key', certKey);
   url.searchParams.set('p_cert_id', certId);
-  url.searchParams.set('p_returntype', 'json');
+  url.searchParams.set('p_returntype', returnType);
   url.searchParams.set('p_product_cls_code', marketCode);
   url.searchParams.set('p_item_category_code', category);
   url.searchParams.set('p_convert_kg_yn', 'N');
   if (countryCode) url.searchParams.set('p_country_code', countryCode);
   if (regday) url.searchParams.set('p_regday', regday);
-  return fetchKamisJson(url.toString());
+  return returnType === 'xml' ? fetchKamisXml(url.toString()) : fetchKamisJson(url.toString());
 }
 
 async function fetchKamisJson(url) {
-  const response = await fetch(url, { headers: { accept: 'application/json,text/plain,*/*' } });
+  const response = await fetch(url, { headers: { accept: 'application/json,text/plain,*/*', 'cache-control': 'no-cache' }, cf: { cacheTtl: 0, cacheEverything: false } });
   const text = await response.text();
   if (!response.ok) throw new Error(`KAMIS API 응답 오류가 발생했습니다. (${response.status})`);
   try {
-    return text ? JSON.parse(text) : {};
+    if (!text) return { _kamisFormat: 'json' };
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) return { data: parsed, _kamisFormat: 'json' };
+    if (parsed && typeof parsed === 'object') return { ...parsed, _kamisFormat: 'json' };
+    return { data: parsed, _kamisFormat: 'json' };
   } catch {
     if (text.includes('<OpenAPI_ServiceResponse>') || text.includes('Unauthenticated')) {
       throw new Error('KAMIS 인증 정보 또는 요청 파라미터를 확인해 주세요.');
     }
     throw new Error('KAMIS 응답을 해석하지 못했습니다.');
   }
+}
+
+async function fetchKamisXml(url) {
+  const response = await fetch(url, { headers: { accept: 'application/xml,text/xml,text/plain,*/*', 'cache-control': 'no-cache' }, cf: { cacheTtl: 0, cacheEverything: false } });
+  const text = await response.text();
+  if (!response.ok) throw new Error(`KAMIS API XML 응답 오류가 발생했습니다. (${response.status})`);
+  if (text.includes('Unauthenticated')) throw new Error('KAMIS 인증 정보 또는 요청 파라미터를 확인해 주세요.');
+  return parseKamisXml(text);
+}
+
+function parseKamisXml(text) {
+  const dataBlock = firstXmlBlock(text, 'data') || '';
+  const items = [];
+  const itemRegex = /<item\b[^>]*>([\s\S]*?)<\/item>/gi;
+  let match;
+  while ((match = itemRegex.exec(dataBlock))) {
+    const row = parseXmlFlatObject(match[1]);
+    if (Object.keys(row).length) items.push(row);
+  }
+
+  return {
+    condition: parseXmlFlatObject(firstXmlBlock(text, 'condition') || ''),
+    data: { item: items },
+    _kamisFormat: 'xml',
+    _xmlShape: { itemCount: items.length },
+  };
+}
+
+function firstXmlBlock(text, tag) {
+  const pattern = new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i');
+  const match = String(text || '').match(pattern);
+  return match ? match[1] : '';
+}
+
+function parseXmlFlatObject(xml) {
+  const output = {};
+  const tagRegex = /<([A-Za-z0-9_:-]+)\b[^>]*>([\s\S]*?)<\/\1>/g;
+  let match;
+  while ((match = tagRegex.exec(String(xml || '')))) {
+    const key = match[1];
+    const value = decodeXml(match[2].replace(/<[^>]+>/g, '').trim());
+    output[key] = value;
+  }
+  return output;
+}
+
+function decodeXml(value) {
+  return String(value || '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
 }
 
 function readCondition(data) {
@@ -408,6 +507,8 @@ function buildSummary({ item, region, market, results, warnings }) {
       tone: 'empty',
       title: '조회 가능한 가격정보를 찾지 못했습니다',
       message: '품목명을 조금 더 짧게 입력하거나 인기 품목을 선택해 다시 확인해 주세요.',
+      requestId,
+      version: KAMIS_GROCERY_API_VERSION,
       item,
       region,
       market,
@@ -544,11 +645,13 @@ function formatPrice(number, fallback) {
   return text && text !== '-' ? text : '가격 정보 없음';
 }
 
-function logKamisDiagnostics({ item, region, marketType, category, condition, rawData, rawRows, normalizedRows, matchedRows, usableRows, fallbackUsed = false, effectiveRegion = region }) {
+function logKamisDiagnostics({ requestId, item, region, marketType, category, condition, rawData, rawRows, normalizedRows, matchedRows, usableRows, fallbackUsed = false, effectiveRegion = region }) {
   try {
     const firstRawRow = rawRows?.[0] || null;
     const firstMatchedRow = matchedRows?.[0] || null;
     console.log('[KAMIS grocery diagnostics]', {
+      requestId,
+      version: KAMIS_GROCERY_API_VERSION,
       item,
       region,
       marketType,
@@ -556,9 +659,11 @@ function logKamisDiagnostics({ item, region, marketType, category, condition, ra
       conditionCode: condition?.code || '',
       fallbackUsed,
       effectiveRegion,
+      payloadFormat: rawData?._kamisFormat || 'unknown',
       topLevelKeys: rawData && typeof rawData === 'object' ? Object.keys(rawData).slice(0, 20) : [],
       dataShape: describeShape(rawData?.data),
       priceShape: describeShape(rawData?.price),
+      xmlShape: rawData?._xmlShape || null,
       firstRawRowKeys: firstRawRow && typeof firstRawRow === 'object' ? Object.keys(firstRawRow).slice(0, 40) : [],
       extractedRowCount: rawRows?.length || 0,
       normalizedRowCount: normalizedRows?.length || 0,
@@ -613,6 +718,13 @@ function normalizeText(value) {
 
 function clean(value, max = 80) {
   return String(value || '').trim().slice(0, max);
+}
+
+function createRequestId() {
+  try {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  } catch {}
+  return `grocery-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function getEnv(env, keys) {

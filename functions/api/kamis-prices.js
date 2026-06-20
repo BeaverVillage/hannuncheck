@@ -1,9 +1,11 @@
 const KAMIS_BASE_ENDPOINT = 'https://www.kamis.or.kr/service/price/xml.do';
-const KAMIS_GROCERY_API_VERSION = 'v68-pricego-http-fallback';
+const KAMIS_GROCERY_API_VERSION = 'v69-pricego-spec-query-fix';
 const PRICE_GO_ENDPOINTS = [
   'https://openapi.price.go.kr/openApiImpl/ProductPriceInfoService',
   'http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService',
+  'http://openapi.price.go.kr/ProductPriceInfoService',
 ];
+const PRICE_GO_KEY_PARAM_NAMES = ['ServiceKey', 'serviceKey'];
 
 const ACTIONS = {
   dailySales: 'dailySalesList',
@@ -433,21 +435,56 @@ async function tryBuildPriceGoFallbackResponse({ priceGoKey, requestId, item, re
 }
 
 async function fetchPriceGoFallback({ apiKey, requestId, item, region }) {
-  const productPayload = await fetchPriceGoPayload({ apiKey, endpoint: 'getProductInfoSvc.do', requestId });
+  const checkedDays = buildPriceGoInspectDays(8);
+  const productPayload = await fetchPriceGoPayload({ apiKey, endpoint: 'getProductInfoSvc.do', requestId, preferRows: true });
   const productRows = normalizePriceGoProducts(productPayload);
   const productCandidates = findPriceGoProductCandidates(productRows, item);
-  if (!productCandidates.length) {
-    return { results: [], candidates: [], candidateCount: 0, checkedDays: [], warnings: [] };
+
+  if (productCandidates.length) {
+    const candidateResult = await fetchPriceGoPricesForCandidates({
+      apiKey,
+      requestId,
+      item,
+      region,
+      productCandidates,
+      checkedDays,
+    });
+    if (candidateResult.results.length) return candidateResult;
   }
 
+  const directResult = await fetchPriceGoPricesBySearch({
+    apiKey,
+    requestId,
+    item,
+    region,
+    checkedDays,
+  });
+
+  if (directResult.results.length) return directResult;
+
+  return {
+    results: [],
+    candidates: productCandidates.slice(0, PRICE_GO_MAX_PRODUCT_CANDIDATES).map(publicPriceGoCandidate),
+    candidateCount: productCandidates.length || directResult.candidateCount || 0,
+    checkedDays,
+    warnings: directResult.warnings || [],
+  };
+}
+
+async function fetchPriceGoPricesForCandidates({ apiKey, requestId, item, region, productCandidates, checkedDays }) {
   const selectedCandidates = productCandidates.slice(0, PRICE_GO_MAX_PRODUCT_CANDIDATES);
   const candidateIds = new Set(selectedCandidates.map((candidate) => candidate.goodId).filter(Boolean));
-  const checkedDays = buildPriceGoInspectDays(8);
   let priceRows = [];
   let usedDay = '';
 
   for (const day of checkedDays) {
-    const payload = await fetchPriceGoPayload({ apiKey, endpoint: 'getProductPriceInfoSvc.do', requestId, extraParams: { goodInspectDay: day } });
+    const payload = await fetchPriceGoPayload({
+      apiKey,
+      endpoint: 'getProductPriceInfoSvc.do',
+      requestId,
+      extraParams: { goodInspectDay: day },
+      preferRows: true,
+    });
     const normalized = normalizePriceGoPriceRows(payload, selectedCandidates)
       .filter((row) => candidateIds.has(row.productNo));
     if (normalized.length) {
@@ -457,24 +494,88 @@ async function fetchPriceGoFallback({ apiKey, requestId, item, region }) {
     }
   }
 
-  const warnings = [];
   if (!priceRows.length) {
     return {
       results: [],
       candidates: selectedCandidates.map(publicPriceGoCandidate),
       candidateCount: productCandidates.length,
       checkedDays,
-      warnings,
+      warnings: [],
     };
   }
 
+  return buildPriceGoResultFromRows({
+    requestId,
+    item,
+    region,
+    priceRows,
+    candidates: selectedCandidates,
+    checkedDays,
+    usedDay,
+    candidateCount: productCandidates.length,
+    matchMode: 'product-info-candidate',
+  });
+}
+
+async function fetchPriceGoPricesBySearch({ apiKey, requestId, item, region, checkedDays }) {
+  let priceRows = [];
+  let usedDay = '';
+  let rawRowCount = 0;
+
+  for (const day of checkedDays) {
+    const payload = await fetchPriceGoPayload({
+      apiKey,
+      endpoint: 'getProductPriceInfoSvc.do',
+      requestId,
+      extraParams: { goodInspectDay: day },
+      preferRows: true,
+    });
+    const normalized = normalizePriceGoPriceRows(payload, [])
+      .map((row) => ({ ...row, _matchScore: scorePriceGoProduct(candidateFromPriceGoResult(row), item) }))
+      .filter((row) => row._matchScore >= PRICE_GO_MIN_MATCH_SCORE);
+    rawRowCount = Math.max(rawRowCount, payload?.data?.length || 0);
+    if (normalized.length) {
+      priceRows = normalized;
+      usedDay = day;
+      break;
+    }
+  }
+
+  if (!priceRows.length) {
+    console.log('[PRICE_GO grocery direct price search empty]', {
+      requestId,
+      version: KAMIS_GROCERY_API_VERSION,
+      item,
+      region,
+      checkedDays,
+      rawRowCount,
+    });
+    return { results: [], candidates: [], candidateCount: 0, checkedDays, warnings: [] };
+  }
+
+  const candidates = buildPriceGoCandidatesFromPriceRows(priceRows, item);
+  return buildPriceGoResultFromRows({
+    requestId,
+    item,
+    region,
+    priceRows,
+    candidates,
+    checkedDays,
+    usedDay,
+    candidateCount: candidates.length,
+    matchMode: 'direct-price-row-search',
+  });
+}
+
+function buildPriceGoResultFromRows({ requestId, item, region, priceRows, candidates, checkedDays, usedDay, candidateCount, matchMode }) {
+  const warnings = [];
   let scopedRows = filterPriceGoRowsByRegion(priceRows, region);
   if (region !== '전국' && !scopedRows.length) {
     scopedRows = priceRows;
     warnings.push(`${region} 지역 참가격 판매점 자료가 충분하지 않아 전국 판매점 기준으로 표시했습니다.`);
   }
 
-  const aggregateRows = buildPriceGoAggregateRows(scopedRows, selectedCandidates, region, usedDay);
+  const aggregateRows = buildPriceGoAggregateRows(scopedRows, candidates, region, usedDay);
   const storeRows = scopedRows
     .sort((a, b) => a.price - b.price || normalizeText(a.region).localeCompare(normalizeText(b.region), 'ko'))
     .slice(0, 24);
@@ -486,8 +587,9 @@ async function fetchPriceGoFallback({ apiKey, requestId, item, region }) {
     version: KAMIS_GROCERY_API_VERSION,
     item,
     region,
-    productCandidateCount: productCandidates.length,
-    selectedCandidates: selectedCandidates.map((candidate) => ({ goodId: candidate.goodId, goodName: candidate.goodName, score: candidate.score })).slice(0, 8),
+    matchMode,
+    productCandidateCount: candidateCount,
+    selectedCandidates: candidates.map((candidate) => ({ goodId: candidate.goodId, goodName: candidate.goodName, score: candidate.score })).slice(0, 8),
     checkedDays,
     usedDay,
     priceRowCount: priceRows.length,
@@ -497,88 +599,122 @@ async function fetchPriceGoFallback({ apiKey, requestId, item, region }) {
 
   return {
     results,
-    candidates: selectedCandidates.map(publicPriceGoCandidate),
-    matchedItem: primary ? publicPriceGoCandidate(candidateFromPriceGoResult(primary)) : publicPriceGoCandidate(selectedCandidates[0]),
-    candidateCount: productCandidates.length,
+    candidates: candidates.map(publicPriceGoCandidate),
+    matchedItem: primary ? publicPriceGoCandidate(candidateFromPriceGoResult(primary)) : publicPriceGoCandidate(candidates[0]),
+    candidateCount,
     checkedDays,
     usedDay,
     warnings,
   };
 }
 
-async function fetchPriceGoPayload({ apiKey, endpoint, requestId, extraParams = {} }) {
+function buildPriceGoCandidatesFromPriceRows(rows, query) {
+  const byProduct = new Map();
+  for (const row of rows) {
+    if (!row.productNo && !row.itemName) continue;
+    const key = row.productNo || normalizeText(row.itemName);
+    const existing = byProduct.get(key);
+    const candidate = candidateFromPriceGoResult(row);
+    candidate.score = Math.max(scorePriceGoProduct(candidate, query), existing?.score || 0);
+    candidate.matchLabel = buildPriceGoMatchLabel(candidate);
+    if (!existing || candidate.score > existing.score) byProduct.set(key, candidate);
+  }
+  return [...byProduct.values()]
+    .filter((candidate) => candidate.score >= PRICE_GO_MIN_MATCH_SCORE)
+    .sort((a, b) => b.score - a.score || normalizeText(a.goodName).localeCompare(normalizeText(b.goodName), 'ko'))
+    .slice(0, PRICE_GO_MAX_PRODUCT_CANDIDATES);
+}
+
+async function fetchPriceGoPayload({ apiKey, endpoint, requestId, extraParams = {}, preferRows = false }) {
   const attempts = [];
   let lastError = null;
+  let lastPayload = null;
+  let lastEmptyPayload = null;
 
   for (const baseEndpoint of PRICE_GO_ENDPOINTS) {
-    const url = new URL(`${baseEndpoint}/${endpoint}`);
-    url.searchParams.set('ServiceKey', apiKey);
-    for (const [key, value] of Object.entries(extraParams || {})) {
-      if (isPresentValue(value)) url.searchParams.set(key, value);
-    }
-
-    const attemptMeta = {
-      requestId,
-      version: KAMIS_GROCERY_API_VERSION,
-      endpoint,
-      protocol: url.protocol.replace(':', ''),
-      host: url.host,
-      path: url.pathname,
-      params: maskPriceGoParams(url.searchParams),
-    };
-
-    try {
-      const response = await fetch(url.toString(), {
-        headers: {
-          accept: 'application/xml,text/xml,text/plain,*/*',
-          'cache-control': 'no-cache',
-          'user-agent': 'hannuncheck-pricego-fallback/1.0',
-        },
-        cf: { cacheTtl: 0, cacheEverything: false },
-      });
-      const text = await response.text();
-      const contentType = response.headers.get('content-type') || '';
-      attempts.push({ ...attemptMeta, status: response.status, ok: response.ok, contentType, preview: previewText(text) });
-
-      if (!response.ok) {
-        console.log('[PRICE_GO grocery fetch status]', { ...attemptMeta, status: response.status, contentType, preview: previewText(text) });
-        lastError = createPriceGoFetchError(response.status, text, attemptMeta);
-        if (PRICE_GO_HTTPS_ERROR_STATUSES.has(response.status) && url.protocol === 'https:') continue;
-        if (url.protocol === 'https:') continue;
-        continue;
+    for (const keyParamName of PRICE_GO_KEY_PARAM_NAMES) {
+      const url = new URL(`${baseEndpoint}/${endpoint}`);
+      url.searchParams.set(keyParamName, apiKey);
+      for (const [key, value] of Object.entries(extraParams || {})) {
+        if (isPresentValue(value)) url.searchParams.set(key, value);
       }
 
-      const payload = parsePriceGoXml(text);
-      const condition = readPriceGoCondition(payload);
-      if (condition.code && condition.code !== '00') {
-        console.log('[PRICE_GO grocery condition]', { requestId, version: KAMIS_GROCERY_API_VERSION, endpoint, protocol: attemptMeta.protocol, condition });
-        if (condition.code === '90' || /auth|key|인증|service/i.test(condition.message)) {
-          throw new Error('참가격 API 인증키 또는 활용신청 반영 상태를 확인해 주세요.');
-        }
-      }
-
-      console.log('[PRICE_GO grocery fetch ok]', {
+      const attemptMeta = {
         requestId,
         version: KAMIS_GROCERY_API_VERSION,
         endpoint,
-        protocol: attemptMeta.protocol,
-        status: response.status,
-        rowCount: payload?.data?.length || 0,
-        xmlShape: payload?._xmlShape || null,
-      });
-      return payload;
-    } catch (error) {
-      lastError = error;
-      attempts.push({ ...attemptMeta, error: error?.message || String(error) });
-      console.log('[PRICE_GO grocery fetch error]', { ...attemptMeta, message: error?.message || String(error) });
-      if (url.protocol === 'https:') continue;
+        protocol: url.protocol.replace(':', ''),
+        host: url.host,
+        path: url.pathname,
+        keyParamName,
+        params: maskPriceGoParams(url.searchParams),
+      };
+
+      try {
+        const response = await fetch(url.toString(), {
+          headers: {
+            accept: 'application/xml,text/xml,text/plain,*/*',
+            'cache-control': 'no-cache',
+            'user-agent': 'hannuncheck-pricego-fallback/1.1',
+          },
+          cf: { cacheTtl: 0, cacheEverything: false },
+        });
+        const text = await response.text();
+        const contentType = response.headers.get('content-type') || '';
+        attempts.push({ ...attemptMeta, status: response.status, ok: response.ok, contentType, preview: previewText(text) });
+
+        if (!response.ok) {
+          console.log('[PRICE_GO grocery fetch status]', { ...attemptMeta, status: response.status, contentType, preview: previewText(text) });
+          lastError = createPriceGoFetchError(response.status, text, attemptMeta);
+          if (PRICE_GO_HTTPS_ERROR_STATUSES.has(response.status) && url.protocol === 'https:') continue;
+          continue;
+        }
+
+        const payload = parsePriceGoXml(text);
+        const condition = readPriceGoCondition(payload);
+        const rowCount = payload?.data?.length || 0;
+        lastPayload = payload;
+
+        console.log('[PRICE_GO grocery fetch ok]', {
+          requestId,
+          version: KAMIS_GROCERY_API_VERSION,
+          endpoint,
+          protocol: attemptMeta.protocol,
+          host: attemptMeta.host,
+          keyParamName,
+          status: response.status,
+          condition,
+          rowCount,
+          xmlShape: payload?._xmlShape || null,
+        });
+
+        if (condition.code && condition.code !== '00') {
+          console.log('[PRICE_GO grocery condition]', { requestId, version: KAMIS_GROCERY_API_VERSION, endpoint, protocol: attemptMeta.protocol, keyParamName, condition });
+          lastError = new Error(`참가격 API 응답 오류: ${condition.code} ${condition.message || ''}`.trim());
+          if (/auth|key|인증|service|승인|denied|register/i.test(condition.message || condition.code)) continue;
+          continue;
+        }
+
+        if (!preferRows || rowCount > 0) return payload;
+
+        lastEmptyPayload = payload;
+        // The endpoint responded but returned only resultCode/resultMsg or no item rows.
+        // Try the next documented path/key variant before deciding that the data is empty.
+      } catch (error) {
+        lastError = error;
+        attempts.push({ ...attemptMeta, error: error?.message || String(error) });
+        console.log('[PRICE_GO grocery fetch error]', { ...attemptMeta, message: error?.message || String(error) });
+      }
     }
   }
 
+  if (lastEmptyPayload) return lastEmptyPayload;
+  if (lastPayload) return lastPayload;
+
   const detail = attempts.map((attempt) => {
-    if (attempt.status) return `${attempt.protocol}:${attempt.status}`;
-    if (attempt.error) return `${attempt.protocol}:error`;
-    return `${attempt.protocol}:unknown`;
+    if (attempt.status) return `${attempt.protocol}:${attempt.status}:${attempt.keyParamName || 'key'}`;
+    if (attempt.error) return `${attempt.protocol}:error:${attempt.keyParamName || 'key'}`;
+    return `${attempt.protocol}:unknown:${attempt.keyParamName || 'key'}`;
   }).join(', ');
   const error = new Error(`${normalizePriceGoErrorMessage(lastError)} 시도 결과: ${detail}`);
   error.attempts = attempts;
@@ -649,23 +785,43 @@ function maskSecret(value) {
 
 function parsePriceGoXml(text) {
   const source = String(text || '');
-  const rows = [
-    ...allXmlBlocks(source, 'item'),
-    ...allXmlBlocks(source, 'row'),
-  ].map(parseXmlFlatObject).filter((row) => Object.keys(row).length && isPotentialPriceGoRow(row));
+  const rows = extractPriceGoRowsFromXml(source);
   const root = parseXmlFlatObject(source);
   return {
     data: rows,
-    resultCode: root.resultCode || '',
-    resultMsg: root.resultMsg || '',
+    resultCode: root.resultCode || root.resultcode || '',
+    resultMsg: root.resultMsg || root.resultmsg || root.resultMessage || '',
     _priceGoFormat: 'xml',
     _xmlShape: {
       itemBlockCount: allXmlBlocks(source, 'item').length,
       rowBlockCount: allXmlBlocks(source, 'row').length,
       rowCount: rows.length,
-      previewTags: extractXmlTagNames(source).slice(0, 60),
+      previewTags: extractXmlTagNames(source).slice(0, 80),
+      sampleKeys: rows[0] ? Object.keys(rows[0]).slice(0, 40) : [],
     },
   };
+}
+
+function extractPriceGoRowsFromXml(source) {
+  const rows = [];
+  const seen = new Set();
+  const tagNames = extractXmlTagNames(source);
+  const preferredTags = ['item', 'row', 'data', 'list'];
+  const skipTags = new Set(['response', 'header', 'body', 'items', 'rows', 'result', 'resultCode', 'resultMsg']);
+  const candidates = [...new Set([...preferredTags, ...tagNames])];
+
+  for (const tag of candidates) {
+    if (!tag || skipTags.has(tag)) continue;
+    for (const block of allXmlBlocks(source, tag)) {
+      const row = parseXmlFlatObject(block);
+      if (!isPotentialPriceGoRow(row)) continue;
+      const signature = JSON.stringify(Object.keys(row).sort().map((key) => [key, row[key]]));
+      if (seen.has(signature)) continue;
+      seen.add(signature);
+      rows.push(row);
+    }
+  }
+  return rows;
 }
 
 function isPotentialPriceGoRow(row) {
@@ -1709,9 +1865,15 @@ function firstXmlBlock(text, tag) {
   return allXmlBlocks(text, tag)[0] || '';
 }
 
+
+function escapeRegExp(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function allXmlBlocks(text, tag) {
   const blocks = [];
-  const pattern = new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'gi');
+  const escaped = escapeRegExp(tag);
+  const pattern = new RegExp(`<${escaped}\\b[^>]*>([\\s\\S]*?)<\\/${escaped}>`, 'gi');
   let match;
   while ((match = pattern.exec(String(text || '')))) blocks.push(match[1]);
   return blocks;
@@ -1719,7 +1881,7 @@ function allXmlBlocks(text, tag) {
 
 function extractXmlTagNames(text) {
   const tags = [];
-  const pattern = /<\/?([A-Za-z0-9_:-]+)\b/g;
+  const pattern = /<\/?([A-Za-z0-9_.:-]+)\b/g;
   let match;
   while ((match = pattern.exec(String(text || ''))) && tags.length < 100) {
     if (!match[1].startsWith('?')) tags.push(match[1]);
@@ -1729,13 +1891,11 @@ function extractXmlTagNames(text) {
 
 function parseXmlFlatObject(xml) {
   const output = {};
-  const tagRegex = /<([A-Za-z0-9_:-]+)\b[^>]*>([\s\S]*?)<\/\1>/g;
+  const simpleTagRegex = /<([A-Za-z0-9_.:-]+)\b[^>]*>([^<>]*)<\/\1>/g;
   let match;
-  while ((match = tagRegex.exec(String(xml || '')))) {
+  while ((match = simpleTagRegex.exec(String(xml || '')))) {
     const key = match[1];
-    const inner = match[2];
-    if (/<[A-Za-z0-9_:-]+\b[^>]*>/.test(inner)) continue;
-    const value = decodeXml(inner.trim());
+    const value = decodeXml(match[2].trim());
     if (isPresentValue(value)) output[key] = value;
   }
   return output;

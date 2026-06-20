@@ -165,3 +165,24 @@ $env:DATA_GO_KR_SERVICE_KEY="YOUR_KEY"
 .\scripts\build-ev-charger-cache-windows.cmd -Region 11 -Test
 .\scripts\build-ev-charger-cache-windows.cmd -Region 11
 ```
+
+
+## 장보기 물가 확인 기능 안내 (v55 1차)
+
+`/tools/grocery-price-check.html`은 KAMIS 가격정보 API 연동 전 화면 뼈대입니다. 다음 단계에서 Cloudflare Pages Functions를 통해 `KAMIS_API_KEY`와 `KAMIS_CERT_ID`를 서버 환경변수로 읽어 가격정보를 조회합니다. 키 값은 하이픈을 제거하지 말고 발급받은 원문 그대로 입력합니다.
+
+
+## 장보기 물가 확인 기능 안내 (v56 2차)
+
+`/tools/grocery-price-check.html`은 Cloudflare Pages Functions의 `/api/kamis-prices`를 통해 KAMIS 가격정보 Open API를 호출합니다.
+
+필수 환경변수:
+
+```env
+KAMIS_API_KEY=발급받은 인증 key 원문 그대로 입력
+KAMIS_CERT_ID=KAMIS 요청자 ID
+```
+
+키 값에 하이픈이 포함되어 있으면 제거하지 말고 그대로 입력합니다. 환경변수 이름에는 하이픈 대신 언더스코어를 사용합니다.
+
+현재 구현은 `dailyPriceByCategoryList`를 사용해 품목명과 부류를 기준으로 최근 조사 가격, 1주일전, 1개월전 가격을 정리합니다. API 응답 품목명이 정확히 일치하지 않을 수 있으므로 품목명은 짧게 입력하는 것이 안정적입니다.

@@ -3101,3 +3101,357 @@ body .parking-hero .container > .breadcrumb span {
     text-align: center;
   }
 }
+
+
+/* v55: EV result notice must not inherit parking card two-column layout */
+.ev-empty-state,
+[data-ev-charger-map] .ev-empty-state {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px dashed var(--hc-border, #bfdbfe);
+  background: #f8fbff;
+  color: var(--hc-text, #0f172a);
+  box-shadow: none;
+  text-align: left;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.ev-empty-state strong,
+[data-ev-charger-map] .ev-empty-state strong {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 8px;
+  font-size: 0.98rem;
+  line-height: 1.45;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.ev-empty-state p,
+[data-ev-charger-map] .ev-empty-state p {
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  color: var(--hc-muted, #64748b);
+  line-height: 1.65;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* v55: Grocery price check skeleton */
+.grocery-tool-layout {
+  align-items: start;
+}
+.grocery-console .grocery-form {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+.grocery-form-grid {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.7fr) minmax(220px, 1.4fr) minmax(150px, 0.8fr) minmax(150px, 0.8fr);
+  gap: 14px;
+  align-items: end;
+}
+.grocery-popular-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.grocery-chip {
+  border: 1px solid var(--hc-blue-border, #bfdbfe);
+  background: #fff;
+  color: var(--hc-navy, #1e3a5f);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.grocery-chip:hover,
+.grocery-chip.is-selected {
+  background: var(--hc-blue-soft, #eff6ff);
+  border-color: var(--hc-blue, #2563eb);
+  color: var(--hc-blue-dark, #1d4ed8);
+}
+.grocery-result-panel {
+  padding: 0 22px 22px;
+}
+.grocery-placeholder-card,
+.grocery-result-card {
+  border: 1px solid var(--hc-blue-border, #bfdbfe);
+  background: #f8fbff;
+  border-radius: 20px;
+  padding: 20px;
+  word-break: keep-all;
+}
+.grocery-result-card {
+  background: #fff;
+  display: grid;
+  gap: 14px;
+}
+.grocery-result-card .price-value {
+  color: var(--hc-blue-dark, #1d4ed8);
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+.grocery-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.grocery-result-grid span {
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 12px;
+  color: var(--hc-muted, #64748b);
+  line-height: 1.45;
+}
+.grocery-result-grid strong {
+  display: block;
+  color: var(--hc-text, #0f172a);
+  margin-bottom: 4px;
+}
+.grocery-dev-note {
+  border-radius: 16px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  padding: 14px 16px;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+@media (max-width: 920px) {
+  .grocery-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .grocery-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .grocery-console .grocery-form,
+  .grocery-result-panel {
+    padding: 18px;
+  }
+  .grocery-result-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* v56: Grocery price check KAMIS API result UI */
+.grocery-result-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+.grocery-result-head h2 {
+  margin: 0 0 8px;
+  color: var(--hc-text, #0f172a);
+  letter-spacing: -0.04em;
+}
+.grocery-result-head p {
+  margin: 0;
+  color: var(--hc-muted, #64748b);
+  line-height: 1.6;
+  word-break: keep-all;
+}
+.grocery-change-pill {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 0.86rem;
+  font-weight: 900;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  white-space: nowrap;
+}
+.grocery-change-pill.tone-up { border-color: #fed7aa; background: #fff7ed; color: #c2410c; }
+.grocery-change-pill.tone-down { border-color: #bbf7d0; background: #f0fdf4; color: #15803d; }
+.grocery-change-pill.tone-same { border-color: #dbeafe; background: #eff6ff; color: #1d4ed8; }
+.grocery-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+}
+.grocery-price-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  background: #fff;
+  font-size: 0.92rem;
+}
+.grocery-price-table th,
+.grocery-price-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: top;
+}
+.grocery-price-table th {
+  color: var(--hc-muted, #64748b);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  background: #f8fafc;
+}
+.grocery-price-table tr:last-child td { border-bottom: 0; }
+.grocery-price-table td span {
+  display: block;
+  margin-top: 3px;
+  color: var(--hc-muted, #64748b);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+.grocery-warning-list {
+  margin: 0;
+  padding: 12px 16px 12px 34px;
+  border: 1px solid #fed7aa;
+  border-radius: 16px;
+  background: #fff7ed;
+  color: #9a3412;
+  line-height: 1.55;
+}
+.grocery-placeholder-card.is-loading {
+  background: linear-gradient(90deg, #f8fbff, #eff6ff, #f8fbff);
+  background-size: 200% 100%;
+  animation: hcGroceryLoading 1.5s ease-in-out infinite;
+}
+.grocery-error-card {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+.grocery-error-card h2 { color: #991b1b; }
+@keyframes hcGroceryLoading {
+  0% { background-position: 0% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (max-width: 640px) {
+  .grocery-result-head {
+    display: grid;
+  }
+  .grocery-change-pill {
+    justify-self: start;
+  }
+}
+
+
+/* v57: Grocery result cards, trend view and FAQ polish */
+.grocery-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.grocery-insight-grid article {
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 18px;
+  padding: 14px;
+  min-width: 0;
+}
+.grocery-insight-grid span,
+.grocery-trend-list span {
+  display: block;
+  color: var(--hc-muted, #64748b);
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.grocery-insight-grid strong,
+.grocery-trend-list strong {
+  display: block;
+  color: var(--hc-text, #0f172a);
+  font-size: 1rem;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+.grocery-insight-grid small,
+.grocery-trend-list small {
+  display: block;
+  margin-top: 6px;
+  color: var(--hc-muted, #64748b);
+  line-height: 1.35;
+}
+.grocery-action-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 2px 0;
+}
+.grocery-action-pills button {
+  border: 1px solid var(--hc-blue-border, #bfdbfe);
+  background: #fff;
+  color: var(--hc-blue-dark, #1d4ed8);
+  border-radius: 999px;
+  padding: 9px 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.grocery-action-pills button:hover {
+  background: var(--hc-blue-soft, #eff6ff);
+  border-color: var(--hc-blue, #2563eb);
+}
+.grocery-trend-card {
+  display: grid;
+  gap: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 18px;
+  background: #f8fafc;
+}
+.grocery-trend-card h3 {
+  margin: 0 0 6px;
+  color: var(--hc-text, #0f172a);
+  letter-spacing: -0.03em;
+}
+.grocery-trend-card p {
+  margin: 0;
+  color: var(--hc-muted, #64748b);
+  line-height: 1.6;
+  word-break: keep-all;
+}
+.grocery-trend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.grocery-trend-list li {
+  border-radius: 16px;
+  border: 1px solid #dbeafe;
+  background: #fff;
+  padding: 12px;
+  min-width: 0;
+}
+.grocery-source-guide .guide-grid article,
+#faq .faq-accordion-item {
+  word-break: keep-all;
+}
+@media (max-width: 920px) {
+  .grocery-insight-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grocery-trend-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .grocery-insight-grid,
+  .grocery-trend-list {
+    grid-template-columns: 1fr;
+  }
+  .grocery-action-pills button {
+    flex: 1 1 100%;
+  }
+}

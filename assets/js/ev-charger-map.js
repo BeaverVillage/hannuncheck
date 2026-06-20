@@ -981,7 +981,7 @@
 
   function renderMoreNotice(total, visible) {
     if (total <= visible) return '';
-    return `<article class="parking-result-card parking-result-more"><strong>상위 ${visible}곳만 표시 중입니다.</strong><p>반경이 넓을수록 더 많은 후보를 표시합니다. 조건이나 반경을 조정하면 결과가 함께 갱신됩니다.</p></article>`;
+    return `<article class="ev-empty-state ev-result-more"><strong>상위 ${visible}곳만 표시 중입니다.</strong><p>반경이 넓을수록 더 많은 후보를 표시합니다. 조건이나 반경을 조정하면 결과가 함께 갱신됩니다.</p></article>`;
   }
 
   function groupStationsForDisplay(list) {

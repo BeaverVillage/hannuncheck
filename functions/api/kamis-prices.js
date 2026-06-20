@@ -1,6 +1,9 @@
 const KAMIS_BASE_ENDPOINT = 'https://www.kamis.or.kr/service/price/xml.do';
-const KAMIS_GROCERY_API_VERSION = 'v65-pricego-fallback';
-const PRICE_GO_BASE_ENDPOINT = 'https://openapi.price.go.kr/openApiImpl/ProductPriceInfoService';
+const KAMIS_GROCERY_API_VERSION = 'v68-pricego-http-fallback';
+const PRICE_GO_ENDPOINTS = [
+  'https://openapi.price.go.kr/openApiImpl/ProductPriceInfoService',
+  'http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService',
+];
 
 const ACTIONS = {
   dailySales: 'dailySalesList',
@@ -86,6 +89,7 @@ const PRICE_GO_MIN_MATCH_SCORE = 92;
 const PRICE_GO_MAX_PRODUCT_CANDIDATES = 8;
 const PRICE_GO_SOURCE_LABEL = '한국소비자원 참가격 생필품 가격 정보 OpenAPI';
 const PRICE_GO_SOURCE_TAG = '참가격 생필품 가격';
+const PRICE_GO_HTTPS_ERROR_STATUSES = new Set([525, 526]);
 
 const json = (body, init = {}) => new Response(JSON.stringify(body), {
   status: init.status || 200,
@@ -190,7 +194,17 @@ export async function onRequestGet({ request, env }) {
       const priceGoResponse = await tryBuildPriceGoFallbackResponse({ priceGoKey, requestId, item, region, market, warnings, reason: resolution.reason });
       if (priceGoResponse) return json(priceGoResponse);
       const missingPriceGoWarning = priceGoKey ? [] : ['한국소비자원 참가격 API 키가 설정되지 않아 생필품 보조 조회를 건너뛰었습니다.'];
-      return json(buildNoPriceResponse({ requestId, item, region, market, warnings: [...warnings, ...missingPriceGoWarning], code: 'unsupported_item', message: `'${item}'은 현재 연결된 KAMIS 가격 목록에서 강하게 매칭되지 않았습니다. 생필품 가격까지 확인하려면 PRICE_GO_KR_API_KEY 설정을 확인해 주세요.` }));
+      const finalWarnings = [...warnings, ...missingPriceGoWarning];
+      return json(buildNoPriceResponse({
+        requestId,
+        item,
+        region,
+        market,
+        warnings: finalWarnings,
+        code: 'unsupported_item',
+        message: buildUnsupportedPriceGoMessage({ item, priceGoKey, warnings: finalWarnings }),
+        sourceTag: '공공데이터 조회 결과',
+      }));
     }
 
     if (resolution.status === 'ambiguous') {
@@ -219,7 +233,7 @@ export async function onRequestGet({ request, env }) {
         results: [],
         warnings: ['입력어가 여러 품목과 연결될 수 있어 자동 조회하지 않았습니다.'],
         source: 'KAMIS 농산물유통정보 가격정보 Open API',
-        sourceTag: 'KAMIS PRICE DATA',
+        sourceTag,
         sourceLabel: 'KAMIS 농산물유통정보 가격정보 Open API',
       });
     }
@@ -286,7 +300,21 @@ export async function onRequestGet({ request, env }) {
         ? 'KAMIS 코드표에서 품목은 찾았지만 현재 조건의 실제 가격값을 확인하지 못했습니다. 시장 유형 또는 지역 기준을 바꿔 다시 확인해 주세요.'
         : '현재 조건의 실제 가격값을 확인하지 못했습니다.';
       const missingPriceGoWarning = priceGoKey ? [] : ['한국소비자원 참가격 API 키가 설정되지 않아 생필품 보조 조회를 건너뛰었습니다.'];
-      return json(buildNoPriceResponse({ requestId, item, region, market, warnings: [...warnings, ...missingPriceGoWarning], code: 'no_recent_price', message: candidateMessage, candidates: resolvedCandidates.slice(0, 5).map(publicCandidate) }));
+      const finalWarnings = [...warnings, ...missingPriceGoWarning];
+      const finalMessage = priceGoKey
+        ? buildNoRecentPriceGoMessage({ item, baseMessage: candidateMessage, warnings: finalWarnings })
+        : candidateMessage;
+      return json(buildNoPriceResponse({
+        requestId,
+        item,
+        region,
+        market,
+        warnings: finalWarnings,
+        code: 'no_recent_price',
+        message: finalMessage,
+        candidates: resolvedCandidates.slice(0, 5).map(publicCandidate),
+        sourceTag: '공공데이터 조회 결과',
+      }));
     }
 
     const summary = buildSummary({ requestId, item, region, market, results, warnings, resolution, elapsedMs: Date.now() - startedAt });
@@ -306,7 +334,7 @@ export async function onRequestGet({ request, env }) {
       results: results.slice(0, 40),
       warnings: [...new Set(warnings)].slice(0, 8),
       source: 'KAMIS 농산물유통정보 가격정보 Open API',
-      sourceTag: 'KAMIS PRICE DATA',
+      sourceTag,
       sourceLabel: 'KAMIS 농산물유통정보 가격정보 Open API',
     });
   } catch (error) {
@@ -315,7 +343,7 @@ export async function onRequestGet({ request, env }) {
   }
 }
 
-function buildNoPriceResponse({ requestId, item, region, market, warnings = [], code = 'no_price', message, candidates = [] }) {
+function buildNoPriceResponse({ requestId, item, region, market, warnings = [], code = 'no_price', message, candidates = [], sourceTag = 'KAMIS PRICE DATA' }) {
   return {
     ok: true,
     code,
@@ -340,7 +368,7 @@ function buildNoPriceResponse({ requestId, item, region, market, warnings = [], 
     results: [],
     warnings: [...new Set(warnings)].slice(0, 8),
     source: 'KAMIS 농산물유통정보 가격정보 Open API',
-    sourceTag: 'KAMIS PRICE DATA',
+    sourceTag,
     sourceLabel: 'KAMIS 농산물유통정보 가격정보 Open API',
   };
 }
@@ -389,15 +417,17 @@ async function tryBuildPriceGoFallbackResponse({ priceGoKey, requestId, item, re
       sourceLabel: PRICE_GO_SOURCE_LABEL,
     };
   } catch (error) {
+    const message = normalizePriceGoErrorMessage(error);
     console.log('[PRICE_GO grocery fallback failed]', {
       requestId,
       version: KAMIS_GROCERY_API_VERSION,
       item,
       region,
       reason,
-      message: error?.message || String(error),
+      message,
+      rawMessage: error?.message || String(error),
     });
-    warnings.push('한국소비자원 참가격 생필품 가격 보조 조회 중 오류가 발생했습니다.');
+    warnings.push(message);
     return null;
   }
 }
@@ -477,24 +507,144 @@ async function fetchPriceGoFallback({ apiKey, requestId, item, region }) {
 }
 
 async function fetchPriceGoPayload({ apiKey, endpoint, requestId, extraParams = {} }) {
-  const url = new URL(`${PRICE_GO_BASE_ENDPOINT}/${endpoint}`);
-  url.searchParams.set('ServiceKey', apiKey);
-  for (const [key, value] of Object.entries(extraParams || {})) {
-    if (isPresentValue(value)) url.searchParams.set(key, value);
+  const attempts = [];
+  let lastError = null;
+
+  for (const baseEndpoint of PRICE_GO_ENDPOINTS) {
+    const url = new URL(`${baseEndpoint}/${endpoint}`);
+    url.searchParams.set('ServiceKey', apiKey);
+    for (const [key, value] of Object.entries(extraParams || {})) {
+      if (isPresentValue(value)) url.searchParams.set(key, value);
+    }
+
+    const attemptMeta = {
+      requestId,
+      version: KAMIS_GROCERY_API_VERSION,
+      endpoint,
+      protocol: url.protocol.replace(':', ''),
+      host: url.host,
+      path: url.pathname,
+      params: maskPriceGoParams(url.searchParams),
+    };
+
+    try {
+      const response = await fetch(url.toString(), {
+        headers: {
+          accept: 'application/xml,text/xml,text/plain,*/*',
+          'cache-control': 'no-cache',
+          'user-agent': 'hannuncheck-pricego-fallback/1.0',
+        },
+        cf: { cacheTtl: 0, cacheEverything: false },
+      });
+      const text = await response.text();
+      const contentType = response.headers.get('content-type') || '';
+      attempts.push({ ...attemptMeta, status: response.status, ok: response.ok, contentType, preview: previewText(text) });
+
+      if (!response.ok) {
+        console.log('[PRICE_GO grocery fetch status]', { ...attemptMeta, status: response.status, contentType, preview: previewText(text) });
+        lastError = createPriceGoFetchError(response.status, text, attemptMeta);
+        if (PRICE_GO_HTTPS_ERROR_STATUSES.has(response.status) && url.protocol === 'https:') continue;
+        if (url.protocol === 'https:') continue;
+        continue;
+      }
+
+      const payload = parsePriceGoXml(text);
+      const condition = readPriceGoCondition(payload);
+      if (condition.code && condition.code !== '00') {
+        console.log('[PRICE_GO grocery condition]', { requestId, version: KAMIS_GROCERY_API_VERSION, endpoint, protocol: attemptMeta.protocol, condition });
+        if (condition.code === '90' || /auth|key|인증|service/i.test(condition.message)) {
+          throw new Error('참가격 API 인증키 또는 활용신청 반영 상태를 확인해 주세요.');
+        }
+      }
+
+      console.log('[PRICE_GO grocery fetch ok]', {
+        requestId,
+        version: KAMIS_GROCERY_API_VERSION,
+        endpoint,
+        protocol: attemptMeta.protocol,
+        status: response.status,
+        rowCount: payload?.data?.length || 0,
+        xmlShape: payload?._xmlShape || null,
+      });
+      return payload;
+    } catch (error) {
+      lastError = error;
+      attempts.push({ ...attemptMeta, error: error?.message || String(error) });
+      console.log('[PRICE_GO grocery fetch error]', { ...attemptMeta, message: error?.message || String(error) });
+      if (url.protocol === 'https:') continue;
+    }
   }
-  const response = await fetch(url.toString(), {
-    headers: { accept: 'application/xml,text/xml,text/plain,*/*', 'cache-control': 'no-cache' },
-    cf: { cacheTtl: 0, cacheEverything: false },
-  });
-  const text = await response.text();
-  if (!response.ok) throw new Error(`참가격 API 응답 오류가 발생했습니다. (${response.status})`);
-  const payload = parsePriceGoXml(text);
-  const condition = readPriceGoCondition(payload);
-  if (condition.code && condition.code !== '00') {
-    console.log('[PRICE_GO grocery condition]', { requestId, version: KAMIS_GROCERY_API_VERSION, endpoint, condition });
-    if (condition.code === '90' || /auth|key|인증/i.test(condition.message)) throw new Error('참가격 API 인증키를 확인해 주세요.');
+
+  const detail = attempts.map((attempt) => {
+    if (attempt.status) return `${attempt.protocol}:${attempt.status}`;
+    if (attempt.error) return `${attempt.protocol}:error`;
+    return `${attempt.protocol}:unknown`;
+  }).join(', ');
+  const error = new Error(`${normalizePriceGoErrorMessage(lastError)} 시도 결과: ${detail}`);
+  error.attempts = attempts;
+  throw error;
+}
+
+function createPriceGoFetchError(status, text, meta) {
+  const preview = previewText(text);
+  if (PRICE_GO_HTTPS_ERROR_STATUSES.has(status) && meta?.protocol === 'https') {
+    return new Error(`참가격 API HTTPS 연결 오류가 발생했습니다. (${status})`);
   }
-  return payload;
+  return new Error(`참가격 API 응답 오류가 발생했습니다. (${status})${preview ? ` - ${preview}` : ''}`);
+}
+
+function normalizePriceGoErrorMessage(error) {
+  const raw = error?.message || String(error || '');
+  if (/\b526\b/.test(raw) || /HTTPS 연결 오류/.test(raw)) {
+    return '한국소비자원 참가격 API HTTPS 연결 오류가 발생했습니다. HTTP 대체 경로까지 확인했지만 응답을 받지 못했습니다.';
+  }
+  if (/인증키|활용신청|ServiceKey|SERVICE_KEY|key/i.test(raw)) {
+    return '한국소비자원 참가격 API 인증키 또는 활용신청 반영 상태를 확인해 주세요.';
+  }
+  if (/fetch failed|network|timeout|TLS|SSL/i.test(raw)) {
+    return '한국소비자원 참가격 API 연결 중 네트워크 또는 SSL 오류가 발생했습니다.';
+  }
+  return raw || '한국소비자원 참가격 API 보조 조회 중 오류가 발생했습니다.';
+}
+
+function buildUnsupportedPriceGoMessage({ item, priceGoKey, warnings = [] }) {
+  if (!priceGoKey) {
+    return `'${item}'은 현재 연결된 KAMIS 가격 목록에서 강하게 매칭되지 않았습니다. 생필품 가격까지 확인하려면 PRICE_GO_KR_API_KEY 설정을 확인해 주세요.`;
+  }
+  if (hasPriceGoConnectionWarning(warnings)) {
+    return `'${item}'은 KAMIS 농축수산물 가격 목록에서 찾지 못했고, 참가격 생필품 API 연결 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.`;
+  }
+  return `'${item}'은 KAMIS 농축수산물 가격 목록과 참가격 생필품 목록에서 현재 가격정보를 확인하지 못했습니다. 품목명을 조금 다르게 입력해 보세요.`;
+}
+
+function buildNoRecentPriceGoMessage({ item, baseMessage, warnings = [] }) {
+  if (hasPriceGoConnectionWarning(warnings)) {
+    return `${baseMessage} 또한 참가격 생필품 API 연결 중 오류가 발생해 보조 가격을 확인하지 못했습니다.`;
+  }
+  return `${baseMessage} 참가격 생필품 보조 조회에서도 현재 조건의 가격정보를 확인하지 못했습니다.`;
+}
+
+function hasPriceGoConnectionWarning(warnings = []) {
+  return warnings.some((warning) => /참가격 API.*(오류|연결|HTTPS|SSL|네트워크|응답)/.test(String(warning || '')));
+}
+
+function previewText(text, maxLength = 180) {
+  return String(text || '').replace(/\s+/g, ' ').trim().slice(0, maxLength);
+}
+
+function maskPriceGoParams(searchParams) {
+  const masked = {};
+  for (const [key, value] of searchParams.entries()) {
+    masked[key] = /servicekey/i.test(key) ? maskSecret(value) : value;
+  }
+  return masked;
+}
+
+function maskSecret(value) {
+  const text = String(value || '');
+  if (!text) return '';
+  if (text.length <= 8) return '****';
+  return `${text.slice(0, 4)}…${text.slice(-4)}`;
 }
 
 function parsePriceGoXml(text) {

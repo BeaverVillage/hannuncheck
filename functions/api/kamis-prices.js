@@ -1,5 +1,5 @@
 const KAMIS_DAILY_ENDPOINT = 'https://www.kamis.or.kr/service/price/xml.do?action=dailyPriceByCategoryList';
-const KAMIS_GROCERY_API_VERSION = 'v61-kamis-cache-xml-fallback';
+const KAMIS_GROCERY_API_VERSION = 'v62-kamis-requestid-xml-row-fix';
 const CATEGORY_LABELS = {
   '100': '식량작물',
   '200': '채소류',
@@ -151,7 +151,7 @@ export async function onRequestGet({ request, env }) {
     }
 
     const deduped = dedupeResults(results).sort(compareResult);
-    const summary = buildSummary({ item, region, market, results: deduped, warnings });
+    const summary = buildSummary({ requestId, item, region, market, results: deduped, warnings });
 
     return json({
       ok: true,
@@ -182,7 +182,18 @@ async function fetchKamisDaily({ certKey, certId, item, region, marketType, cate
     warnings.push(`${region} 지역은 KAMIS 도매가격 지역 조회가 제한되어 전체지역 기준으로 확인했습니다.`);
   }
 
-  let data = await fetchKamisDailyPayloadWithFallback({
+  const evaluatePayload = (payload, effectiveRegion, fallbackUsed = false) => {
+    const condition = readCondition(payload);
+    const rawRows = extractRows(payload);
+    const normalizedRows = rawRows
+      .map((row) => normalizeKamisRow(row, { marketType, marketLabel: marketInfo.label, region: effectiveRegion, category }))
+      .filter(hasItemIdentity);
+    const matchedRows = normalizedRows.filter((row) => isItemMatch(row, item));
+    const usableRows = matchedRows.filter(hasUsablePriceRow);
+    return { payload, condition, rawRows, normalizedRows, matchedRows, usableRows, effectiveRegion, fallbackUsed };
+  };
+
+  let evaluated = evaluatePayload(await fetchKamisDailyPayloadWithFallback({
     certKey,
     certId,
     marketCode: marketInfo.code,
@@ -190,20 +201,16 @@ async function fetchKamisDaily({ certKey, certId, item, region, marketType, cate
     countryCode: requestCountryCode,
     regday,
     requestId,
-  });
-  let apiCondition = readCondition(data);
-  if (apiCondition.code && apiCondition.code !== '000') {
-    throw new Error(apiCondition.message || `KAMIS API 오류가 발생했습니다. (${apiCondition.code})`);
+  }), region, false);
+
+  if (evaluated.condition.code && evaluated.condition.code !== '000') {
+    throw new Error(evaluated.condition.message || `KAMIS API 오류가 발생했습니다. (${evaluated.condition.code})`);
   }
 
-  let rawRows = extractRows(data);
-  let effectiveRegion = region;
-  let fallbackUsed = false;
-
-  if (!rawRows.length && region === '전국') {
+  if (!evaluated.usableRows.length && region === '전국') {
     const fallbackRegions = marketType === 'wholesale' ? NATIONAL_WHOLESALE_FALLBACK_REGIONS : NATIONAL_RETAIL_FALLBACK_REGIONS;
     for (const [fallbackCode, fallbackLabel] of fallbackRegions) {
-      const fallbackData = await fetchKamisDailyPayloadWithFallback({
+      const fallbackPayload = await fetchKamisDailyPayloadWithFallback({
         certKey,
         certId,
         marketCode: marketInfo.code,
@@ -212,27 +219,15 @@ async function fetchKamisDaily({ certKey, certId, item, region, marketType, cate
         regday,
         requestId,
       });
-      const fallbackCondition = readCondition(fallbackData);
-      if (fallbackCondition.code && fallbackCondition.code !== '000') continue;
+      const fallbackEvaluated = evaluatePayload(fallbackPayload, `${fallbackLabel} 기준`, true);
+      if (fallbackEvaluated.condition.code && fallbackEvaluated.condition.code !== '000') continue;
+      if (!fallbackEvaluated.usableRows.length) continue;
 
-      const fallbackRows = extractRows(fallbackData);
-      if (!fallbackRows.length) continue;
-
-      data = fallbackData;
-      apiCondition = fallbackCondition;
-      rawRows = fallbackRows;
-      effectiveRegion = `${fallbackLabel} 기준`;
-      fallbackUsed = true;
-      warnings.push(`KAMIS 전국 기준 응답이 비어 있어 ${fallbackLabel} 지역 기준으로 확인했습니다.`);
+      evaluated = fallbackEvaluated;
+      warnings.push(`KAMIS 전국 기준 응답에서 실제 가격값을 찾지 못해 ${fallbackLabel} 지역 기준으로 확인했습니다.`);
       break;
     }
   }
-
-  const normalizedRows = rawRows
-    .map((row) => normalizeKamisRow(row, { marketType, marketLabel: marketInfo.label, region: effectiveRegion, category }))
-    .filter(hasItemIdentity);
-  const matchedRows = normalizedRows.filter((row) => isItemMatch(row, item));
-  const usableRows = matchedRows.filter(hasUsablePriceRow);
 
   logKamisDiagnostics({
     requestId,
@@ -240,20 +235,23 @@ async function fetchKamisDaily({ certKey, certId, item, region, marketType, cate
     region,
     marketType,
     category,
-    condition: apiCondition,
-    rawData: data,
-    rawRows,
-    normalizedRows,
-    matchedRows,
-    usableRows,
-    fallbackUsed,
-    effectiveRegion,
+    condition: evaluated.condition,
+    rawData: evaluated.payload,
+    rawRows: evaluated.rawRows,
+    normalizedRows: evaluated.normalizedRows,
+    matchedRows: evaluated.matchedRows,
+    usableRows: evaluated.usableRows,
+    fallbackUsed: evaluated.fallbackUsed,
+    effectiveRegion: evaluated.effectiveRegion,
   });
 
-  if (matchedRows.length && !usableRows.length) {
+  if (evaluated.matchedRows.length && !evaluated.usableRows.length) {
     warnings.push('KAMIS에서 품목명은 확인됐지만 최근 가격 필드가 비어 있어 결과에서 제외했습니다.');
   }
-  return { results: usableRows, warnings };
+  if (!evaluated.matchedRows.length && evaluated.rawRows.length) {
+    warnings.push('KAMIS 응답은 있었지만 선택한 품목명과 일치하는 가격 row를 찾지 못했습니다.');
+  }
+  return { results: evaluated.usableRows, warnings };
 }
 
 async function fetchKamisDailyPayloadWithFallback(args) {
@@ -318,27 +316,56 @@ async function fetchKamisXml(url) {
 }
 
 function parseKamisXml(text) {
-  const dataBlock = firstXmlBlock(text, 'data') || '';
-  const items = [];
-  const itemRegex = /<item\b[^>]*>([\s\S]*?)<\/item>/gi;
-  let match;
-  while ((match = itemRegex.exec(dataBlock))) {
-    const row = parseXmlFlatObject(match[1]);
-    if (Object.keys(row).length) items.push(row);
+  const source = String(text || '');
+  const itemBlocks = allXmlBlocks(source, 'item');
+  let rows = itemBlocks.map(parseXmlFlatObject).filter((row) => Object.keys(row).length);
+
+  if (!rows.length) {
+    rows = allXmlBlocks(source, 'data')
+      .map(parseXmlFlatObject)
+      .filter((row) => Object.keys(row).length && isPriceLikeRow(row));
+  }
+
+  if (!rows.length) {
+    rows = allXmlBlocks(source, 'row')
+      .map(parseXmlFlatObject)
+      .filter((row) => Object.keys(row).length && isPriceLikeRow(row));
   }
 
   return {
-    condition: parseXmlFlatObject(firstXmlBlock(text, 'condition') || ''),
-    data: { item: items },
+    condition: parseXmlFlatObject(firstXmlBlock(source, 'condition') || ''),
+    data: { item: rows },
     _kamisFormat: 'xml',
-    _xmlShape: { itemCount: items.length },
+    _xmlShape: {
+      itemBlockCount: itemBlocks.length,
+      rowCount: rows.length,
+      previewTags: extractXmlTagNames(source).slice(0, 40),
+    },
   };
 }
 
 function firstXmlBlock(text, tag) {
-  const pattern = new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i');
-  const match = String(text || '').match(pattern);
-  return match ? match[1] : '';
+  return allXmlBlocks(text, tag)[0] || '';
+}
+
+function allXmlBlocks(text, tag) {
+  const blocks = [];
+  const pattern = new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'gi');
+  let match;
+  while ((match = pattern.exec(String(text || '')))) {
+    blocks.push(match[1]);
+  }
+  return blocks;
+}
+
+function extractXmlTagNames(text) {
+  const tags = [];
+  const pattern = /<\/?([A-Za-z0-9_:-]+)\b/g;
+  let match;
+  while ((match = pattern.exec(String(text || ''))) && tags.length < 80) {
+    if (!match[1].startsWith('?')) tags.push(match[1]);
+  }
+  return [...new Set(tags)];
 }
 
 function parseXmlFlatObject(xml) {
@@ -347,8 +374,10 @@ function parseXmlFlatObject(xml) {
   let match;
   while ((match = tagRegex.exec(String(xml || '')))) {
     const key = match[1];
-    const value = decodeXml(match[2].replace(/<[^>]+>/g, '').trim());
-    output[key] = value;
+    const inner = match[2];
+    if (/<[A-Za-z0-9_:-]+\b[^>]*>/.test(inner)) continue;
+    const value = decodeXml(inner.trim());
+    if (isPresentValue(value)) output[key] = value;
   }
   return output;
 }
@@ -501,7 +530,7 @@ function dedupeResults(rows) {
   return [...map.values()];
 }
 
-function buildSummary({ item, region, market, results, warnings }) {
+function buildSummary({ requestId, item, region, market, results, warnings }) {
   if (!results.length) {
     return {
       tone: 'empty',
@@ -539,6 +568,9 @@ function isItemMatch(row, query) {
 
   const aliases = getItemAliases(query).map(normalizeText).filter(Boolean);
   return aliases.some((alias) => {
+    if (alias.length <= 1) {
+      return item === alias || kind === alias;
+    }
     if (item.includes(alias) || kind.includes(alias)) return true;
     if (item.length >= 2 && alias.includes(item)) return true;
     if (kind.length >= 2 && alias.includes(kind)) return true;
@@ -583,7 +615,7 @@ function normalizeDate(value) {
 }
 
 
-const ITEM_NAME_KEYS = ['item_name', 'itemName', 'itemname', 'ITEM_NAME', 'productName', 'product_name', 'product_name_kor', 'productname', '품목명', '품목', 'item'];
+const ITEM_NAME_KEYS = ['item_name', 'itemName', 'itemname', 'ITEM_NAME', 'productName', 'product_name', 'product_name_kor', 'productname', '품목명', '품목'];
 const KIND_NAME_KEYS = ['kind_name', 'kindName', 'kindname', 'KIND_NAME', 'kind', 'variety_name', 'varietyName', 'kindnm', '품종명', '품종', '규격'];
 const ITEM_CODE_KEYS = ['itemcode', 'item_code', 'itemCode', 'ITEM_CODE', 'productno', 'product_no', 'productNo', '품목코드'];
 const KIND_CODE_KEYS = ['kindcode', 'kind_code', 'kindCode', 'KIND_CODE', 'kindno', 'kind_no', '품종코드'];
@@ -627,7 +659,9 @@ function normalizeKey(value) {
 }
 
 function isPresentValue(value) {
-  return value !== undefined && value !== null && String(value).trim() !== '';
+  if (value === undefined || value === null) return false;
+  if (Array.isArray(value) || typeof value === 'object') return false;
+  return String(value).trim() !== '';
 }
 
 function parsePrice(value) {

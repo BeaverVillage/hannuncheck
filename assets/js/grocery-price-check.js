@@ -197,7 +197,7 @@
       item,
       market: els.market?.value || 'retail',
       period: els.period?.value || 'latest',
-      _v: 'v61',
+      _v: 'v62',
       _ts: Date.now().toString()
     });
     setStatus(`${item} 가격정보를 불러오고 있습니다.`);

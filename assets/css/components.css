@@ -3456,7 +3456,7 @@ body .parking-hero .container > .breadcrumb span {
   }
 }
 
-/* v60: Grocery KAMIS national fallback + robust row extraction */
+/* v62: Grocery KAMIS requestId, XML row parsing, and cache-bust fix */
 .grocery-tool-layout {
   grid-template-columns: minmax(0, 1fr);
   gap: 22px;

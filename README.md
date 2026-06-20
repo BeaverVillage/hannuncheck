@@ -169,7 +169,7 @@ $env:DATA_GO_KR_SERVICE_KEY="YOUR_KEY"
 
 ## 장보기 물가 확인 기능 안내 (v55 1차)
 
-`/tools/grocery-price-check.html`은 Cloudflare Pages Functions의 `/api/kamis-prices`를 통해 KAMIS 가격정보 Open API를 호출합니다. v63부터는 `dailySalesList` 최근일자 상품 기준 가격정보를 1차 가격 소스로 사용하고, `productInfo` 코드표 및 상품번호 기반 매칭으로 품목명을 해석합니다. 키 값은 하이픈을 제거하지 말고 발급받은 원문 그대로 입력합니다.
+`/tools/grocery-price-check.html`은 Cloudflare Pages Functions의 `/api/kamis-prices`를 통해 KAMIS 가격정보 Open API를 호출합니다. v64부터는 `dailySalesList` 최근일자 상품 기준 가격정보를 가격 있는 1차 검색 인덱스로 먼저 사용하고, `productInfo` 코드표는 품목 후보 보정과 애매한 입력 처리에 보조로 사용합니다. 키 값은 하이픈을 제거하지 말고 발급받은 원문 그대로 입력합니다.
 
 
 ## 장보기 물가 확인 기능 안내 (v56 2차)
@@ -188,7 +188,7 @@ KAMIS_CERT_ID=KAMIS 요청자 ID
 현재 구현은 `dailySalesList` 상품 기준 가격정보를 우선 사용하고, `productInfo` 코드표 및 후보 선택 로직으로 품목명을 해석합니다. 부류별 API는 보조 fallback으로만 사용합니다.
 
 
-### 장보기 물가 확인 v63
+### 장보기 물가 확인 v64
 
 - `functions/api/kamis-prices.js`는 `dailyPriceByCategoryList` 부류 추정 방식을 메인에서 내리고, `dailySalesList` 상품 기준 가격정보와 `productInfo` 코드표 기반 매칭을 우선 사용합니다.
 - `배`/`배추`, `무`/`무화과`, `파`/`대파`/`쪽파`처럼 혼동 가능성이 있는 품목은 단순 포함 검색을 막고 후보 선택 상태를 반환합니다.

@@ -1,5 +1,5 @@
 const KAMIS_BASE_ENDPOINT = 'https://www.kamis.or.kr/service/price/xml.do';
-const KAMIS_GROCERY_API_VERSION = 'v63-kamis-code-index-search';
+const KAMIS_GROCERY_API_VERSION = 'v64-daily-sales-first-match';
 
 const ACTIONS = {
   dailySales: 'dailySalesList',
@@ -142,7 +142,7 @@ export async function onRequestGet({ request, env }) {
     const productCatalogRows = productCatalogPayload ? normalizeProductCatalogRows(productCatalogPayload) : [];
     const indexEntries = buildCodeIndex(dailyRows, productCatalogRows);
 
-    const resolution = resolveItemCandidate({
+    let resolution = resolveItemCandidate({
       query: item,
       selectedProductNo,
       selectedItemCode,
@@ -152,6 +152,14 @@ export async function onRequestGet({ request, env }) {
       indexEntries,
       marketTypes,
     });
+
+    const directDailyRows = filterDailyRowsByQuery(dailyPriceRows, item);
+    if (resolution.status === 'unsupported' && directDailyRows.length) {
+      resolution = { status: 'resolved', candidates: directDailyRows.map(candidateFromRow).map((candidate) => ({ ...candidate, score: scoreCandidate(candidate, item), matchLabel: buildMatchLabel(candidate) })).slice(0, 8), reason: 'daily_sales_direct_match' };
+    } else if (resolution.status === 'ambiguous' && directDailyRows.length === 1 && scoreCandidate(candidateFromRow(directDailyRows[0]), item) >= 125) {
+      const candidate = candidateFromRow(directDailyRows[0]);
+      resolution = { status: 'resolved', candidates: [{ ...candidate, score: scoreCandidate(candidate, item), matchLabel: buildMatchLabel(candidate) }], reason: 'daily_sales_single_strong_match' };
+    }
 
     logCodeIndexDiagnostics({
       requestId,
@@ -199,7 +207,27 @@ export async function onRequestGet({ request, env }) {
     }
 
     const resolvedCandidates = resolution.candidates.length ? resolution.candidates : [];
-    const matchedDailyRows = filterDailyRowsByCandidates(dailyPriceRows, resolvedCandidates, item);
+    const matchedDailyRows = dedupeResults([
+      ...directDailyRows,
+      ...filterDailyRowsByCandidates(dailyPriceRows, resolvedCandidates, item),
+    ]);
+    console.log('[KAMIS grocery daily-sales match]', {
+      requestId,
+      version: KAMIS_GROCERY_API_VERSION,
+      item,
+      directDailyRowCount: directDailyRows.length,
+      matchedDailyRowCount: matchedDailyRows.length,
+      firstMatchedDailyRow: matchedDailyRows[0] ? {
+        productNo: matchedDailyRows[0].productNo,
+        productName: matchedDailyRows[0].productName,
+        itemName: matchedDailyRows[0].itemName,
+        categoryCode: matchedDailyRows[0].categoryCode,
+        marketType: matchedDailyRows[0].marketType,
+        unit: matchedDailyRows[0].unit,
+        day: matchedDailyRows[0].day,
+        hasPrice: Number.isFinite(matchedDailyRows[0].price),
+      } : null,
+    });
     const periodRows = [];
 
     if (region !== '전국' && resolvedCandidates.length) {
@@ -219,10 +247,12 @@ export async function onRequestGet({ request, env }) {
       .filter(hasUsablePriceRow)
       .sort(compareResult);
 
-    if (!results.length && resolvedCandidates.length) {
+    if (!results.length && resolvedCandidates.length && dailyRows.length < 1) {
       const categoryFallbackRows = await safeFetchCategoryFallbackRows({ certKey, certId, requestId, region, marketTypes, candidates: resolvedCandidates, item, regday });
       results = dedupeResults(categoryFallbackRows).filter(hasUsablePriceRow).sort(compareResult);
       if (categoryFallbackRows.length) warnings.push('상품 기준 가격에서 찾지 못해 부류별 가격 API를 보조 조회했습니다.');
+    } else if (!results.length && resolvedCandidates.length) {
+      warnings.push('최근 상품 기준 가격 목록에서 현재 품목의 가격값을 찾지 못해 부류별 보조 조회는 생략했습니다.');
     }
 
     let trend = null;
@@ -735,6 +765,7 @@ function scoreCandidate(entry, query) {
   const q = normalizeText(query);
   if (!q) return 0;
   const aliases = getItemAliases(query).map(normalizeText).filter(Boolean);
+  const aliasOnly = aliases.filter((alias) => alias && alias !== q);
   const item = normalizeText(entry.itemName);
   const kind = normalizeText(entry.kindName);
   const display = normalizeText(entry.displayName);
@@ -742,27 +773,38 @@ function scoreCandidate(entry, query) {
   const tokens = new Set([item, kind, display, product, ...(entry.normalizedTokens || [])].filter(Boolean));
   let score = 0;
 
-  for (const alias of aliases) {
+  if (display === q || product === q) score = Math.max(score, 150);
+  if (item === q) score = Math.max(score, 135);
+  if (kind === q) score = Math.max(score, 130);
+  if (tokens.has(q)) score = Math.max(score, 115);
+
+  if (!DANGEROUS_ONE_CHAR_QUERY.has(q) && q.length >= 2) {
+    if (display.includes(q) || product.includes(q)) score = Math.max(score, 108);
+    if (item.includes(q)) score = Math.max(score, 105);
+    if (kind.includes(q)) score = Math.max(score, 100);
+    if (q.includes(item) && item.length >= 2) score = Math.max(score, 80);
+  }
+
+  for (const alias of aliasOnly) {
     if (!alias) continue;
     if (DANGEROUS_ONE_CHAR_QUERY.has(alias)) {
-      if (item === alias) score = Math.max(score, 120);
-      if (display === alias || product === alias) score = Math.max(score, 110);
-      if (kind === alias) score = Math.max(score, 80);
+      if (display === alias || product === alias) score = Math.max(score, 68);
+      if (item === alias) score = Math.max(score, 64);
+      if (kind === alias) score = Math.max(score, 60);
       continue;
     }
-    if (item === alias) score = Math.max(score, 120);
-    if (display === alias || product === alias) score = Math.max(score, 105);
-    if (kind === alias) score = Math.max(score, 85);
-    if (tokens.has(alias)) score = Math.max(score, 95);
+    if (display === alias || product === alias) score = Math.max(score, 90);
+    if (item === alias) score = Math.max(score, 82);
+    if (kind === alias) score = Math.max(score, 78);
+    if (tokens.has(alias)) score = Math.max(score, 74);
     if (alias.length >= 2) {
-      if (item.includes(alias)) score = Math.max(score, 88);
-      if (display.includes(alias) || product.includes(alias)) score = Math.max(score, 82);
-      if (kind.includes(alias)) score = Math.max(score, 70);
-      if (alias.includes(item) && item.length >= 2) score = Math.max(score, 75);
+      if (display.includes(alias) || product.includes(alias)) score = Math.max(score, 62);
+      if (item.includes(alias) || kind.includes(alias)) score = Math.max(score, 58);
     }
   }
 
-  if (entry.productNo) score += 8;
+  if (entry.productNo) score += 20;
+  if (entry.source?.includes('dailySales')) score += 12;
   if (entry.itemCategoryCode) score += 3;
   if (entry.retailUnit || entry.wholesaleUnit) score += 2;
   if (isDangerousFalsePositive(q, entry)) score = 0;
@@ -779,14 +821,52 @@ function isDangerousFalsePositive(query, entry) {
 }
 
 function filterDailyRowsByCandidates(rows, candidates, query) {
-  if (!candidates.length) return rows.filter((row) => isItemMatch(row, query));
+  const directRows = filterDailyRowsByQuery(rows, query);
+  if (!candidates.length) return directRows;
   const productNos = new Set(candidates.map((candidate) => candidate.productNo).filter(Boolean));
-  const candidateNames = new Set(candidates.map(canonicalCandidateName).filter(Boolean).map(normalizeText));
-  return rows.filter((row) => {
+  const linkedRows = rows.filter((row) => {
+    const rowCandidate = candidateFromRow(row);
     if (row.productNo && productNos.has(row.productNo)) return true;
-    const name = canonicalCandidateName(candidateFromRow(row));
-    return name && candidateNames.has(normalizeText(name));
+    if (filterDailyRowsByQuery([row], query).length) return true;
+    return candidates.some((candidate) => candidateMatchesDailyRow(candidate, rowCandidate));
   });
+  return dedupeResults([...directRows, ...linkedRows]);
+}
+
+function filterDailyRowsByQuery(rows, query) {
+  const q = normalizeText(query);
+  if (!q || AMBIGUOUS_QUERY_HINTS.has(q) || q.length <= 1) return [];
+  return rows
+    .filter(hasUsablePriceRow)
+    .map((row) => ({ row, score: scoreCandidate(candidateFromRow(row), query) }))
+    .filter(({ score }) => score >= 115)
+    .sort((a, b) => b.score - a.score || compareResult(a.row, b.row))
+    .map(({ row }) => row);
+}
+
+function candidateMatchesDailyRow(candidate, rowCandidate) {
+  if (!candidate || !rowCandidate) return false;
+  if (candidate.productNo && rowCandidate.productNo && candidate.productNo === rowCandidate.productNo) return true;
+  if (candidate.itemCategoryCode && rowCandidate.itemCategoryCode && candidate.itemCategoryCode !== rowCandidate.itemCategoryCode) return false;
+
+  const candidateItem = normalizeText(candidate.itemName);
+  const candidateKind = normalizeText(candidate.kindName);
+  const candidateDisplay = normalizeText(candidate.displayName);
+  const rowTexts = [
+    rowCandidate.itemName,
+    rowCandidate.kindName,
+    rowCandidate.displayName,
+    rowCandidate.productName,
+  ].map(normalizeText).filter(Boolean);
+
+  if (candidateKind && candidateKind !== '전체') {
+    if (rowTexts.some((text) => text === candidateKind || (candidateKind.length >= 2 && text.includes(candidateKind)))) return true;
+    return false;
+  }
+
+  if (candidateDisplay && candidateDisplay.length >= 2 && rowTexts.some((text) => text === candidateDisplay || text.includes(candidateDisplay))) return true;
+  if (candidateItem && candidateItem.length >= 2 && rowTexts.some((text) => text === candidateItem || text.includes(candidateItem))) return true;
+  return false;
 }
 
 function isItemMatch(row, query) {
@@ -823,7 +903,7 @@ function publicCandidate(candidate) {
     retailRankCode: candidate.rankCodeForMarket?.retail || '',
     wholesaleRankCode: candidate.rankCodeForMarket?.wholesale || '',
     displayName: candidate.displayName || buildDisplayName(candidate.itemName, candidate.kindName),
-    label: buildDisplayName(candidate.itemName, candidate.kindName) || candidate.displayName || candidate.productNo || '',
+    label: candidate.displayName || buildDisplayName(candidate.itemName, candidate.kindName) || candidate.productNo || '',
     marketTypes: candidate.marketTypes || [],
     score: candidate.score || 0,
     matchLabel: candidate.matchLabel || buildMatchLabel(candidate),
@@ -842,7 +922,12 @@ function uniqueCandidateChoices(candidates) {
 }
 
 function canonicalCandidateName(candidate) {
-  return clean(candidate?.itemName || stripKindFromProductName(candidate?.displayName || candidate?.productName || ''), 50);
+  const item = clean(candidate?.itemName, 50);
+  const kind = clean(candidate?.kindName, 50);
+  const display = clean(candidate?.displayName || candidate?.productName || '', 80);
+  if (display && normalizeText(display) !== normalizeText(item)) return display;
+  if (kind && kind !== '전체' && normalizeText(kind) !== normalizeText(item)) return kind;
+  return item || stripKindFromProductName(display);
 }
 
 function candidatePriority(candidate) {
@@ -853,8 +938,7 @@ function candidatePriority(candidate) {
 
 function buildSearchTokens({ itemName, kindName, productName }) {
   const values = [itemName, kindName, productName, stripKindFromProductName(productName), extractKindFromProductName(productName)];
-  const aliases = values.flatMap((value) => getItemAliases(value));
-  return [...new Set([...values, ...aliases].map(normalizeText).filter(Boolean))];
+  return [...new Set(values.map(normalizeText).filter(Boolean))];
 }
 
 function buildMatchLabel(candidate) {

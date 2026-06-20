@@ -275,7 +275,7 @@
       item,
       market: els.market?.value || 'retail',
       period: els.period?.value || 'latest',
-      _v: 'v63',
+      _v: 'v64',
       _ts: Date.now().toString()
     });
     if (selectedCandidate?.productNo) params.set('productNo', selectedCandidate.productNo);

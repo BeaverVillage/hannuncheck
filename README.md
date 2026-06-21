@@ -16,7 +16,7 @@
 - 거래 전 체크리스트
 - 컴퓨터 사양 확인
 
-## v96-emergency-ev-map-parity-home-compact
+## v97-emergency-map-rebuild-adsense-seo-ready
 
 이번 버전은 운영 UI 최종 점검본입니다. 메인, sitemap, 데이터 출처, 환경변수 예시, 응급실 지도형 UI, 외출 위험 오류 문구, 의료기관 카카오맵 로컬 캐시 연결 상태를 다시 확인했습니다.
 
@@ -29,6 +29,11 @@
 - 기상특보 보조 조회 실패가 외출 위험 핵심 결과를 가리지 않도록 문구 유지
 - 데이터 출처와 환경변수 예시를 현재 운영 기능 기준으로 정리
 - `.env`, `.env.local`이 배포 ZIP에 포함되지 않도록 확인
+- 응급실 지도 선택 시 `fitBounds`를 반복 실행하지 않고 선택 기관으로 `panTo` 처리
+- 지도 마커를 `병상 7` 형식으로 축소하고 번호 원형 제거
+- PC 선택 카드 상세보기 버튼 제거, PC/모바일 카드 닫기(X) 추가
+- 모바일 하단 목록 시트 드래그와 필터 액션시트 이벤트 보강
+- AdSense 심사 전 HTML 광고 스크립트 비활성화 및 개인정보처리방침/면책/데이터 출처 문구 보강
 
 ## 환경변수 예시
 
@@ -62,7 +67,7 @@ HIRA_API_KEY=
 
 ## 배포 확인
 
-배포 후 `/api/config`의 `serverVersion`이 `v96-emergency-ev-map-parity-home-compact`로 보이면 이번 최종 점검본이 반영된 것입니다.
+배포 후 `/api/config`의 `serverVersion`이 `v97-emergency-map-rebuild-adsense-seo-ready`로 보이면 이번 최종 점검본이 반영된 것입니다.
 
 ## 의료기관 카카오맵 캐시 생성
 
@@ -83,7 +88,7 @@ node scripts/enrich-medical-kakao-places.js --mode=all --region=대전 --limit=3
 del .env.local
 ```
 
-## v96-emergency-ev-map-parity-home-compact
+## v97-emergency-map-rebuild-adsense-seo-ready
 
 - 응급실·야간 병원·약국 확인 페이지를 전기차 충전소 지도 계열의 상단 조건 카드 + 지도 중심 + 결과 목록 구조로 다시 정리했습니다.
 - 왼쪽에 고립되어 보이던 조회 전/선택 카드 구조를 제거하고, 선택 상세 카드는 실제 항목 선택 후에만 결과 흐름 아래 표시되도록 변경했습니다.

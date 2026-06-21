@@ -10,8 +10,8 @@
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
   });
   const buildKakaoSearchUrl = toolkit.buildKakaoSearchUrl || ((item) => `https://map.kakao.com/link/search/${encodeURIComponent(`${item.name} ${item.address}`)}`);
-  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v96-emergency-ev-map-parity-home-compact';
-  const EMERGENCY_NATIONAL_CACHE_URL = '/assets/data/medical/emergency-national-cache.json?v=20260621-v96-emergency-ev-map-parity-home-compact';
+  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v97-emergency-map-rebuild-adsense-seo-ready';
+  const EMERGENCY_NATIONAL_CACHE_URL = '/assets/data/medical/emergency-national-cache.json?v=20260621-v97-emergency-map-rebuild-adsense-seo-ready';
 
   const MODE_META = {
     emergency: { label: '응급실', searchLabel: '응급실 확인하기', listLabel: '응급실 비교 목록', mapSuffix: '응급실', detailTitle: '선택한 응급실' },
@@ -103,6 +103,10 @@
     keywordMode: 'facility',
     detailOpen: false,
     resultFilter: 'all',
+    mapHasFitResults: false,
+    mapResultSignature: '',
+    selectionMove: false,
+    mobileSheetMode: 'collapsed',
     emergencyCachePromise: null,
     kakaoCachePromise: null,
   };
@@ -154,6 +158,8 @@
   };
 
   const sortLabel = (value) => ({ distance: '가까운 순', beds: '병상 우선', phone: '전화 우선', critical: '중증 정보', night: '야간 운영' }[value] || '가까운 순');
+  const isMobileView = () => window.matchMedia?.('(max-width: 860px)')?.matches || window.innerWidth <= 860;
+  const currentRegionFull = () => normalizeRegionForCache(elements.region?.value || getRegionLabel());
 
   const syncToolbarInputs = () => {
     if (elements.mapKeyword && elements.keyword && elements.mapKeyword !== document.activeElement) elements.mapKeyword.value = elements.keyword.value || '';
@@ -358,6 +364,14 @@
     return sortItems(result, elements.sort?.value || 'distance').slice(0, options.limit || 40);
   };
 
+
+  const matchesCurrentRegion = (item = {}) => {
+    const { raw, full } = normalizeRegionForCache(elements.region?.value || getRegionLabel());
+    if (!raw && !full) return true;
+    const haystack = `${item.region || ''} ${item.address || ''} ${item.district || ''}`;
+    return haystack.includes(full) || haystack.includes(raw);
+  };
+
   const hasMapCoordinates = (item) => {
     const lat = Number(item?.lat);
     const lng = Number(item?.lng);
@@ -462,11 +476,14 @@
     button.className = `emergency-kakao-marker ${tone} ${state.selectedId === item.id ? 'selected' : ''}`;
     button.setAttribute('aria-label', item.name || meta().label);
     button.dataset.hospitalId = item.id || '';
-    button.innerHTML = `<span>${index + 1}</span><strong>${escapeHtml(markerText(item))}</strong>`;
+    button.innerHTML = `<strong>${escapeHtml(markerText(item))}</strong>`;
     button.addEventListener('click', (event) => {
       event.preventDefault();
       state.selectedId = item.id;
+      state.detailOpen = false;
+      state.selectionMove = true;
       render();
+      if (isMobileView()) setEmergencyMobileSheetState('half');
     });
     return button;
   };
@@ -483,13 +500,14 @@
 
     if (!items.length) {
       state.map.setCenter(new window.kakao.maps.LatLng(center.lat, center.lng));
-      state.map.setLevel(state.careMode === 'emergency' ? 7 : 6);
+      state.map.setLevel(getRegionLabel() === '서울' ? 7 : 8);
+      state.mapHasFitResults = false;
       return true;
     }
 
     if (!validItems.length) {
       state.map.setCenter(new window.kakao.maps.LatLng(center.lat, center.lng));
-      state.map.setLevel(state.careMode === 'emergency' ? 7 : 6);
+      state.map.setLevel(getRegionLabel() === '서울' ? 7 : 8);
       setMapFallbackMessage('지도 위치 확인 필요', '좌표가 제공되지 않은 기관은 목록과 상세 정보에서 확인해 주세요.');
       return true;
     }
@@ -519,13 +537,32 @@
       state.kakaoOverlays.push(overlay);
     });
 
-    if (state.kakaoOverlays.length > 1 || hasReference) {
-      state.map.setBounds(bounds, 56, 56, 56, 56);
+    const selected = validItems.find((item) => item.id === state.selectedId);
+    if (state.selectionMove && selected) {
+      const position = new window.kakao.maps.LatLng(Number(selected.lat), Number(selected.lng));
+      if (typeof state.map.panTo === 'function') state.map.panTo(position);
+      else state.map.setCenter(position);
+      if (typeof state.map.getLevel === 'function' && state.map.getLevel() > 6) state.map.setLevel(5);
+      state.selectionMove = false;
+      state.mapHasFitResults = true;
     } else {
-      const target = validItems[0];
-      state.map.setCenter(new window.kakao.maps.LatLng(Number(target.lat), Number(target.lng)));
-      state.map.setLevel(5);
+      const signature = [state.careMode, getRegionLabel(), elements.district?.value || '', state.referencePoint?.type || '', state.referencePoint?.lat || '', state.referencePoint?.lng || '', validItems.map((item) => item.id).join(',')].join('|');
+      if (!state.mapHasFitResults || state.mapResultSignature !== signature) {
+        if (validItems.length > 1 || hasReference) {
+          state.map.setBounds(bounds, 72, 72, 72, 72);
+          if (getRegionLabel() === '서울' && !hasReference && typeof state.map.getLevel === 'function' && state.map.getLevel() > 7) {
+            state.map.setLevel(7);
+          }
+        } else {
+          const target = validItems[0];
+          state.map.setCenter(new window.kakao.maps.LatLng(Number(target.lat), Number(target.lng)));
+          state.map.setLevel(5);
+        }
+        state.mapHasFitResults = true;
+        state.mapResultSignature = signature;
+      }
     }
+
     setTimeout(() => {
       if (typeof state.map?.relayout === 'function') state.map.relayout();
       window.kakao?.maps?.event?.trigger?.(state.map, 'resize');
@@ -629,7 +666,7 @@
     elements.markers.innerHTML = referenceHtml + items.slice(0, 12).map((item, index) => {
       const pos = makeMapPosition(item, index, items.length);
       const tone = item.statusTone || (Number(item.emergencyBeds) > 0 ? 'good' : 'neutral');
-      return `<button type="button" class="emergency-map-marker ${escapeHtml(tone)} ${state.selectedId === item.id ? 'selected' : ''}" style="left:${pos.x}%;top:${pos.y}%" data-hospital-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)}"><span>${index + 1}</span><strong>${escapeHtml(markerText(item))}</strong></button>`;
+      return `<button type="button" class="emergency-map-marker ${escapeHtml(tone)} ${state.selectedId === item.id ? 'selected' : ''}" style="left:${pos.x}%;top:${pos.y}%" data-hospital-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)}"><strong>${escapeHtml(markerText(item))}</strong></button>`;
     }).join('');
   };
 
@@ -740,6 +777,7 @@
     const statusText = isEmergencyItem(item) ? (Number(item.criticalAvailableCount) > 0 ? `${Number(item.criticalAvailableCount)}개 참고` : '전화 확인') : (item.isNightCandidate ? '야간 운영 참고' : '전화 확인');
     elements.mapDetail.hidden = false;
     elements.mapDetail.innerHTML = `
+      <button class="map-selected-close" type="button" data-close-selected aria-label="선택 카드 닫기">×</button>
       <span class="map-selected-eyebrow">지도에서 선택한 기관</span>
       <h3>${escapeHtml(item.name || meta().label)}</h3>
       <p class="map-selected-address">${escapeHtml(item.address || '주소 정보 없음')}</p>
@@ -751,7 +789,7 @@
       <div class="map-selected-actions">
         ${phone ? `<a class="primary-link" href="${buildTelLink(phone)}">전화하기</a>` : '<span class="primary-link disabled">전화 확인</span>'}
         <a class="secondary-link" href="${kakaoAction.url}" target="_blank" rel="noopener">${escapeHtml(kakaoAction.label)}</a>
-        <button class="secondary-link as-button" type="button" data-open-detail-id="${escapeHtml(item.id)}">상세보기</button>
+        <button class="secondary-link as-button mobile-detail-action" type="button" data-open-detail-id="${escapeHtml(item.id)}">상세보기</button>
       </div>
       <p class="fine-print" style="margin:0.56rem 0 0">${escapeHtml(distanceText)} · ${escapeHtml(mapText)} · 방문 전 전화 확인이 필요합니다.</p>`;
   };
@@ -776,7 +814,7 @@
     const distanceText = formatDistanceSafe(item.distanceM) || '거리 정보 없음';
     const mapText = hasMapCoordinates(item) ? '지도 표시 가능' : '지도 위치 확인 필요';
     if (!isEmergencyItem(item)) {
-      elements.detail.innerHTML = `<h3>${escapeHtml(item.name || meta().label)}</h3>
+      elements.detail.innerHTML = `<button class="map-selected-close detail-close" type="button" data-close-selected aria-label="상세 닫기">×</button><h3>${escapeHtml(item.name || meta().label)}</h3>
         <p class="emergency-detail-address">${escapeHtml(item.address || '주소 정보 없음')}</p>
         <div class="emergency-detail-grid">
           <div><span>운영시간</span><strong>${escapeHtml(item.operationTime || '전화 확인')}</strong></div>
@@ -794,7 +832,7 @@
       if (elements.mobileDetail) elements.mobileDetail.innerHTML = elements.detail.innerHTML;
       return;
     }
-    elements.detail.innerHTML = `<h3>${escapeHtml(item.name || '응급의료기관')}</h3>
+    elements.detail.innerHTML = `<button class="map-selected-close detail-close" type="button" data-close-selected aria-label="상세 닫기">×</button><h3>${escapeHtml(item.name || '응급의료기관')}</h3>
       <p class="emergency-detail-address">${escapeHtml(item.address || '주소 정보 없음')}</p>
       <div class="emergency-detail-grid">
         <div><span>가용 병상</span><strong>${formatBeds(item.emergencyBeds)}</strong></div>
@@ -823,7 +861,7 @@
 
   const render = () => {
     const items = applyResultFilter(state.items);
-    const selected = items.find((item) => item.id === state.selectedId) || items[0] || null;
+    const selected = state.selectedId ? (items.find((item) => item.id === state.selectedId) || null) : null;
     renderSummary(items);
     renderMap(items);
     renderList(items);
@@ -853,6 +891,9 @@
     state.warnings = [];
     state.selectedId = '';
     state.detailOpen = false;
+    state.mapHasFitResults = false;
+    state.mapResultSignature = '';
+    state.selectionMove = false;
     syncModeUi();
     setStatus(`조건을 선택한 뒤 ${meta().searchLabel}를 눌러 주세요.`, 'info');
     render();
@@ -872,7 +913,7 @@
       department: elements.department?.value || '',
       sort: elements.sort?.value || (state.careMode === 'emergency' ? 'distance' : 'night'),
       mode: state.careMode,
-      _v: 'v96',
+      _v: 'v97',
     });
     if (state.geo) {
       params.set('lat', String(state.geo.lat));
@@ -919,6 +960,9 @@
   const searchHospitals = async () => {
     if (state.loading) return;
     state.loading = true;
+    state.mapHasFitResults = false;
+    state.mapResultSignature = '';
+    state.selectionMove = false;
     setStatus(`${meta().label} 정보를 불러오는 중입니다. 응급 상황이면 119에 먼저 연락하세요.`, 'info');
     if (state.careMode === 'emergency') {
       await ensureEmergencyNationalCache();
@@ -938,7 +982,8 @@
       const data = await fetchJson(buildApiUrl(), { cache: 'no-store' });
       if (data?.ok === false) throw Object.assign(new Error(data.message || `${meta().label} 정보를 불러오지 못했습니다.`), { data });
       state.dataMode = 'api';
-      const apiItems = mergeEmergencyCacheBasics(Array.isArray(data.items) ? data.items : []);
+      const mergedApiItems = mergeEmergencyCacheBasics(Array.isArray(data.items) ? data.items : []);
+      const apiItems = state.careMode === 'emergency' ? mergedApiItems.filter(matchesCurrentRegion) : mergedApiItems;
       state.items = apiItems.length ? apiItems : localFallback;
       state.summary = data.summary || (localFallback.length ? { criteria: `${getRegionLabel()} 응급실 기본정보 캐시`, count: localFallback.length, sourceMode: 'local_emergency_cache' } : {});
       state.warnings = Array.isArray(data.warnings) ? data.warnings : [];
@@ -976,6 +1021,7 @@
   const setEmergencyMobileSheetState = (mode = 'half') => {
     const sheet = elements.mobileSheet;
     if (!sheet) return;
+    state.mobileSheetMode = mode;
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700;
     const height = Math.min(Math.max(360, viewportHeight * 0.88), 760);
     const peek = 58;
@@ -1005,6 +1051,7 @@
     let lastY = 0;
     let lastTime = 0;
     let velocity = 0;
+    let pointerId = null;
     const positions = () => {
       const vh = window.innerHeight || document.documentElement.clientHeight || 700;
       const h = Math.min(Math.max(360, vh * 0.88), 760);
@@ -1026,22 +1073,30 @@
       return next;
     };
     const interactive = (target) => target?.closest?.('button,a,input,select,textarea');
+    const getY = (event) => event.clientY ?? event.touches?.[0]?.clientY ?? null;
     const start = (event) => {
       if (interactive(event.target)) return;
-      const y = event.clientY ?? event.touches?.[0]?.clientY;
+      const y = getY(event);
       if (y == null) return;
       dragging = true;
+      pointerId = event.pointerId ?? null;
       startY = y;
       startSheetY = currentY();
       lastY = y;
       lastTime = performance.now();
       velocity = 0;
       sheet.classList.add('is-dragging');
+      event.currentTarget?.setPointerCapture?.(pointerId);
+      window.addEventListener('pointermove', move, { passive: false });
+      window.addEventListener('pointerup', end, { passive: false });
+      window.addEventListener('pointercancel', end, { passive: false });
+      window.addEventListener('touchmove', move, { passive: false });
+      window.addEventListener('touchend', end, { passive: false });
       event.preventDefault?.();
     };
     const move = (event) => {
       if (!dragging) return;
-      const y = event.clientY ?? event.touches?.[0]?.clientY;
+      const y = getY(event);
       if (y == null) return;
       const now = performance.now();
       velocity = (y - lastY) / Math.max(1, now - lastTime);
@@ -1057,19 +1112,16 @@
       const p = positions();
       const y = applyY(startSheetY + lastY - startY + velocity * 120);
       const mode = [['expanded', Math.abs(y - p.expanded)], ['half', Math.abs(y - p.half)], ['collapsed', Math.abs(y - p.collapsed)]].sort((a,b) => a[1] - b[1])[0][0];
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      window.removeEventListener('touchmove', move);
+      window.removeEventListener('touchend', end);
       setEmergencyMobileSheetState(mode);
     };
     targets.forEach((target) => {
-      if (window.PointerEvent) {
-        target.addEventListener('pointerdown', start, { passive: false });
-        target.addEventListener('pointermove', move, { passive: false });
-        target.addEventListener('pointerup', end, { passive: false });
-        target.addEventListener('pointercancel', end, { passive: false });
-      } else {
-        target.addEventListener('touchstart', start, { passive: false });
-        target.addEventListener('touchmove', move, { passive: false });
-        target.addEventListener('touchend', end, { passive: false });
-      }
+      if (window.PointerEvent) target.addEventListener('pointerdown', start, { passive: false });
+      target.addEventListener('touchstart', start, { passive: false });
     });
   };
 
@@ -1096,9 +1148,22 @@
 
 
 
-  elements.mapModeToggle?.addEventListener('click', () => toggleToolbarPanel(elements.mapModeToggle, elements.mapModePanel));
-  elements.mapRegionToggle?.addEventListener('click', () => toggleToolbarPanel(elements.mapRegionToggle, elements.mapRegionPanel));
-  elements.mapSortToggle?.addEventListener('click', () => toggleToolbarPanel(elements.mapSortToggle, elements.mapSortPanel));
+  elements.mapModeToggle?.addEventListener('click', () => {
+    if (isMobileView()) return openMobileActionSheet('확인 유형', [
+      { value: 'emergency', label: '응급실' }, { value: 'hospital', label: '야간 병원' }, { value: 'pharmacy', label: '야간 약국' }
+    ], state.careMode, (value) => { if (!MODE_META[value]) return; state.careMode = value; resetToIdle(); if (value === 'emergency') searchHospitals(); });
+    toggleToolbarPanel(elements.mapModeToggle, elements.mapModePanel);
+  });
+  elements.mapRegionToggle?.addEventListener('click', () => {
+    if (isMobileView()) return openMobileActionSheet('지역 선택', Object.keys(REGION_CENTERS).map((value) => ({ value, label: value })), getRegionLabel(), (value) => { if (elements.region) elements.region.value = value; if (elements.mapRegion) elements.mapRegion.value = value; if (elements.district) elements.district.value = ''; if (elements.mapDistrict) elements.mapDistrict.value = ''; state.referencePoint = null; state.geo = null; syncToolbarInputs(); searchHospitals(); });
+    toggleToolbarPanel(elements.mapRegionToggle, elements.mapRegionPanel);
+  });
+  elements.mapSortToggle?.addEventListener('click', () => {
+    if (isMobileView()) return openMobileActionSheet('정렬 기준', [
+      { value: 'distance', label: '가까운 순' }, { value: 'beds', label: '병상 우선' }, { value: 'phone', label: '전화 우선' }, { value: 'critical', label: '중증 정보' }
+    ], elements.sort?.value || 'distance', (value) => { if (elements.sort) elements.sort.value = value; syncModeUi(); if (state.items.length) { state.items = sortItems(state.items, value); state.selectedId = state.items[0]?.id || state.selectedId; render(); } });
+    toggleToolbarPanel(elements.mapSortToggle, elements.mapSortPanel);
+  });
   elements.mobileSortButton?.addEventListener('click', () => openMobileActionSheet('정렬 기준', [
     { value: 'distance', label: '가까운 순' }, { value: 'beds', label: '병상 우선' }, { value: 'phone', label: '전화 우선' }, { value: 'critical', label: '중증 정보' }
   ], elements.sort?.value || 'distance', (value) => { if (elements.sort) elements.sort.value = value; syncModeUi(); if (state.items.length) { state.items = sortItems(state.items, value); render(); } }));
@@ -1186,7 +1251,7 @@
     const id = detailId || card?.getAttribute('data-hospital-id');
     if (!id) return;
     if (detailId) openSelectedDetail(id);
-    else { state.selectedId = id; state.detailOpen = false; render(); setEmergencyMobileSheetState('half'); }
+    else { state.selectedId = id; state.detailOpen = false; state.selectionMove = true; render(); if (isMobileView()) setEmergencyMobileSheetState('half'); }
   }));
 
   elements.form?.addEventListener('submit', (event) => {
@@ -1216,6 +1281,8 @@
       const lat = Number(position.coords.latitude);
       const lng = Number(position.coords.longitude);
       state.geo = { lat, lng };
+      state.mapHasFitResults = false;
+      state.mapResultSignature = '';
       state.referencePoint = { lat, lng, type: 'current', label: '현재 위치' };
       state.keywordMode = 'place';
       if (elements.sort) elements.sort.value = 'distance';
@@ -1238,15 +1305,28 @@
       const sort = button.dataset.emergencySort || button.dataset.emergencyMapSort || button.dataset.emergencyMobileSort;
       if (sort && elements.sort) elements.sort.value = sort;
       syncModeUi();
-      
+      if (state.items.length) {
+        state.items = sortItems(state.items, elements.sort?.value || 'distance');
+        state.selectedId = state.items[0]?.id || state.selectedId;
+        state.mapHasFitResults = false;
+        render();
+      }
     });
   });
 
-  elements.mapDetail?.addEventListener('click', (event) => {
-    const button = event.target instanceof Element ? event.target.closest('[data-open-detail-id]') : null;
+  [elements.mapDetail, elements.detail, elements.mobileDetail].forEach((panel) => panel?.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest('[data-close-selected]')) {
+      state.selectedId = '';
+      state.detailOpen = false;
+      state.selectionMove = false;
+      render();
+      return;
+    }
+    const button = target?.closest('[data-open-detail-id]');
     const id = button?.getAttribute('data-open-detail-id');
     if (id) openSelectedDetail(id);
-  });
+  }));
 
   elements.markers?.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target.closest('[data-hospital-id]') : null;
@@ -1254,7 +1334,9 @@
     if (!id) return;
     state.selectedId = id;
     state.detailOpen = false;
+    state.selectionMove = true;
     render();
+    if (isMobileView()) setEmergencyMobileSheetState('half');
   });
 
   ['change', 'input'].forEach((eventName) => {

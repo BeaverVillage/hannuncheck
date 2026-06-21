@@ -10,7 +10,7 @@ import {
   toNumber,
 } from './_lib/check-core.js';
 
-const SERVER_VERSION = 'v96-emergency-ev-map-parity-home-compact';
+const SERVER_VERSION = 'v97-emergency-map-rebuild-adsense-seo-ready';
 const NMC_SOURCE = 'NMC EMERGENCY MEDICAL DATA';
 const NMC_HOSPITAL_SOURCE = 'NMC HOSPITAL CLINIC DATA';
 const NMC_PHARMACY_SOURCE = 'NMC PHARMACY DATA';

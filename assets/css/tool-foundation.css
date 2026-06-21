@@ -1,0 +1,1298 @@
+/* 한눈체크 신규 확인 기능 공통 UI 기반(v71)
+   주유소, 외출 위험, 응급실·야간 병원 기능에서 재사용할 안전한 보조 스타일입니다. */
+.hc-tool-shell {
+  display: grid;
+  gap: 24px;
+}
+
+.hc-tool-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.hc-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.hc-result-card {
+  border: 1px solid #bfdbfe;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(30, 58, 95, 0.08);
+  padding: 22px;
+}
+
+.hc-result-card.compact {
+  padding: 16px;
+  border-radius: 18px;
+}
+
+.hc-state-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  color: #1e3a5f;
+  font-size: 0.86rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.hc-state-badge.good { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+.hc-state-badge.caution { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+.hc-state-badge.danger { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+.hc-state-badge.neutral { border-color: #dbeafe; background: #f8fbff; color: #1e3a5f; }
+
+.hc-source-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: #526983;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.hc-warning-line {
+  margin: 8px 0 0;
+  padding: 11px 13px;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-weight: 700;
+}
+
+.hc-empty-state {
+  border: 1px solid #bfdbfe;
+  border-radius: 18px;
+  background: #f8fbff;
+  padding: 18px;
+}
+
+.hc-empty-state strong {
+  display: block;
+  color: #0f172a;
+  font-size: 1.08rem;
+  margin-bottom: 6px;
+}
+
+.hc-empty-state p {
+  margin: 0;
+  color: #526983;
+  line-height: 1.7;
+}
+
+.hc-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+@media (max-width: 860px) {
+  .hc-tool-grid,
+  .hc-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hc-result-card {
+    border-radius: 18px;
+    padding: 18px;
+  }
+}
+
+/* v75 최저가 주유소 확인 UI */
+.fuel-hero-band {
+  background: linear-gradient(135deg, #eef6ff 0%, #f8fbff 58%, #fff7ed 100%);
+}
+
+.fuel-tool-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.fuel-console {
+  min-width: 0;
+}
+
+.fuel-form {
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+}
+
+.fuel-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.fuel-quick-row,
+.fuel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.fuel-quick-row button {
+  border: 1px solid #bfdbfe;
+  background: #fff;
+  color: #0f3d73;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.fuel-quick-row button.active,
+.fuel-quick-row button:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.fuel-summary-grid {
+  padding: 0 24px 24px;
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1fr;
+  gap: 14px;
+}
+
+.fuel-summary-card {
+  border: 1px solid #bfdbfe;
+  border-radius: 18px;
+  background: #f8fbff;
+  padding: 18px;
+  min-width: 0;
+}
+
+.fuel-summary-card.main {
+  background: linear-gradient(135deg, #eff6ff, #fff);
+}
+
+.fuel-summary-card span,
+.fuel-station-price span {
+  display: block;
+  color: #526983;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.fuel-summary-card strong {
+  display: block;
+  color: #1d4ed8;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  margin-top: 6px;
+}
+
+.fuel-summary-card small {
+  display: block;
+  color: #526983;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.fuel-dashboard {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
+  gap: 18px;
+  padding: 0 24px 24px;
+}
+
+.fuel-map-card,
+.fuel-result-panel {
+  border: 1px solid #bfdbfe;
+  border-radius: 22px;
+  background: #fff;
+  padding: 18px;
+  min-width: 0;
+}
+
+.fuel-map-head,
+.fuel-list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  color: #526983;
+  font-size: 0.92rem;
+}
+
+.fuel-map-head strong,
+.fuel-list-head strong {
+  color: #0f172a;
+}
+
+.fuel-map {
+  position: relative;
+  overflow: hidden;
+  min-height: 360px;
+  border-radius: 18px;
+  border: 1px solid #dbeafe;
+  background: radial-gradient(circle at 24% 22%, rgba(59, 130, 246, 0.12), transparent 28%), linear-gradient(135deg, #f8fbff, #eaf3ff);
+}
+
+.fuel-map-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.72;
+  background-image: linear-gradient(rgba(30, 58, 95, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(30, 58, 95, 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.fuel-map-notice {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid #bfdbfe;
+  background: rgba(255, 255, 255, 0.92);
+  color: #526983;
+  line-height: 1.45;
+}
+
+.fuel-map-notice strong {
+  color: #0f172a;
+}
+
+.fuel-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  gap: 2px;
+  min-width: 58px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f3d73;
+  padding: 7px 9px;
+  box-shadow: 0 12px 26px rgba(30, 58, 95, 0.18);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.fuel-marker span {
+  position: absolute;
+  top: -10px;
+  left: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.72rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fuel-marker strong {
+  font-size: 0.78rem;
+}
+
+.fuel-marker.good { border-color: #86efac; background: #f0fdf4; color: #166534; }
+.fuel-marker.caution { border-color: #fed7aa; background: #fff7ed; color: #9a3412; }
+
+.fuel-list {
+  display: grid;
+  gap: 12px;
+}
+
+.fuel-station-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background: #f8fbff;
+  padding: 14px;
+}
+
+.fuel-station-rank {
+  min-width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1d4ed8;
+  font-weight: 900;
+}
+
+.fuel-station-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.fuel-station-title strong,
+.fuel-detail-name strong {
+  color: #0f172a;
+  font-size: 1.04rem;
+}
+
+.fuel-station-title span,
+.fuel-detail-name span {
+  color: #526983;
+  font-weight: 800;
+}
+
+.fuel-station-main p {
+  margin: 4px 0 8px;
+  color: #526983;
+  line-height: 1.5;
+}
+
+.fuel-station-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+
+.fuel-station-tags > span:not(.hc-state-badge) {
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  background: #fff;
+  color: #526983;
+  padding: 6px 9px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.fuel-station-price {
+  text-align: right;
+  min-width: 112px;
+}
+
+.fuel-station-price strong {
+  display: block;
+  color: #1d4ed8;
+  font-size: 1.32rem;
+  margin-top: 4px;
+}
+
+.fuel-station-price small {
+  color: #526983;
+}
+
+.fuel-station-actions {
+  grid-column: 2 / 4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.fuel-station-actions button,
+.fuel-station-actions a {
+  border: 1px solid #bfdbfe;
+  background: #fff;
+  color: #1d4ed8;
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 9px 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.fuel-station-actions button:hover,
+.fuel-station-actions a:hover {
+  background: #eff6ff;
+}
+
+.fuel-side-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.fuel-detail-card {
+  display: grid;
+  gap: 10px;
+}
+
+.fuel-detail-card h3 {
+  margin: 0;
+  color: #0f3d73;
+}
+
+.fuel-detail-name {
+  display: grid;
+  gap: 2px;
+}
+
+.fuel-detail-price {
+  border: 1px solid #bfdbfe;
+  background: #f8fbff;
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.fuel-detail-price span {
+  color: #526983;
+  font-weight: 800;
+}
+
+.fuel-detail-price strong {
+  display: block;
+  color: #1d4ed8;
+  font-size: 1.8rem;
+  margin-top: 4px;
+}
+
+.fuel-detail-list {
+  margin: 0;
+}
+
+@media (max-width: 1080px) {
+  .fuel-tool-shell,
+  .fuel-dashboard {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .fuel-form,
+  .fuel-summary-grid,
+  .fuel-dashboard {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .fuel-filter-grid,
+  .fuel-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fuel-map {
+    min-height: 300px;
+  }
+
+  .fuel-station-card {
+    grid-template-columns: 1fr;
+  }
+
+  .fuel-station-rank {
+    width: fit-content;
+  }
+
+  .fuel-station-price {
+    text-align: left;
+  }
+
+  .fuel-station-actions {
+    grid-column: auto;
+    justify-content: flex-start;
+  }
+}
+
+.error-text {
+  color: #b91c1c !important;
+}
+
+.fuel-warning-list {
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.fuel-warning-list p {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+/* v77 주유비 계산 UX */
+.fuel-cost-input-panel {
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 20px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.fuel-cost-input-head,
+.fuel-cost-result-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  color: #526983;
+  font-size: 0.92rem;
+}
+
+.fuel-cost-input-head strong,
+.fuel-cost-result-head strong {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.fuel-cost-input-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fuel-inline-input {
+  display: flex;
+  align-items: center;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.fuel-inline-input input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 11px 12px;
+  font-weight: 900;
+  color: #0f172a;
+  background: transparent;
+}
+
+.fuel-inline-input span {
+  border-left: 1px solid #dbeafe;
+  padding: 0 12px;
+  color: #526983;
+  font-size: 0.86rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.fuel-cost-result-panel {
+  margin: 0 24px 24px;
+  border: 1px solid #bfdbfe;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #fff, #f8fbff);
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.fuel-cost-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fuel-cost-card {
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background: #fff;
+  padding: 15px;
+  min-width: 0;
+}
+
+.fuel-cost-card.main {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.fuel-cost-card.good {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.fuel-cost-card.caution {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.fuel-cost-card span {
+  display: block;
+  color: #526983;
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.fuel-cost-card strong {
+  display: block;
+  color: #1d4ed8;
+  font-size: clamp(1.15rem, 2.3vw, 1.55rem);
+  margin-top: 6px;
+}
+
+.fuel-cost-card small {
+  display: block;
+  color: #526983;
+  line-height: 1.45;
+  margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+  .fuel-cost-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .fuel-cost-input-grid,
+  .fuel-cost-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fuel-cost-result-panel {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+
+  .fuel-cost-input-head,
+  .fuel-cost-result-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* v78 응급실 MVP */
+.emergency-hero-band {
+  background: radial-gradient(circle at top left, rgba(248, 113, 113, 0.18), transparent 36%), linear-gradient(135deg, #fff7ed 0%, #fff 46%, #eff6ff 100%);
+}
+
+.emergency-tool-shell,
+.emergency-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.emergency-console {
+  overflow: hidden;
+}
+
+.emergency-alert-card {
+  margin: 24px 24px 0;
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  border-radius: 20px;
+  padding: 18px;
+  color: #7f1d1d;
+}
+
+.emergency-alert-card strong {
+  display: block;
+  font-size: 1.08rem;
+  margin-bottom: 6px;
+}
+
+.emergency-alert-card p {
+  margin: 0;
+  line-height: 1.55;
+  font-weight: 700;
+}
+
+.emergency-form {
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.emergency-filter-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  gap: 14px;
+}
+
+.emergency-filter-grid input,
+.emergency-filter-grid select {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 12px 13px;
+  color: #0f172a;
+  background: #fff;
+  font-weight: 800;
+}
+
+.emergency-quick-row,
+.emergency-actions,
+.emergency-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.emergency-quick-row button {
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #7f1d1d;
+  border-radius: 999px;
+  padding: 9px 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.emergency-quick-row button.active {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.emergency-summary-grid {
+  padding: 0 24px 20px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.emergency-summary-card {
+  border: 1px solid #dbeafe;
+  border-radius: 20px;
+  background: #fff;
+  padding: 16px;
+  min-width: 0;
+}
+
+.emergency-summary-card.main {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.emergency-summary-card span {
+  display: block;
+  color: #526983;
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.emergency-summary-card strong {
+  display: block;
+  color: #991b1b;
+  font-size: clamp(1.25rem, 2.5vw, 1.8rem);
+  margin-top: 5px;
+}
+
+.emergency-summary-card small {
+  display: block;
+  color: #526983;
+  line-height: 1.45;
+  margin-top: 4px;
+}
+
+.emergency-warning-list {
+  margin: 0 24px 22px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.emergency-warning-list p {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.emergency-dashboard {
+  grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
+  padding: 0 24px 24px;
+}
+
+.emergency-map-card,
+.emergency-result-panel {
+  border: 1px solid #dbeafe;
+  background: #fff;
+  border-radius: 22px;
+  padding: 18px;
+  min-width: 0;
+}
+
+.emergency-map-head,
+.emergency-list-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  color: #526983;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+.emergency-map-head strong,
+.emergency-list-head strong {
+  color: #0f172a;
+}
+
+.emergency-map {
+  position: relative;
+  overflow: hidden;
+  min-height: 380px;
+  border-radius: 18px;
+  border: 1px solid #cbd5e1;
+  background: linear-gradient(135deg, #f8fafc, #eff6ff);
+}
+
+.emergency-map-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(30, 58, 95, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(30, 58, 95, 0.08) 1px, transparent 1px);
+  background-size: 38px 38px;
+}
+
+.emergency-map-notice {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 12px;
+  color: #334155;
+}
+
+.emergency-map-notice strong,
+.emergency-map-notice span {
+  display: block;
+}
+
+.emergency-map-notice span {
+  margin-top: 3px;
+  color: #526983;
+  font-size: 0.88rem;
+}
+
+.emergency-map-markers {
+  position: absolute;
+  inset: 0;
+}
+
+.emergency-map-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.2);
+  cursor: pointer;
+  font-weight: 950;
+  color: #fff;
+  background: #64748b;
+}
+
+.emergency-map-marker.good {
+  background: #16a34a;
+}
+
+.emergency-map-marker.caution {
+  background: #ea580c;
+}
+
+.emergency-map-marker.neutral {
+  background: #475569;
+}
+
+.emergency-map-marker span {
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.emergency-list {
+  display: grid;
+  gap: 12px;
+  max-height: 620px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.emergency-hospital-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 14px;
+  background: #fff;
+}
+
+.emergency-hospital-card.selected {
+  border-color: #fca5a5;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.12);
+}
+
+.emergency-rank span {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 950;
+  display: inline-grid;
+  place-items: center;
+}
+
+.emergency-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.emergency-title-row h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  color: #0f172a;
+}
+
+.emergency-main p {
+  margin: 6px 0 0;
+  color: #526983;
+  line-height: 1.45;
+}
+
+.emergency-status {
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 0.78rem;
+  font-weight: 950;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.emergency-status.good {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.emergency-status.caution {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.emergency-status.neutral {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.emergency-meta-grid {
+  margin: 10px 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.emergency-meta-grid div {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 9px;
+  background: #f8fafc;
+}
+
+.emergency-meta-grid dt {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.emergency-meta-grid dd {
+  margin: 3px 0 0;
+  color: #0f172a;
+  font-weight: 950;
+}
+
+.emergency-actions {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.primary-mini-link,
+.secondary-mini-link {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 8px 11px;
+  font-size: 0.85rem;
+  font-weight: 950;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primary-mini-link {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #fff;
+}
+
+.secondary-mini-link {
+  background: #fff;
+  color: #334155;
+}
+
+.secondary-mini-link.disabled {
+  opacity: 0.65;
+}
+
+.secondary-mini-link.as-button {
+  font: inherit;
+}
+
+.emergency-detail-card h3 {
+  margin-top: 0;
+}
+
+.emergency-detail-address {
+  color: #526983;
+  line-height: 1.55;
+}
+
+.emergency-detail-grid {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.emergency-detail-grid div {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.emergency-detail-grid span {
+  display: block;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.emergency-detail-grid strong {
+  display: block;
+  color: #991b1b;
+  font-size: 1.2rem;
+  margin-top: 4px;
+}
+
+@media (max-width: 1080px) {
+  .emergency-tool-shell,
+  .emergency-dashboard {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .emergency-alert-card,
+  .emergency-form,
+  .emergency-summary-grid,
+  .emergency-dashboard,
+  .emergency-warning-list {
+    margin-left: 16px;
+    margin-right: 16px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .emergency-form,
+  .emergency-dashboard,
+  .emergency-summary-grid {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .emergency-filter-grid,
+  .emergency-summary-grid,
+  .emergency-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .emergency-map {
+    min-height: 300px;
+  }
+
+  .emergency-hospital-card {
+    grid-template-columns: 1fr;
+  }
+
+  .emergency-actions {
+    grid-column: auto;
+  }
+
+  .emergency-rank span {
+    width: fit-content;
+    min-width: 34px;
+  }
+}
+
+/* v79 emergency room status enhancements */
+.emergency-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.emergency-status.warning {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.emergency-status-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.emergency-status-chip-row.detail {
+  margin-top: 8px;
+}
+
+.emergency-mini-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 0.76rem;
+  font-weight: 900;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.emergency-mini-chip.good {
+  border-color: #bbf7d0;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.emergency-mini-chip.caution,
+.emergency-mini-chip.warning {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.emergency-mini-chip.neutral {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.emergency-status-group {
+  border-top: 1px solid #e2e8f0;
+  margin-top: 14px;
+  padding-top: 12px;
+}
+
+.emergency-status-group h4 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 0.96rem;
+}
+
+.emergency-message-box {
+  display: grid;
+  gap: 8px;
+}
+
+.emergency-message-box p {
+  margin: 0;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  padding: 9px 10px;
+  background: #fff7ed;
+  color: #7c2d12;
+  line-height: 1.45;
+}
+
+.emergency-message-box strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #9a3412;
+}
+
+@media (max-width: 1080px) {
+  .emergency-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .emergency-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* v80 야간 병원·약국 탭 확장 */
+.emergency-mode-tabs {
+  margin: 18px 24px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.emergency-mode-tabs button {
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #7f1d1d;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 950;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(127, 29, 29, 0.06);
+}
+
+.emergency-mode-tabs button.active {
+  background: #991b1b;
+  color: #fff;
+  border-color: #991b1b;
+}
+
+.emergency-quick-row button.is-hidden,
+.form-row.is-hidden {
+  display: none;
+}
+
+.emergency-mini-chip.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+@media (max-width: 720px) {
+  .emergency-mode-tabs {
+    margin: 16px 18px 0;
+  }
+
+  .emergency-mode-tabs button {
+    flex: 1 1 30%;
+    padding: 10px 11px;
+  }
+}

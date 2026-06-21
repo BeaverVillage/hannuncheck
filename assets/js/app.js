@@ -1,7 +1,28 @@
 (() => {
   const TOOL_DRAWER_GROUPS = [
     {
-      label: '거래·사업자 체크',
+      label: '차량 생활 확인',
+      tools: [
+        ['전기차 충전소 지도', '/tools/ev-charger-map.html', '목적지 주변 충전소 상태와 사용 가능성 확인'],
+        ['주차비 확인 지도', '/tools/parking-fee-check.html', '목적지 주변 주차장 요금과 운영정보 확인'],
+        ['최저가 주유소 확인', '/tools/fuel-station-check.html', '유종별 주유소 가격·거리·예상 주유비 비교']
+      ]
+    },
+    {
+      label: '생활 안전 확인',
+      tools: [
+        ['외출 위험 종합 체크', '/tools/outdoor-air.html', '대기질·날씨·자외선과 활동별 외출 위험도 확인'],
+        ['응급실·야간 병원 확인', '/tools/emergency-hospital-check.html', '응급실·야간 병원·약국 전화 확인 참고']
+      ]
+    },
+    {
+      label: '생활 물가 확인',
+      tools: [
+        ['장보기 물가 확인', '/tools/grocery-price-check.html', '농수축산물과 생필품 가격 흐름 확인']
+      ]
+    },
+    {
+      label: '사업자·거래 확인',
       tools: [
         ['사업자등록 상태 조회', '/tools/business-status.html', '계속·휴업·폐업 여부와 과세유형 확인'],
         ['사업자 진위확인', '/tools/business-validate.html', '대표자명과 개업일자 일치 여부 확인'],
@@ -11,27 +32,10 @@
       ]
     },
     {
-      label: '기기·환경 체크',
+      label: '기기 확인',
       tools: [
         ['컴퓨터 사양 확인', '/tools/pc-spec.html', '운영체제·CPU 코어·메모리·GPU·화면 정보 확인'],
-        ['CPU 간단 테스트', '/tools/pc-spec.html#pc-spec-tool', '브라우저 안에서 짧은 반복 연산으로 참고 성능 확인'],
-        ['미세먼지·외출 체크', '/tools/outdoor-air.html', '대기질·오존·기상특보와 외출 목적별 참고'],
-        ['장보기 물가 확인', '/tools/grocery-price-check.html', '농수축산물 가격 흐름과 지역별 차이 확인']
-      ]
-    },
-    {
-      label: '이동·생활 체크',
-      tools: [
-        ['전기차 충전소 지도', '/tools/ev-charger-map.html', '목적지 주변 충전소 상태와 사용 가능성 확인'],
-        ['주차비 확인 지도', '/tools/parking-fee-check.html', '목적지 주변 주차장 요금과 운영정보 확인']
-      ]
-    },
-    {
-      label: '거래 전 점검 가이드',
-      tools: [
-        ['무통장입금 전 확인사항', '/guides/before-bank-transfer.html', '입금 전에 추가로 봐야 할 기준 설명'],
-        ['공식 정보가 정상이어도 주의할 점', '/guides/official-info-limit.html', '등록정보와 거래 안전성의 차이 설명'],
-        ['쇼핑몰 하단 정보 확인법', '/guides/store-footer-info.html', '상호명·대표자명·신고번호 비교 방법']
+        ['CPU 간단 테스트', '/tools/pc-spec.html#pc-spec-tool', '브라우저 안에서 짧은 반복 연산으로 참고 성능 확인']
       ]
     },
     {
@@ -39,7 +43,9 @@
       tools: [
         ['사업자등록 상태 조회 가이드', '/guides/business-registration-status.html', '상태 결과를 어떻게 읽어야 하는지 안내'],
         ['계속·휴업·폐업자 차이', '/guides/active-closed-business.html', '상태별 의미와 추가 확인 포인트'],
-        ['통신판매업 신고정보 가이드', '/guides/mail-order-business.html', '신고정보 확인 시 주의할 점']
+        ['통신판매업 신고정보 가이드', '/guides/mail-order-business.html', '신고정보 확인 시 주의할 점'],
+        ['무통장입금 전 확인사항', '/guides/before-bank-transfer.html', '입금 전에 추가로 봐야 할 기준 설명'],
+        ['공식 정보가 정상이어도 주의할 점', '/guides/official-info-limit.html', '등록정보와 거래 안전성의 차이 설명']
       ]
     }
   ];

@@ -3686,3 +3686,240 @@ body .parking-hero .container > .breadcrumb span {
     grid-template-columns: 1fr;
   }
 }
+
+/* v72: outdoor risk score UI foundation */
+.outdoor-risk-action-panel {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(130px, 0.55fr) minmax(180px, 0.9fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+.outdoor-risk-action-panel .form-row {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.outdoor-risk-action-panel label {
+  min-height: 24px;
+  color: var(--check-primary);
+  font-weight: 950;
+  line-height: 1.25;
+}
+.outdoor-risk-action-panel select {
+  width: 100%;
+  min-height: 58px;
+}
+.air-risk-main-card {
+  grid-template-columns: auto minmax(0, 1fr) minmax(210px, 0.42fr);
+  align-items: stretch;
+}
+.air-risk-score-wrap {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  min-width: 132px;
+}
+.air-risk-score {
+  display: grid;
+  place-items: center;
+  width: 118px;
+  height: 118px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgba(191, 219, 254, 0.9);
+  box-shadow: inset 0 0 0 10px #eff6ff, 0 18px 42px rgba(37, 99, 235, 0.12);
+}
+.air-risk-score strong {
+  margin-top: 10px;
+  color: var(--check-primary);
+  font-size: 2.25rem;
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+}
+.air-risk-score span {
+  color: var(--check-muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+.air-main-card.good .air-risk-score { box-shadow: inset 0 0 0 10px #ecfdf5, 0 18px 42px rgba(4, 120, 87, 0.12); }
+.air-main-card.warning .air-risk-score { box-shadow: inset 0 0 0 10px #fffbeb, 0 18px 42px rgba(180, 83, 9, 0.12); }
+.air-main-card.bad .air-risk-score { box-shadow: inset 0 0 0 10px #fef2f2, 0 18px 42px rgba(185, 28, 28, 0.12); }
+.air-risk-summary-copy {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+.air-risk-summary-copy h2 {
+  margin: 0;
+  color: var(--check-primary);
+  font-size: clamp(1.35rem, 2.6vw, 2rem);
+  letter-spacing: -0.04em;
+}
+.air-risk-summary-copy p {
+  max-width: 720px;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+.air-risk-facts {
+  min-width: 220px;
+}
+.air-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.air-action-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid #dbeafe;
+  box-shadow: var(--check-shadow-soft);
+}
+.air-action-card span {
+  color: var(--check-primary);
+  font-weight: 950;
+}
+.air-action-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--check-muted);
+  line-height: 1.55;
+}
+.air-metric-card small {
+  color: var(--check-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+@media (max-width: 1080px) {
+  .outdoor-risk-action-panel,
+  .air-risk-main-card {
+    grid-template-columns: 1fr;
+  }
+  .air-risk-score-wrap {
+    justify-items: start;
+  }
+}
+@media (max-width: 760px) {
+  .outdoor-risk-action-panel,
+  .air-action-grid {
+    grid-template-columns: 1fr;
+  }
+  .air-risk-score {
+    width: 104px;
+    height: 104px;
+  }
+  .air-risk-score strong {
+    font-size: 2rem;
+  }
+}
+
+/* v73: outdoor risk weather forecast integration */
+.air-metric-card.normal {
+  background: #f8fbff;
+}
+.air-metric-card.warning {
+  background: #fffbeb;
+}
+.air-metric-card.bad {
+  background: #fef2f2;
+}
+.air-action-card li {
+  word-break: keep-all;
+}
+.air-warning-box .fine-print {
+  margin-top: 8px;
+}
+
+
+/* v81 main integration category layout */
+.feature-category-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.feature-category-section {
+  border: 1px solid #dbe7f3;
+  border-radius: 26px;
+  padding: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+}
+
+.feature-category-head {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.feature-category-head span {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #eaf3ff;
+  color: #1d4ed8;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.feature-category-head h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(1.18rem, 2vw, 1.55rem);
+}
+
+.feature-category-head p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.tool-card-grid.category-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tool-card-grid.category-grid.safety-grid,
+.tool-card-grid.category-grid.one-card-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tool-card-grid.category-grid.trade-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (max-width: 1180px) {
+  .tool-card-grid.category-grid.trade-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .tool-card-grid.category-grid,
+  .tool-card-grid.category-grid.safety-grid,
+  .tool-card-grid.category-grid.one-card-grid,
+  .tool-card-grid.category-grid.trade-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .feature-category-section {
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  .tool-card-grid.category-grid,
+  .tool-card-grid.category-grid.safety-grid,
+  .tool-card-grid.category-grid.one-card-grid,
+  .tool-card-grid.category-grid.trade-grid {
+    grid-template-columns: 1fr;
+  }
+}

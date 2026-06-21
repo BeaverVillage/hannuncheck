@@ -5,6 +5,7 @@
   const form = $('#outdoor-air-form');
   const sidoSelect = $('#air-sido');
   const purposeSelect = $('#air-purpose');
+  const timeSelect = $('#air-time');
   const placeInput = $('#air-place-query');
   const placeButton = $('#air-place-search');
   const currentButton = $('#air-current-location');
@@ -12,6 +13,7 @@
   const panel = $('#air-summary-panel');
   const mainCard = $('#air-main-card');
   const metricGrid = $('#air-metric-grid');
+  const actionGrid = $('#air-action-grid');
   const warningBox = $('#air-warning-box');
 
   const state = {
@@ -273,7 +275,7 @@
         const data = await fetchJson(`/api/kakao-local?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`, { timeoutMs: 7000 });
         const region = normalizeSido(data.region1 || inferRegion1(data.addressName || ''));
         if (setSidoValue(region)) {
-          state.selectedPlace = { name: data.addressName || '현재 위치', address: data.addressName || '', region1: region };
+          state.selectedPlace = { name: data.addressName || '현재 위치', address: data.addressName || '', region1: region, lat: pos.coords.latitude, lng: pos.coords.longitude };
           setStatus(`${data.addressName || '현재 위치'} 기준으로 ${sidoSelect.value} 지역을 선택했습니다.`, 'success');
           fetchAir();
         } else {
@@ -294,23 +296,31 @@
     if (state.isFetching) return;
     const sido = sidoSelect.value || '서울';
     const purpose = purposeSelect.value || 'walk';
+    const timeSlot = timeSelect?.value || 'now';
     state.isFetching = true;
-    setStatus(`${sido} 대기질과 기상특보를 확인하는 중입니다...`, 'neutral');
+    setStatus(`${sido} 대기질, 단기예보, 생활기상지수를 확인하는 중입니다...`, 'neutral');
     panel.hidden = false;
     mainCard.className = 'air-main-card is-loading';
     mainCard.innerHTML = '<div class="empty-state">외출 체크 결과를 불러오는 중입니다.</div>';
     metricGrid.innerHTML = '';
+    if (actionGrid) actionGrid.innerHTML = '';
     warningBox.innerHTML = '';
     try {
-      const data = await fetchJson(`/api/outdoor-air?sido=${encodeURIComponent(sido)}&purpose=${encodeURIComponent(purpose)}`, { timeoutMs: 10000 });
+      const params = new URLSearchParams({ sido, purpose, time: timeSlot });
+      if (Number.isFinite(Number(state.selectedPlace?.lat)) && Number.isFinite(Number(state.selectedPlace?.lng))) {
+        params.set('lat', String(state.selectedPlace.lat));
+        params.set('lng', String(state.selectedPlace.lng));
+      }
+      const data = await fetchJson(`/api/outdoor-air?${params.toString()}`, { timeoutMs: 12000 });
       if (!data.ok) throw new Error(data.message || '대기질 조회에 실패했습니다.');
       renderAir(data);
-      setStatus('조회가 완료되었습니다. 결과는 공개 대기질·기상특보 기준의 참고 정보입니다.', 'success');
+      setStatus('조회가 완료되었습니다. 결과는 공개 대기질·단기예보·생활기상지수 기준의 참고 정보입니다.', 'success');
     } catch (error) {
       const message = error?.message || '대기질 정보를 불러오지 못했습니다.';
       mainCard.className = 'air-main-card unknown';
       mainCard.innerHTML = `<div class="empty-state"><strong>조회 결과를 불러오지 못했습니다.</strong><p>${escapeHtml(message)}</p><p>잠시 후 다시 시도하거나 지역을 직접 선택해 주세요.</p></div>`;
       metricGrid.innerHTML = '';
+      if (actionGrid) actionGrid.innerHTML = '';
       warningBox.innerHTML = '';
       setStatus(message, 'warning');
     } finally {
@@ -321,37 +331,57 @@
   function renderAir(data) {
     const item = data.representative || {};
     const summary = data.summary || {};
-    const tone = summary.tone || 'unknown';
-    mainCard.className = `air-main-card ${tone}`;
+    const risk = data.risk || buildFallbackRisk(item, purposeSelect.value || 'walk', timeSelect?.value || 'now');
+    const tone = risk.tone || summary.tone || 'unknown';
+    mainCard.className = `air-main-card air-risk-main-card ${tone}`;
     mainCard.innerHTML = `
-      <div><span class="air-tone-label">${escapeHtml(labelTone(tone))}</span><h2>${escapeHtml(summary.title || '외출 체크 결과')}</h2><p>${escapeHtml(summary.message || '')}</p></div>
-      <dl><div><dt>기준 측정소</dt><dd>${escapeHtml(item.stationName || '확인 필요')}</dd></div><div><dt>측정 시각</dt><dd>${escapeHtml(item.dataTime || '확인 필요')}</dd></div><div><dt>지역</dt><dd>${escapeHtml(data.sido || '')}</dd></div></dl>
+      <div class="air-risk-score-wrap">
+        <span class="air-tone-label">${escapeHtml(risk.gradeLabel || labelTone(tone))}</span>
+        <div class="air-risk-score" aria-label="외출 위험도 점수"><strong>${escapeHtml(risk.score ?? '—')}</strong><span>점</span></div>
+      </div>
+      <div class="air-risk-summary-copy"><h2>${escapeHtml(risk.title || summary.title || '외출 위험 체크 결과')}</h2><p>${escapeHtml(risk.message || summary.message || '')}</p></div>
+      <dl class="air-risk-facts"><div><dt>기준 측정소</dt><dd>${escapeHtml(item.stationName || '확인 필요')}</dd></div><div><dt>측정 시각</dt><dd>${escapeHtml(item.dataTime || '확인 필요')}</dd></div><div><dt>활동·시간대</dt><dd>${escapeHtml(`${purposeLabel(data.purpose || purposeSelect.value)} · ${timeLabel(data.timeSlot || timeSelect?.value)}`)}</dd></div></dl>
     `;
+    const weatherCards = Array.isArray(data.forecast?.cards) ? data.forecast.cards : [];
+    const livingCards = Array.isArray(data.livingIndex?.cards) ? data.livingIndex.cards : [];
     metricGrid.innerHTML = [
-      metricCard('초미세먼지 PM2.5', item.pm25, '㎍/㎥', item.pm25Label, gradeTone(item.pm25Label)),
-      metricCard('미세먼지 PM10', item.pm10, '㎍/㎥', item.pm10Label, gradeTone(item.pm10Label)),
-      metricCard('오존 O₃', item.o3, 'ppm', item.o3Label, gradeTone(item.o3Label)),
-      metricCard('통합대기환경지수', item.khai, '', item.khaiLabel, gradeTone(item.khaiLabel))
+      metricCard('초미세먼지 PM2.5', item.pm25, '㎍/㎥', item.pm25Label, gradeTone(item.pm25Label), risk.reasons?.pm25),
+      metricCard('미세먼지 PM10', item.pm10, '㎍/㎥', item.pm10Label, gradeTone(item.pm10Label), risk.reasons?.pm10),
+      metricCard('오존 O₃', item.o3, 'ppm', item.o3Label, gradeTone(item.o3Label), risk.reasons?.o3),
+      metricCard('통합대기환경지수', item.khai, '', item.khaiLabel, gradeTone(item.khaiLabel), risk.reasons?.khai),
+      ...weatherCards.slice(0, 5).map((card) => metricCard(card.title, card.value, card.unit || '', card.label, card.tone || 'normal', data.forecast?.targetLabel || '기상청 단기예보')),
+      ...livingCards.slice(0, 2).map((card) => metricCard(card.title, card.value, card.unit || '', card.label, card.tone || 'normal', card.sourceLabel || data.livingIndex?.targetLabel || '생활기상지수'))
     ].join('');
-    renderWarnings(data.warning);
+    renderActionCards(risk);
+    renderWarnings(data.warning, risk);
   }
 
-  function metricCard(title, value, unit, label, tone) {
+  function metricCard(title, value, unit, label, tone, reason) {
     const displayValue = value === null || value === undefined || Number.isNaN(value) ? '정보 없음' : `${value}${unit ? ` ${unit}` : ''}`;
-    return `<article class="air-metric-card ${tone}"><span>${escapeHtml(title)}</span><strong>${escapeHtml(displayValue)}</strong><em>${escapeHtml(label || '정보 없음')}</em></article>`;
+    return `<article class="air-metric-card ${tone}"><span>${escapeHtml(title)}</span><strong>${escapeHtml(displayValue)}</strong><em>${escapeHtml(label || '정보 없음')}</em>${reason ? `<small>${escapeHtml(reason)}</small>` : ''}</article>`;
   }
 
-  function renderWarnings(warning) {
+  function renderActionCards(risk) {
+    if (!actionGrid) return;
+    const actions = Array.isArray(risk.actions) ? risk.actions : [];
+    const readiness = Array.isArray(risk.readiness) ? risk.readiness : [];
+    actionGrid.innerHTML = `
+      <article class="air-action-card"><span>활동별 참고</span><ul>${actions.slice(0, 5).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></article>
+      <article class="air-action-card"><span>데이터 반영 상태</span><ul>${readiness.slice(0, 5).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></article>
+    `;
+  }
+
+  function renderWarnings(warning, risk) {
     if (!warning?.ok) {
-      warningBox.innerHTML = `<h3>기상특보</h3><p>${escapeHtml(warning?.message || '기상특보 정보를 확인하지 못했습니다.')}</p>`;
+      warningBox.innerHTML = `<h3>추가 확인 안내</h3><p>${escapeHtml(warning?.message || '기상특보 정보를 확인하지 못했습니다.')}</p><p class="fine-print">기상청 단기예보와 생활기상지수가 연결되면 강수확률, 기온, 습도, 풍속, 자외선지수, 대기정체지수가 외출 위험 점수에 함께 반영됩니다.</p>`;
       return;
     }
     const items = Array.isArray(warning.items) ? warning.items : [];
     if (!items.length) {
-      warningBox.innerHTML = '<h3>기상특보</h3><p>최근 조회 범위에서 기상특보 항목이 확인되지 않았습니다. 단, 지역별 실제 특보는 기상청 안내를 함께 확인해 주세요.</p>';
+      warningBox.innerHTML = '<h3>추가 확인 안내</h3><p>최근 조회 범위에서 기상특보 항목이 확인되지 않았습니다. 단, 지역별 실제 특보는 기상청 안내를 함께 확인해 주세요.</p><p class="fine-print">기상청 단기예보와 생활기상지수가 조회되면 강수확률·기온·풍속·자외선·대기정체가 외출 위험 점수에 함께 반영됩니다.</p>';
       return;
     }
-    warningBox.innerHTML = `<h3>기상특보 후보</h3><ul>${items.slice(0, 5).map((item) => `<li><strong>${escapeHtml(item.title || '기상특보')}</strong><span>${escapeHtml(item.area || '')} ${escapeHtml(item.time || '')}</span></li>`).join('')}</ul><p class="fine-print">특보 데이터는 발표·해제 시점에 따라 달라질 수 있습니다.</p>`;
+    warningBox.innerHTML = `<h3>기상특보 후보</h3><ul>${items.slice(0, 5).map((item) => `<li><strong>${escapeHtml(item.title || '기상특보')}</strong><span>${escapeHtml(item.area || '')} ${escapeHtml(item.time || '')}</span></li>`).join('')}</ul><p class="fine-print">특보 데이터는 발표·해제 시점에 따라 달라질 수 있습니다. 기상특보는 별도 참고 정보이며, 단기예보의 강수확률·기온·풍속과 생활기상지수의 자외선·대기정체 정보는 외출 위험 점수에 반영됩니다.</p>`;
   }
 
   async function fetchJson(url, options = {}) {
@@ -412,6 +442,102 @@
 
   function isKnownSido(value) {
     return ['서울','부산','대구','인천','광주','대전','울산','세종','경기','강원','충북','충남','전북','전남','경북','경남','제주'].includes(value);
+  }
+
+  function buildFallbackRisk(item, purpose, timeSlot) {
+    const levels = {
+      pm25: gradePenalty(item.pm25Label),
+      pm10: gradePenalty(item.pm10Label),
+      o3: gradePenalty(item.o3Label),
+      khai: gradePenalty(item.khaiLabel)
+    };
+    let score = 100 - levels.pm25 - levels.pm10 - levels.o3 - Math.floor(levels.khai * 0.5);
+    if (['exercise', 'hiking', 'bike', 'child'].includes(purpose)) score -= 5;
+    score = Math.max(0, Math.min(100, score));
+    const tone = score >= 85 ? 'good' : score >= 70 ? 'normal' : score >= 50 ? 'warning' : 'bad';
+    return {
+      score,
+      tone,
+      gradeLabel: riskGradeLabel(score),
+      title: riskTitle(score),
+      message: purposeRiskMessage(purpose, tone),
+      actions: purposeActions(purpose, tone),
+      readiness: ['대기질 데이터 반영', '기상청 단기예보 반영', '생활기상지수 반영', `${timeLabel(timeSlot)} 기준 참고 문구 적용`],
+      reasons: {
+        pm25: metricReason(item.pm25Label),
+        pm10: metricReason(item.pm10Label),
+        o3: metricReason(item.o3Label),
+        khai: metricReason(item.khaiLabel)
+      }
+    };
+  }
+
+  function gradePenalty(label) {
+    if (/매우/.test(label)) return 35;
+    if (/나쁨/.test(label)) return 25;
+    if (/보통/.test(label)) return 8;
+    if (/좋음/.test(label)) return 0;
+    return 6;
+  }
+
+  function riskGradeLabel(score) {
+    if (score >= 85) return '좋음';
+    if (score >= 70) return '보통';
+    if (score >= 50) return '주의';
+    if (score >= 30) return '나쁨';
+    return '외출 자제';
+  }
+
+  function riskTitle(score) {
+    if (score >= 85) return '외출 부담이 낮은 편입니다';
+    if (score >= 70) return '일반 외출은 보통 수준입니다';
+    if (score >= 50) return '장시간 야외활동은 조절이 필요합니다';
+    if (score >= 30) return '외출 전 확인이 많이 필요합니다';
+    return '야외활동을 줄이는 편이 좋습니다';
+  }
+
+  function purposeRiskMessage(purpose, tone) {
+    const careful = tone === 'warning' || tone === 'bad';
+    const map = {
+      commute: careful ? '출근·등교는 가능하더라도 마스크, 실내 대기, 이동 동선을 함께 확인해 주세요.' : '출근·등교 목적의 일반 이동은 현재 대기질 기준으로 큰 부담이 낮은 편입니다.',
+      child: careful ? '아이와 외출은 체류 시간을 줄이고 실내 활동 대안을 함께 고려해 주세요.' : '아이와 외출은 체류 시간과 장소를 함께 보며 무리 없는 범위에서 판단해 주세요.',
+      exercise: careful ? '러닝·고강도 운동은 줄이고 실내 운동이나 짧은 산책으로 조절하는 것을 고려해 주세요.' : '러닝·운동은 개인 컨디션과 시간대를 함께 확인하면 무난한 편입니다.',
+      walk: careful ? '산책은 시간을 짧게 잡고 대기질이 나아지는 시간대를 다시 확인해 보세요.' : '산책 목적이라면 현재 대기질 기준으로 비교적 무난한 편입니다.',
+      hiking: careful ? '등산은 노출 시간이 길어질 수 있으므로 일정 단축이나 실내 대안을 고려해 주세요.' : '등산은 가능해 보이지만 장시간 노출과 개인 컨디션을 함께 확인해 주세요.',
+      bike: careful ? '자전거는 호흡량이 늘 수 있어 짧은 이동 위주로 조절하는 편이 좋습니다.' : '자전거 이동은 현재 대기질 기준으로 비교적 무난한 편입니다.',
+      drive: careful ? '차량 이동 시 창문 개방과 장시간 외부 대기를 줄이는 것을 고려해 주세요.' : '차량 이동은 대기질보다 기상특보와 시야 상황을 함께 확인해 주세요.'
+    };
+    return map[purpose] || map.walk;
+  }
+
+  function purposeActions(purpose, tone) {
+    const base = tone === 'good' || tone === 'normal'
+      ? ['외출 전 최신 측정 시각 확인', '장시간 외출이면 중간에 대기질 재확인']
+      : ['마스크 착용 여부 확인', '야외 체류 시간 줄이기', '실내 활동 대안 준비'];
+    const extra = {
+      child: ['아이 컨디션과 민감군 여부 확인'],
+      exercise: ['고강도 운동은 짧게 조절'],
+      hiking: ['장시간 노출과 고도 변화 고려'],
+      bike: ['호흡량 증가를 고려해 속도 조절'],
+      drive: ['창문 개방 줄이기']
+    }[purpose] || [];
+    return [...base, ...extra];
+  }
+
+  function metricReason(label) {
+    if (/매우/.test(label)) return '야외활동 부담 큼';
+    if (/나쁨/.test(label)) return '장시간 노출 주의';
+    if (/보통/.test(label)) return '민감군은 확인';
+    if (/좋음/.test(label)) return '부담 낮음';
+    return '자료 확인 필요';
+  }
+
+  function purposeLabel(value) {
+    return { commute: '출근·등교', child: '아이와 외출', exercise: '러닝·운동', walk: '산책', hiking: '등산', bike: '자전거', drive: '차량 이동' }[value] || '산책';
+  }
+
+  function timeLabel(value) {
+    return { now: '지금', morning: '오전', afternoon: '오후', evening: '저녁', tomorrow: '내일' }[value] || '지금';
   }
 
   function labelTone(tone) { return { good: '외출 무난', normal: '보통', warning: '주의', bad: '확인 필요', unknown: '정보 확인' }[tone] || '정보 확인'; }

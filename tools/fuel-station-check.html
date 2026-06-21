@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="naver-site-verification" content="1cf7b1f007f077b86659a324cb20becb08bf5eb7" />
+    <meta name="theme-color" content="#1e3a5f">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <meta name="description" content="지역과 유종, 주유량을 선택해 오피넷 기준 최저가 주유소 가격·거리·브랜드와 예상 주유비를 비교합니다.">
+    <title>최저가 주유소 확인 | 주유비 계산·오피넷 가격 비교 | 한눈체크</title>
+    <link rel="canonical" href="https://hannuncheck.com/tools/fuel-station-check.html">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ko_KR">
+    <meta property="og:site_name" content="한눈체크">
+    <meta property="og:title" content="최저가 주유소 확인 | 한눈체크">
+    <meta property="og:description" content="지역과 유종, 주유량을 선택해 주유소 가격·거리·부가서비스와 예상 주유비를 비교합니다.">
+    <meta property="og:url" content="https://hannuncheck.com/tools/fuel-station-check.html">
+    <script data-schema="webapplication" type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"최저가 주유소 확인","url":"https://hannuncheck.com/tools/fuel-station-check.html","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","inLanguage":"ko-KR","description":"지역과 유종, 주유량을 선택해 주유소 가격·거리·부가서비스와 예상 주유비를 비교합니다.","offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"}}</script>
+    <script data-schema="breadcrumb" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"한눈체크","item":"https://hannuncheck.com/"},{"@type":"ListItem","position":2,"name":"최저가 주유소 확인","item":"https://hannuncheck.com/tools/fuel-station-check.html"}]}</script>
+    <script data-schema="faqpage" type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"최저가 주유소 확인은 무엇을 보여주나요?","acceptedAnswer":{"@type":"Answer","text":"지역과 유종, 주유량을 선택해 오피넷 기준 주유소 가격, 거리, 브랜드, 부가서비스와 예상 주유비를 비교합니다."}},{"@type":"Question","name":"현재 표시되는 가격은 실제 오피넷 가격인가요?","acceptedAnswer":{"@type":"Answer","text":"주유소 확인하기를 누르면 한국석유공사 오피넷 API 기준 지역별 최저가 또는 반경 내 주유소 가격을 조회합니다. 가격은 제공 시점 기준 참고 정보입니다."}},{"@type":"Question","name":"주유비 절약액은 어떻게 계산하나요?","acceptedAnswer":{"@type":"Answer","text":"선택한 주유량 기준으로 전국 평균가와 최저가 주유소 가격 차이를 계산합니다. 현재 위치 기반 조회에서는 이동거리와 연비를 반영한 참고 절약액도 함께 표시합니다."}},{"@type":"Question","name":"지도 이동마다 API를 호출하나요?","acceptedAnswer":{"@type":"Answer","text":"아닙니다. API 호출량을 아끼기 위해 검색 버튼을 눌렀을 때만 목록을 조회하고, 상세정보는 카드 선택 시 필요한 범위에서 조회하도록 설계했습니다."}},{"@type":"Question","name":"주유소 가격은 현장 가격과 다를 수 있나요?","acceptedAnswer":{"@type":"Answer","text":"네. 오피넷 제공 기준 가격은 참고용이며 실제 현장 가격, 영업 여부, 부가서비스 제공 여부는 달라질 수 있습니다."}}]}</script>
+    <link rel="stylesheet" href="/assets/css/base.css">
+    <link rel="stylesheet" href="/assets/css/layout.css?v=20260620-v55-grocery-skeleton">
+    <link rel="stylesheet" href="/assets/css/components.css?v=20260621-v81-main-seo-integration">
+    <link rel="stylesheet" href="/assets/css/tool-foundation.css?v=20260621-v81-main-seo-integration">
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6340743169950430" crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/index.html" aria-label="한눈체크 홈"><span class="brand-mark">한</span><span><strong>한눈체크</strong><small>생활 확인 도구</small></span></a>
+      <nav aria-label="주요 메뉴" class="site-nav"><a href="/index.html#features" data-tool-drawer>주요 기능</a><a href="/index.html#safe-position">운영 원칙</a><a href="/contact.html">문의</a></nav>
+    </header>
+    <main>
+      <section class="tool-hero-band fuel-hero-band">
+        <div class="container">
+          <nav class="breadcrumb" aria-label="현재 위치"><a href="/index.html">홈</a><span>/</span><span>최저가 주유소 확인</span></nav>
+          <div class="section-intro"><p class="eyebrow">Fuel station check</p><h1>최저가 주유소 확인</h1><p>지역과 유종, 주유량을 선택해 주유소 가격, 거리, 브랜드, 예상 주유비를 지도와 카드로 비교합니다.</p><p class="fine-print strong-note">오피넷 API 기준 지역별 최저가 주유소와 현재 위치 반경 내 주유소를 조회하고, 입력한 주유량 기준 예상 주유비를 계산합니다.</p></div>
+        </div>
+      </section>
+
+      <section class="content-band tool-content-band">
+        <div class="container fuel-tool-shell" id="fuel-station-tool" data-fuel-station-tool>
+          <article class="check-console tool-console fuel-console">
+            <div class="console-header"><span class="console-dots" aria-hidden="true"><span></span><span></span><span></span></span><strong>주유 전 확인</strong></div>
+            <form class="fuel-form" id="fuel-station-form">
+              <div class="fuel-filter-grid">
+                <div class="form-row"><label for="fuel-region">지역</label><select id="fuel-region"><option value="all">전국 샘플</option><option value="서울">서울</option><option value="경기">경기</option><option value="대전" selected>대전</option><option value="부산">부산</option><option value="제주">제주</option></select></div>
+                <div class="form-row"><label for="fuel-type">유종</label><select id="fuel-type"><option value="gasoline" selected>휘발유</option><option value="diesel">경유</option><option value="premium">고급휘발유</option><option value="lpg">LPG</option></select></div>
+                <div class="form-row"><label for="fuel-view-mode">보기 기준</label><select id="fuel-view-mode"><option value="nearby">내 주변</option><option value="top20" selected>지역 최저가</option><option value="route">이동 경로 참고</option></select></div>
+                <div class="form-row"><label for="fuel-sort">정렬</label><select id="fuel-sort"><option value="cheap" selected>가격 낮은 순</option><option value="nearby">가까운 순</option><option value="recommended">추천순</option></select></div>
+              </div>
+              <div class="fuel-quick-row" aria-label="빠른 선택">
+                <button type="button" data-fuel-type="gasoline" class="active">휘발유</button>
+                <button type="button" data-fuel-type="diesel">경유</button>
+                <button type="button" data-fuel-type="premium">고급</button>
+                <button type="button" data-fuel-type="lpg">LPG</button>
+                <button type="button" data-fuel-sort="cheap">최저가</button>
+                <button type="button" data-fuel-sort="nearby">가까운 순</button>
+              </div>
+              <section class="fuel-cost-input-panel" aria-label="주유비 계산 조건">
+                <div class="fuel-cost-input-head"><strong>주유비 계산 조건</strong><span>선택한 유종의 리터당 가격에 적용됩니다.</span></div>
+                <div class="fuel-cost-input-grid">
+                  <div class="form-row"><label for="fuel-liters">주유량</label><div class="fuel-inline-input"><input id="fuel-liters" type="number" min="1" max="120" step="1" value="30" inputmode="decimal"><span>L</span></div></div>
+                  <div class="form-row"><label for="fuel-efficiency">차량 연비</label><div class="fuel-inline-input"><input id="fuel-efficiency" type="number" min="1" max="40" step="0.1" value="12.0" inputmode="decimal"><span>km/L</span></div></div>
+                  <div class="form-row"><label for="fuel-extra-distance">추가 이동거리</label><div class="fuel-inline-input"><input id="fuel-extra-distance" type="number" min="0" max="100" step="0.1" value="0" inputmode="decimal"><span>km</span></div></div>
+                </div>
+                <p class="fine-print">거리 고려값은 주유소 왕복거리와 사용자가 입력한 추가 이동거리를 바탕으로 한 참고 계산입니다.</p>
+              </section>
+              <div class="fuel-actions">
+                <button class="submit-button" type="submit">주유소 확인하기</button>
+                <button class="secondary-action-button" type="button" id="fuel-use-location">현재 위치 사용</button><button class="secondary-action-button" type="button" id="fuel-demo-reset">샘플 보기</button>
+              </div>
+              <p class="preview-note" id="fuel-status" aria-live="polite">지역과 유종, 주유량을 선택한 뒤 주유소 확인하기를 누르면 오피넷 가격과 예상 주유비를 확인합니다.</p>
+            </form>
+
+            <section class="fuel-summary-grid" aria-label="주유소 요약">
+              <article class="fuel-summary-card main" id="fuel-best-card"></article>
+              <article class="fuel-summary-card" id="fuel-average-card"></article>
+              <article class="fuel-summary-card" id="fuel-count-card"></article>
+            </section>
+
+            <section class="fuel-cost-result-panel" aria-label="예상 주유비 계산 결과">
+              <div class="fuel-cost-result-head"><span>주유비 계산</span><strong id="fuel-cost-title">30L 기준 예상 비용</strong></div>
+              <div class="fuel-cost-grid" id="fuel-cost-grid"></div>
+            </section>
+
+            <div class="fuel-dashboard">
+              <section class="fuel-map-card" aria-label="주유소 지도 미리보기">
+                <div class="fuel-map-head"><span>지도</span><strong id="fuel-map-title">대전 주변 주유소</strong></div>
+                <div class="fuel-map" id="fuel-map" role="img" aria-label="샘플 주유소 위치 지도"><div class="fuel-map-grid" aria-hidden="true"></div><div class="fuel-map-notice"><strong>오피넷 가격 확인</strong><span>검색 버튼을 누르면 실제 오피넷 주유소 가격을 조회합니다.</span></div><div class="fuel-map-markers" id="fuel-map-markers"></div></div>
+                <p class="fine-print">지도 표시는 조회된 주유소 후보의 상대적 위치를 간단히 보여줍니다. 정확한 위치와 길찾기는 카카오맵 검색을 확인하세요.</p>
+              </section>
+              <section class="fuel-result-panel" aria-label="주유소 목록">
+                <div class="fuel-list-head"><span id="fuel-list-summary">샘플 주유소</span><strong>가격 비교 목록</strong></div>
+                <div class="fuel-list" id="fuel-result-list"></div>
+              </section>
+            </div>
+          </article>
+
+          <aside class="tool-sidebar fuel-side-panel">
+            <div class="notice-card blue"><p class="eyebrow">확인 기준</p><h2>유종별 가격을 먼저 봅니다</h2><p>휘발유, 경유, 고급휘발유, LPG 중 선택한 유종의 리터당 가격을 기준으로 최저가 후보를 정렬합니다.</p></div>
+            <div class="notice-card warning"><p class="eyebrow">주의</p><h2>현장 가격과 다를 수 있습니다</h2><p>오피넷 연동 후에도 가격은 제공 시점 기준입니다. 실제 현장 가격, 영업 여부, 세차장·편의점 제공 여부와 이동거리 기반 절약액은 방문 전 확인이 필요합니다.</p></div>
+            <div class="api-status-card fuel-detail-card" id="fuel-detail-card"><h3>선택한 주유소</h3><p>목록에서 주유소를 선택하면 가격, 브랜드, 카카오맵 검색 버튼이 표시됩니다.</p></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="content-band muted">
+        <div class="container calculator-guide"><p class="eyebrow">주유소 확인 가이드</p><h2>최저가 주유소 확인은 이렇게 활용하세요.</h2><p class="section-lead">주유소 가격은 유종, 지역, 갱신 시점에 따라 달라집니다. 오피넷 실제 데이터 기준으로 조회하며, 입력한 주유량과 연비를 바탕으로 예상 주유비와 참고 절약액을 계산합니다.</p><div class="guide-grid"><article><h3>유종 선택</h3><p>휘발유, 경유, 고급휘발유, LPG 중 실제 차량에 맞는 유종을 선택해야 가격 비교가 의미 있습니다.</p></article><article><h3>가격과 거리 함께 보기</h3><p>가장 저렴한 주유소가 멀리 있다면 이동 비용이 더 커질 수 있으므로 가격, 거리, 예상 절약액을 함께 봐야 합니다.</p></article><article><h3>주유량 기준 계산</h3><p>30L, 50L처럼 실제 주유량을 입력하면 최저가와 평균가 기준 예상 주유비 차이를 바로 확인할 수 있습니다.</p></article><article><h3>부가서비스 확인</h3><p>세차장, 경정비, 편의점 여부는 향후 오피넷 상세정보와 함께 표시할 예정입니다.</p></article><article><h3>데이터 한계</h3><p>가격은 제공기관 데이터 기준이며 현장 가격과 다를 수 있습니다. 방문 전 현장 가격을 확인하는 것이 좋습니다.</p></article></div></div>
+      </section>
+
+      <section class="content-band" id="faq"><div class="container faq-section"><p class="eyebrow">자주 묻는 질문</p><h2>최저가 주유소 확인 FAQ</h2><details><summary>현재 가격은 실제 오피넷 가격인가요?</summary><p>네. 주유소 확인하기를 누르면 한국석유공사 오피넷 API 기준 지역별 최저가 또는 반경 내 주유소 가격을 조회합니다. 예상 주유비는 조회된 리터당 가격에 사용자가 입력한 주유량을 곱해 계산합니다.</p></details><details><summary>오피넷 API 키가 없으면 어떻게 되나요?</summary><p>Cloudflare Pages Production 환경변수에 OPINET_API_KEY가 없으면 실제 가격 조회가 되지 않고 설정 안내가 표시됩니다.</p></details><details><summary>주유비 절약액은 어떻게 계산하나요?</summary><p>선택한 주유량 기준으로 전국 평균가와 최저가 주유소의 금액 차이를 계산합니다. 현재 위치 기반 조회에서는 주유소 왕복 이동거리와 연비를 반영한 참고 절약액도 함께 표시합니다.</p></details><details><summary>지도 이동마다 API를 호출하나요?</summary><p>아닙니다. API 호출량 절약을 위해 검색 버튼을 눌렀을 때만 조회하고, 상세정보는 카드 선택 시 호출하는 방식으로 설계합니다.</p></details><details><summary>카카오맵 버튼은 무엇을 여나요?</summary><p>주유소명과 주소를 기준으로 카카오맵 검색 화면을 엽니다. 정확한 장소 링크는 향후 데이터 상태에 따라 보강할 수 있습니다.</p></details></div></section>
+    </main>
+    <footer class="site-footer"><div class="container footer-grid"><div class="footer-note"><strong>한눈체크</strong><p>생활 속에서 확인이 필요한 정보를 한눈에 정리하고, 결과의 의미와 한계를 함께 설명하는 생활 확인 도구입니다.</p></div><nav aria-label="푸터 메뉴"><a href="/about.html">소개</a><a href="/privacy.html">개인정보처리방침</a><a href="/disclaimer.html">면책 안내</a><a href="/data-sources.html">데이터 출처</a><a href="/contact.html">문의·정정 요청</a></nav></div></footer>
+    <script src="/assets/js/app.js"></script>
+    <script src="/assets/js/check-toolkit.js?v=20260621-v81-main-seo-integration" defer></script>
+    <script src="/assets/js/fuel-station-check.js?v=20260621-v81-main-seo-integration" defer></script>
+  </body>
+</html>

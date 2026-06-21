@@ -1,6 +1,6 @@
 # 한눈체크
 
-전기차 충전소, 주차비, 미세먼지, 사업자 정보 등 생활 속 확인 정보를 정리하는 정적 사이트 + Cloudflare Pages Functions 프로젝트입니다.
+전기차 충전소, 주차비, 최저가 주유소, 외출 위험, 응급실·야간 병원·약국, 장보기 물가, 사업자 정보 등 생활 속 확인 정보를 정리하는 정적 사이트 + Cloudflare Pages Functions 프로젝트입니다.
 
 ## 구성
 
@@ -276,3 +276,143 @@ node scripts/enrich-parking-kakao-places.js --dry-run --limit=10
 - 주차비 확인 지도 카카오맵 버튼 문구를 `카카오맵 바로가기`, `카카오맵 검색`으로 짧게 정리했습니다.
 - PC 지도 팝업에서는 `지도에서 선택한 주차장입니다.` 배지 옆에 카카오맵 버튼이 같은 줄로 배치되도록 보정했습니다.
 - 모바일 팝업은 기존 하단 액션 영역 배치를 유지합니다.
+
+## v71 신규 기능 0차: 공통 기반 정리
+
+이번 버전은 `주유비·최저가 주유소 확인`, `응급실·야간 병원·약국 확인`, `외출 위험 종합 체크`를 실제 구현하기 전에 공통 기반을 먼저 정리한 버전입니다. 기존 기능의 UI와 API 동작은 유지하면서, 이후 차수에서 바로 재사용할 수 있는 공통 유틸과 환경변수 문서를 추가했습니다.
+
+### 추가된 파일
+
+```txt
+functions/api/_lib/check-core.js
+assets/js/check-toolkit.js
+assets/css/tool-foundation.css
+assets/data/common/korea-sido.json
+docs/new-feature-implementation-plan.md
+.env.example
+```
+
+### 공통 API 응답 원칙
+
+신규 API는 아래 구조를 우선 사용합니다.
+
+```json
+{
+  "ok": true,
+  "code": "success",
+  "source": "PUBLIC_API",
+  "checkedAt": "ISO_DATE",
+  "summary": {},
+  "count": 0,
+  "items": [],
+  "warnings": []
+}
+```
+
+오류는 `api_key_missing`, `api_auth_error`, `api_connection_error`, `no_data`, `invalid_request`처럼 원인을 분리합니다. 화면에서는 원인을 그대로 노출하기보다 사용자가 다음 행동을 알 수 있는 문구로 바꿔 표시합니다.
+
+### 신규 기능 환경변수 준비
+
+```env
+# 주유비·최저가 주유소 확인
+OPINET_API_KEY=
+
+# 외출 위험 종합 체크
+AIRKOREA_API_KEY=
+KMA_FORECAST_API_KEY=
+KMA_LIVING_INDEX_API_KEY=
+KMA_API_KEY=
+
+# 응급실·야간 병원·약국 확인
+NMC_EMERGENCY_API_KEY=
+NMC_HOSPITAL_API_KEY=
+NMC_PHARMACY_API_KEY=
+HIRA_API_KEY=
+```
+
+`/api/config`는 v71부터 `featureEnvStatus`를 함께 반환합니다. 이 값은 신규 기능 개발 중 환경변수가 Production에 들어갔는지 빠르게 확인하는 용도로 사용합니다.
+
+### 이후 구현 순서
+
+```txt
+v72 외출 위험 UI 개편
+v73 기상청 단기예보 연동
+v74 생활기상지수 연동 완료
+v75 주유소 지도 UI
+v76 오피넷 API 연동
+v77 주유비 계산 고도화
+v78 응급실 MVP
+v79 응급실 상태 고도화
+v80 야간 병원·약국 확장 및 메인 통합
+```
+
+
+## v73-outdoor-risk-weather
+
+- `functions/api/outdoor-air.js`에 기상청 단기예보 조회서비스 연동을 추가했습니다.
+- 장소 검색 또는 현재 위치 좌표가 있으면 해당 좌표를 기상청 격자 좌표로 변환하고, 좌표가 없으면 시도 대표 좌표를 사용합니다.
+- 외출 위험도 점수에 강수확률, 강수형태, 예상 기온, 습도, 풍속을 반영합니다.
+- 결과 카드에 강수확률, 예상 기온, 습도, 풍속, 하늘상태 지표를 추가했습니다.
+- 자외선지수와 대기정체지수는 생활기상지수 API로 반영됩니다.
+
+
+### v74 생활기상지수 연동 상세
+
+- `functions/api/outdoor-air.js`에 기상청 생활기상지수 조회서비스(3.0) 연동을 추가했습니다.
+- `KMA_LIVING_INDEX_API_KEY`가 있으면 자외선지수와 대기정체지수를 조회해 외출 위험 점수에 반영합니다.
+- 자외선지수는 높음 이상에서 차단제·모자 준비, 매우 높음 이상에서 한낮 장시간 외출 주의 문구를 제공합니다.
+- 대기정체지수는 대기 확산이 낮은 경우 오염물질이 머무를 수 있다는 안내를 추가합니다.
+- 기상청 단기예보와 생활기상지수는 모두 공개 API 기준의 참고 정보이며 실제 체감 환경과 차이가 있을 수 있습니다.
+
+
+## v75 최저가 주유소 확인 UI 골격
+
+- `tools/fuel-station-check.html` 페이지를 추가했습니다.
+- `assets/js/fuel-station-check.js`는 오피넷 API 연동 전 샘플 데이터로 필터, 지도 마커, 주유소 카드, 상세 패널 UI를 확인합니다.
+- `functions/api/fuel-stations.js`는 향후 오피넷 연동을 위한 API 엔드포인트 골격입니다.
+- 실제 주유소 가격 연동은 다음 차수에서 `OPINET_API_KEY`를 사용해 구현합니다.
+- 배포 ZIP에는 `.env`, `.env.local` 같은 키 파일을 포함하지 않습니다.
+
+
+### v77-fuel-cost-calc
+- 최저가 주유소 확인에 주유량·연비·추가 이동거리 입력을 추가했습니다.
+- 오피넷 가격 기준 예상 주유비, 평균가 대비 절약액, 거리 고려 참고 절약액을 계산합니다.
+
+
+## v78-emergency-room-mvp
+
+- `tools/emergency-hospital-check.html` 응급실·야간 병원·약국 확인 페이지를 추가했습니다.
+- `functions/api/emergency-hospitals.js`에서 `NMC_EMERGENCY_API_KEY` 기준 국립중앙의료원 응급의료기관 정보를 조회합니다.
+- 응급실 목록, 전화번호, 가용 병상, 현재 위치 기반 조회, 카카오맵 검색 버튼을 제공합니다.
+- 응급 상황에서는 119 연락이 우선이라는 안내와 방문 전 전화 확인 문구를 UI 전반에 반영했습니다.
+
+
+## v79-emergency-room-status
+
+- `functions/api/emergency-hospitals.js`에 중증질환 수용가능정보 조회와 응급실·중증질환 메시지 조회를 비파괴 보강 방식으로 추가했습니다.
+- 응급실 카드에 중증질환 참고 정보, 장비·시설 상태 칩, 상태 메시지 영역을 추가했습니다.
+- `보기 기준`에 중증 정보 우선 정렬을 추가했습니다.
+- 가용 병상, 중증질환 수용가능정보, 장비 상태는 모두 공공데이터 제공 시점 기준 참고 정보이며 실제 수용 가능 여부는 병원 전화 또는 119 안내로 확인해야 한다는 문구를 강화했습니다.
+
+
+## v80-night-hospital-pharmacy
+
+- `tools/emergency-hospital-check.html`에 `[응급실] [야간 병원] [야간 약국]` 탭을 추가했습니다.
+- `functions/api/emergency-hospitals.js`에서 `mode=hospital`, `mode=pharmacy` 조회를 지원합니다.
+- 국립중앙의료원 전국 병·의원 찾기 서비스와 전국 약국 정보 조회 서비스 기준으로 기관명, 전화번호, 주소, 운영시간을 정규화합니다.
+- 운영시간은 공공데이터 기준 참고 정보이므로 실제 접수 마감과 방문 가능 여부는 전화 확인이 필요하다는 안내를 유지합니다.
+
+
+## v81-main-seo-integration
+
+10차 작업으로 신규 기능 3종을 메인 구조와 SEO 기준에 최종 통합했습니다.
+
+- 메인 기능 영역을 `차량 생활 확인`, `생활 안전 확인`, `생활 물가 확인`, `사업자·거래 확인`, `기기 확인` 카테고리로 재배치했습니다.
+- 주요 기능 drawer의 중복 항목을 정리하고 신규 기능을 카테고리별로 묶었습니다.
+- `index.html`에 WebSite/ItemList JSON-LD를 추가했습니다.
+- 외출 위험, 최저가 주유소, 응급실·야간 병원·약국 페이지의 메타 설명, FAQ 구조화 데이터, 오래된 예정 문구를 정리했습니다.
+- `data-sources.html`에서 신규 기능을 추가 예정이 아닌 적용 상태로 갱신했습니다.
+- `sitemap.xml`에 2026-06-21 lastmod와 신규 핵심 기능 우선순위를 반영했습니다.
+- `.env.example`을 전체 기능 기준 환경변수 목록으로 정리했습니다.
+
+배포 후 `/api/config`의 `serverVersion`이 `v81-main-seo-integration`으로 보이면 10차 통합본이 반영된 것입니다.

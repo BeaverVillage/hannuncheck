@@ -3811,3 +3811,216 @@
     grid-column: 1 / -1 !important;
   }
 }
+
+/* v99: emergency mobile sheet state, critical item popup, and hidden-card cleanup */
+.emergency-map-app--v99 .emergency-map-selected-card[hidden],
+.emergency-map-app--v99 .emergency-detail-card[hidden],
+.emergency-map-app--v99 .emergency-detail-card--mobile[hidden] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.emergency-map-app--v99 .metric-detail-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.28rem;
+  min-height: 24px;
+  padding: 0.18rem 0.46rem;
+  border-radius: 999px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+}
+
+.emergency-map-app--v99 .metric-detail-link:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.emergency-map-app--v99 .emergency-map-selected-card .map-selected-metrics div {
+  align-content: start;
+  gap: 0.1rem;
+}
+
+.emergency-critical-popup[hidden] { display: none !important; }
+.emergency-critical-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 10080;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.46);
+}
+
+.emergency-critical-popup__panel {
+  width: min(520px, 100%);
+  max-height: min(78vh, 640px);
+  overflow: hidden;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #d7e5f4;
+  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.24);
+}
+
+.emergency-critical-popup__panel header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.05rem 0.8rem;
+  border-bottom: 1px solid #e5edf7;
+}
+
+.emergency-critical-popup__panel header strong {
+  display: block;
+  color: #102033;
+  font-size: 1rem;
+}
+
+.emergency-critical-popup__panel header span {
+  display: block;
+  margin-top: 0.18rem;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.emergency-critical-popup__panel header button {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid #d7e5f4;
+  background: #fff;
+  color: #334155;
+  font-weight: 900;
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+.emergency-critical-popup__body {
+  padding: 0.95rem 1.05rem 1.1rem;
+  overflow-y: auto;
+  max-height: calc(min(78vh, 640px) - 78px);
+}
+
+.emergency-critical-popup__body ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.8rem 0 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.emergency-critical-popup__body li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.7rem 0.78rem;
+  border-radius: 14px;
+  background: #f8fbff;
+  border: 1px solid #e5edf7;
+}
+
+.emergency-critical-popup__body li.good { background: #ecfdf5; border-color: #bbf7d0; }
+.emergency-critical-popup__body li.caution { background: #fff7ed; border-color: #fed7aa; }
+.emergency-critical-popup__body li.warning { background: #fef2f2; border-color: #fecaca; }
+
+.emergency-critical-popup__body li strong {
+  color: #102033;
+  font-size: 0.9rem;
+}
+
+.emergency-critical-popup__body li span {
+  color: #475569;
+  font-size: 0.82rem;
+  text-align: right;
+}
+
+@media (min-width: 861px) {
+  .emergency-map-app--v99 .mobile-detail-action,
+  .emergency-map-app--v99 .emergency-result-list [data-detail-id],
+  .emergency-map-app--v99 .parking-card-actions .as-button {
+    display: none !important;
+  }
+}
+
+@media (max-width: 860px) {
+  .emergency-map-app--v99 .parking-bottom-sheet,
+  .emergency-map-app--v99 .parking-bottom-sheet.is-collapsed,
+  .emergency-map-app--v99 .parking-bottom-sheet.is-open,
+  .emergency-map-app--v99 .parking-bottom-sheet.is-expanded {
+    position: fixed !important;
+    left: 10px !important;
+    right: 10px !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 6px) !important;
+    height: var(--parking-sheet-height, min(88dvh, 760px)) !important;
+    max-height: var(--parking-sheet-height, min(88dvh, 760px)) !important;
+    transform: translate3d(0, var(--parking-sheet-y, calc(var(--parking-sheet-height, 620px) - 58px)), 0) !important;
+    transition: transform 180ms cubic-bezier(0.2, 0.85, 0.25, 1) !important;
+    z-index: 160 !important;
+    overflow: hidden !important;
+    pointer-events: auto !important;
+    touch-action: none !important;
+  }
+
+  .emergency-map-app--v99 .parking-bottom-sheet.is-dragging { transition: none !important; }
+
+  .emergency-map-app--v99 .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-controls,
+  .emergency-map-app--v99 .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-sort,
+  .emergency-map-app--v99 .parking-bottom-sheet.is-collapsed .parking-mobile-results,
+  .emergency-map-app--v99 .parking-bottom-sheet.is-collapsed .emergency-detail-card--mobile {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .emergency-map-app--v99 .parking-mobile-sheet-head,
+  .emergency-map-app--v99 .parking-sheet-handle {
+    touch-action: none !important;
+  }
+
+  .emergency-map-app--v99 .parking-mobile-results {
+    max-height: calc(var(--parking-sheet-height, 620px) - 170px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem) !important;
+  }
+
+  .emergency-map-app--v99 .emergency-map-selected-card--v98,
+  .emergency-map-app--v99 .emergency-map-selected-card--v99 {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+    width: auto !important;
+    max-height: 184px !important;
+    overflow: auto !important;
+    z-index: 145 !important;
+  }
+
+  .emergency-map-app--v99 .emergency-map-selected-card .map-selected-metrics,
+  .emergency-map-app--v99 .emergency-map-selected-card .map-selected-address,
+  .emergency-map-app--v99 .emergency-map-selected-card .fine-print {
+    display: none !important;
+  }
+
+  .emergency-map-app--v99 .emergency-map-selected-card .map-selected-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .emergency-critical-popup {
+    align-items: end;
+    padding: 0;
+  }
+  .emergency-critical-popup__panel {
+    width: 100%;
+    max-height: 82vh;
+    border-radius: 24px 24px 0 0;
+  }
+}

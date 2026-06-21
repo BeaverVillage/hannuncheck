@@ -10,7 +10,7 @@ import {
   toNumber,
 } from './_lib/check-core.js';
 
-const SERVER_VERSION = 'v94-emergency-national-local-cache';
+const SERVER_VERSION = 'v95-emergency-map-card-performance-fix';
 const NMC_SOURCE = 'NMC EMERGENCY MEDICAL DATA';
 const NMC_HOSPITAL_SOURCE = 'NMC HOSPITAL CLINIC DATA';
 const NMC_PHARMACY_SOURCE = 'NMC PHARMACY DATA';
@@ -109,24 +109,26 @@ export async function onRequestGet({ request, env }) {
       return handleNightCareRequest({ url, key, modeConfig, region, district, sort, lat, lng, useLocation, requestId });
     }
 
-    const listResult = useLocation
-      ? await fetchNearbyEmergency({ key, lat, lng, requestId }).catch(async (error) => {
+    const listPromise = useLocation
+      ? fetchNearbyEmergency({ key, lat, lng, requestId }).catch(async (error) => {
         warnings.push('현재 위치 기준 조회가 원활하지 않아 지역 기준 응급실 정보를 함께 확인합니다.');
         console.log('[NMC nearby fallback]', { requestId, message: error?.message || String(error) });
         return fetchRealtimeBeds({ key, region, district, requestId });
       })
-      : await fetchRealtimeBeds({ key, region, district, requestId });
+      : fetchRealtimeBeds({ key, region, district, requestId });
 
-    const locationResult = await fetchEmergencyLocationList({ key, region, district, requestId }).catch((error) => {
+    const locationPromise = fetchEmergencyLocationList({ key, region, district, requestId }).catch((error) => {
       console.log('[NMC emergency location merge unavailable]', { requestId, message: error?.message || String(error) });
       return { items: [], sourceMode: 'location_merge_unavailable' };
     });
 
-    const statusResult = await fetchStatusEnhancements({ key, region, district, requestId }).catch((error) => {
+    const statusPromise = fetchStatusEnhancements({ key, region, district, requestId }).catch((error) => {
       warnings.push('중증질환 수용가능정보와 응급실 메시지 일부를 불러오지 못했습니다. 병상·전화 정보 중심으로 확인해 주세요.');
       console.log('[NMC emergency status fallback]', { requestId, message: error?.message || String(error) });
       return { seriousItems: [], messages: [], warnings: ['status_unavailable'] };
     });
+
+    const [listResult, locationResult, statusResult] = await Promise.all([listPromise, locationPromise, statusPromise]);
     const statusMaps = buildStatusMaps(statusResult);
 
     let items = mergeEmergencyLocationData(listResult.items, locationResult.items, useLocation ? { lat, lng } : null)

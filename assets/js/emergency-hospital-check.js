@@ -10,8 +10,8 @@
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
   });
   const buildKakaoSearchUrl = toolkit.buildKakaoSearchUrl || ((item) => `https://map.kakao.com/link/search/${encodeURIComponent(`${item.name} ${item.address}`)}`);
-  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v94-emergency-national-local-cache';
-  const EMERGENCY_NATIONAL_CACHE_URL = '/assets/data/medical/emergency-national-cache.json?v=20260621-v94-emergency-national-local-cache';
+  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v95-emergency-map-card-performance-fix';
+  const EMERGENCY_NATIONAL_CACHE_URL = '/assets/data/medical/emergency-national-cache.json?v=20260621-v95-emergency-map-card-performance-fix';
 
   const MODE_META = {
     emergency: { label: '응급실', searchLabel: '응급실 확인하기', listLabel: '응급실 비교 목록', mapSuffix: '응급실', detailTitle: '선택한 응급실' },
@@ -51,6 +51,7 @@
     listTitle: document.querySelector('#emergency-list-title'),
     listSummary: document.querySelector('#emergency-list-summary'),
     detail: document.querySelector('#emergency-detail-card'),
+    mapDetail: document.querySelector('#emergency-map-selected-card'),
     mobileDetail: document.querySelector('#emergency-mobile-detail-card'),
     warningList: document.querySelector('#emergency-warning-list'),
     quickButtons: Array.from(document.querySelectorAll('.emergency-quick-row button, .emergency-result-sort-tabs--v88 button, [data-emergency-map-sort], [data-emergency-mobile-sort]')),
@@ -96,6 +97,8 @@
     map: null,
     kakaoOverlays: [],
     mapLoadStarted: false,
+    emergencyCachePromise: null,
+    kakaoCachePromise: null,
   };
 
   const escapeHtml = (value) => String(value ?? '')
@@ -106,13 +109,16 @@
     .replace(/'/g, '&#039;');
 
   const meta = () => MODE_META[state.careMode] || MODE_META.emergency;
-  const getRegionLabel = () => elements.region?.value || '대전';
+  const getRegionLabel = () => elements.region?.value || '서울';
   const numberOrMax = (value) => Number.isFinite(Number(value)) ? Number(value) : 999999999;
   const numberOrNeg = (value) => Number.isFinite(Number(value)) ? Number(value) : -1;
   const buildTelLink = (phone) => phone ? `tel:${String(phone).replace(/[^0-9+]/g, '')}` : '';
   const hasUsableDistance = (value) => Number.isFinite(Number(value)) && Number(value) > 0;
   const formatDistanceSafe = (value) => (hasUsableDistance(value) ? formatDistance(Number(value)) : '');
-  const formatBeds = (value) => Number.isFinite(Number(value)) ? `${Number(value).toLocaleString('ko-KR')}개` : '전화 확인';
+  const formatBeds = (value) => {
+    const number = Number(value);
+    return Number.isFinite(number) && number > 0 ? `${number.toLocaleString('ko-KR')}개` : '전화 확인';
+  };
   const countGood = (items) => (Array.isArray(items) ? items.filter((item) => item.tone === 'good').length : 0);
 
   const setStatus = (message, tone = 'info') => {
@@ -140,7 +146,7 @@
 
   const syncToolbarInputs = () => {
     if (elements.mapKeyword && elements.keyword && elements.mapKeyword !== document.activeElement) elements.mapKeyword.value = elements.keyword.value || '';
-    if (elements.mapRegion && elements.region) elements.mapRegion.value = elements.region.value || '대전';
+    if (elements.mapRegion && elements.region) elements.mapRegion.value = elements.region.value || '서울';
     if (elements.mapDistrict && elements.district && elements.mapDistrict !== document.activeElement) elements.mapDistrict.value = elements.district.value || '';
     if (elements.mapModeToggle) elements.mapModeToggle.textContent = meta().label;
     if (elements.mapRegionToggle) elements.mapRegionToggle.textContent = elements.district?.value ? `${getRegionLabel()} ${elements.district.value}` : getRegionLabel();
@@ -177,7 +183,7 @@
   const loadKakaoPlaceCache = async () => {
     const util = window.HannunKakaoPlaceLink;
     if (!util?.loadCache) return;
-    state.kakaoCache = await util.loadCache(MEDICAL_KAKAO_CACHE_URL);
+    state.kakaoCache = await util.loadCache(MEDICAL_KAKAO_CACHE_URL, { cache: 'force-cache' });
     if (state.items.length) render();
   };
 
@@ -260,19 +266,29 @@
     return { ...payload, entries, byId, byName };
   };
 
-  const loadEmergencyNationalCache = async () => {
-    try {
-      const response = await fetch(EMERGENCY_NATIONAL_CACHE_URL, { cache: 'no-store' });
-      if (!response.ok) throw new Error(`emergency cache ${response.status}`);
-      state.emergencyCache = createEmergencyCacheIndex(await response.json());
-      state.emergencyCacheReady = true;
-      if (state.items.length) {
-        state.items = mergeEmergencyCacheBasics(state.items);
-        render();
+  const ensureEmergencyNationalCache = async () => {
+    if (state.emergencyCacheReady && state.emergencyCache?.entries) return state.emergencyCache;
+    if (state.emergencyCachePromise) return state.emergencyCachePromise;
+    state.emergencyCachePromise = (async () => {
+      try {
+        const response = await fetch(EMERGENCY_NATIONAL_CACHE_URL, { cache: 'force-cache' });
+        if (!response.ok) throw new Error(`emergency cache ${response.status}`);
+        state.emergencyCache = createEmergencyCacheIndex(await response.json());
+        state.emergencyCacheReady = true;
+      } catch (error) {
+        state.emergencyCache = createEmergencyCacheIndex({ entries: {} });
+        state.emergencyCacheReady = false;
       }
-    } catch (error) {
-      state.emergencyCache = createEmergencyCacheIndex({ entries: {} });
-      state.emergencyCacheReady = false;
+      return state.emergencyCache;
+    })();
+    return state.emergencyCachePromise;
+  };
+
+  const loadEmergencyNationalCache = async () => {
+    await ensureEmergencyNationalCache();
+    if (state.items.length) {
+      state.items = mergeEmergencyCacheBasics(state.items);
+      render();
     }
   };
 
@@ -345,7 +361,7 @@
       return { lat: Number(candidate.lat), lng: Number(candidate.lng) };
     }
     if (state.geo && Number.isFinite(Number(state.geo.lat)) && Number.isFinite(Number(state.geo.lng))) return state.geo;
-    return REGION_CENTERS[getRegionLabel()] || REGION_CENTERS.대전;
+    return REGION_CENTERS[getRegionLabel()] || REGION_CENTERS.서울;
   };
 
   const loadScript = (src) => new Promise((resolve, reject) => {
@@ -497,12 +513,23 @@
     return `${good}/${total} 가능`;
   };
 
+  const emergencyRankScore = (item) => {
+    let score = 0;
+    const beds = Number(item.emergencyBeds);
+    if (Number.isFinite(beds) && beds > 0) score += Math.min(40, beds * 2);
+    if (item.emergencyTel || item.mainTel) score += 14;
+    if (hasMapCoordinates(item)) score += 10;
+    if (Number(item.criticalAvailableCount) > 0) score += 8;
+    if (item.sourceMode === 'local_emergency_cache') score -= 2;
+    return score;
+  };
+
   const sortItems = (items, sort) => [...items].sort((a, b) => {
-    if (sort === 'beds') return numberOrNeg(b.emergencyBeds) - numberOrNeg(a.emergencyBeds) || numberOrMax(a.distanceM) - numberOrMax(b.distanceM);
-    if (sort === 'phone') return Number(Boolean(b.emergencyTel || b.mainTel)) - Number(Boolean(a.emergencyTel || a.mainTel)) || numberOrMax(a.distanceM) - numberOrMax(b.distanceM);
-    if (sort === 'critical') return numberOrNeg(b.criticalAvailableCount) - numberOrNeg(a.criticalAvailableCount) || numberOrNeg(b.emergencyBeds) - numberOrNeg(a.emergencyBeds) || numberOrMax(a.distanceM) - numberOrMax(b.distanceM);
+    if (sort === 'beds') return Math.max(0, numberOrNeg(b.emergencyBeds)) - Math.max(0, numberOrNeg(a.emergencyBeds)) || emergencyRankScore(b) - emergencyRankScore(a) || numberOrMax(a.distanceM) - numberOrMax(b.distanceM);
+    if (sort === 'phone') return Number(Boolean(b.emergencyTel || b.mainTel)) - Number(Boolean(a.emergencyTel || a.mainTel)) || emergencyRankScore(b) - emergencyRankScore(a) || numberOrMax(a.distanceM) - numberOrMax(b.distanceM);
+    if (sort === 'critical') return numberOrNeg(b.criticalAvailableCount) - numberOrNeg(a.criticalAvailableCount) || Math.max(0, numberOrNeg(b.emergencyBeds)) - Math.max(0, numberOrNeg(a.emergencyBeds)) || emergencyRankScore(b) - emergencyRankScore(a) || numberOrMax(a.distanceM) - numberOrMax(b.distanceM);
     if (sort === 'night') return Number(Boolean(b.isNightCandidate)) - Number(Boolean(a.isNightCandidate)) || numberOrNeg(b.closeMinutes) - numberOrNeg(a.closeMinutes) || numberOrMax(a.distanceM) - numberOrMax(b.distanceM);
-    return numberOrMax(a.distanceM) - numberOrMax(b.distanceM);
+    return numberOrMax(a.distanceM) - numberOrMax(b.distanceM) || emergencyRankScore(b) - emergencyRankScore(a);
   });
 
   const renderSummary = (items) => {
@@ -663,6 +690,36 @@
     return `<div class="emergency-message-box">${messages.map((message) => `<p><strong>${escapeHtml(message.type || '상태 메시지')}</strong>${escapeHtml(message.message || '전화 확인이 필요합니다.')}</p>`).join('')}</div>`;
   };
 
+  const renderMapFloatingDetail = (item) => {
+    if (!elements.mapDetail) return;
+    if (!item || state.dataMode === 'idle') {
+      elements.mapDetail.hidden = true;
+      elements.mapDetail.innerHTML = '';
+      return;
+    }
+    const phone = item.emergencyTel || item.mainTel || '';
+    const kakaoAction = getKakaoAction(item);
+    const distanceText = formatDistanceSafe(item.distanceM) || (state.geo ? '거리 계산 중' : '거리 정보 없음');
+    const mapText = hasMapCoordinates(item) ? '지도 표시 가능' : '지도 위치 확인 필요';
+    const bedsText = isEmergencyItem(item) ? formatBeds(item.emergencyBeds) : (item.operationTime || '운영시간 확인');
+    const statusText = isEmergencyItem(item) ? (Number(item.criticalAvailableCount) > 0 ? `${Number(item.criticalAvailableCount)}개 참고` : '전화 확인') : (item.isNightCandidate ? '야간 운영 참고' : '전화 확인');
+    elements.mapDetail.hidden = false;
+    elements.mapDetail.innerHTML = `
+      <span class="map-selected-eyebrow">지도에서 선택한 기관</span>
+      <h3>${escapeHtml(item.name || meta().label)}</h3>
+      <p class="map-selected-address">${escapeHtml(item.address || '주소 정보 없음')}</p>
+      <div class="map-selected-metrics">
+        <div><span>${isEmergencyItem(item) ? '가용 병상' : '운영시간'}</span><strong>${escapeHtml(bedsText)}</strong></div>
+        <div><span>전화</span><strong>${escapeHtml(phone || '전화 확인')}</strong></div>
+        <div><span>${isEmergencyItem(item) ? '중증 참고' : '지도'}</span><strong>${escapeHtml(isEmergencyItem(item) ? statusText : mapText)}</strong></div>
+      </div>
+      <div class="map-selected-actions">
+        ${phone ? `<a class="primary-link" href="${buildTelLink(phone)}">전화하기</a>` : '<span class="primary-link disabled">전화 확인</span>'}
+        <a class="secondary-link" href="${kakaoAction.url}" target="_blank" rel="noopener">${escapeHtml(kakaoAction.label)}</a>
+      </div>
+      <p class="fine-print" style="margin:0.56rem 0 0">${escapeHtml(distanceText)} · ${escapeHtml(mapText)} · 방문 전 전화 확인이 필요합니다.</p>`;
+  };
+
   const renderDetail = (item) => {
     if (!elements.detail) return;
     if (!item) {
@@ -723,11 +780,13 @@
 
   const render = () => {
     const items = state.items;
+    const selected = items.find((item) => item.id === state.selectedId) || items[0] || null;
     renderSummary(items);
     renderMap(items);
     renderList(items);
     renderWarnings();
-    renderDetail(items.find((item) => item.id === state.selectedId) || items[0] || null);
+    renderDetail(selected);
+    renderMapFloatingDetail(selected);
   };
 
   const syncModeUi = () => {
@@ -769,7 +828,7 @@
       department: elements.department?.value || '',
       sort: elements.sort?.value || (state.careMode === 'emergency' ? 'distance' : 'night'),
       mode: state.careMode,
-      _v: 'v94',
+      _v: 'v95',
     });
     if (state.geo) {
       params.set('lat', String(state.geo.lat));
@@ -782,6 +841,7 @@
     if (state.loading) return;
     state.loading = true;
     setStatus(`${meta().label} 정보를 불러오는 중입니다. 응급 상황이면 119에 먼저 연락하세요.`, 'info');
+    if (state.careMode === 'emergency') await ensureEmergencyNationalCache();
     const localFallback = filterEmergencyCache();
     if (localFallback.length) {
       state.dataMode = 'cache';

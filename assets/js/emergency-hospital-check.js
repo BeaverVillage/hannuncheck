@@ -10,13 +10,22 @@
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
   });
   const buildKakaoSearchUrl = toolkit.buildKakaoSearchUrl || ((item) => `https://map.kakao.com/link/search/${encodeURIComponent(`${item.name} ${item.address}`)}`);
-  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v88-emergency-ev-map-layout-fix';
+  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v89-emergency-kakao-map-rebuild';
 
   const MODE_META = {
     emergency: { label: '응급실', searchLabel: '응급실 확인하기', listLabel: '응급실 비교 목록', mapSuffix: '응급실', detailTitle: '선택한 응급실' },
     hospital: { label: '야간 병원', searchLabel: '야간 병원 확인하기', listLabel: '야간 병원 비교 목록', mapSuffix: '야간 병원', detailTitle: '선택한 야간 병원' },
     pharmacy: { label: '야간 약국', searchLabel: '야간 약국 확인하기', listLabel: '야간 약국 비교 목록', mapSuffix: '야간 약국', detailTitle: '선택한 야간 약국' },
   };
+  const REGION_CENTERS = {
+    서울: { lat: 37.5665, lng: 126.9780 }, 부산: { lat: 35.1796, lng: 129.0756 }, 대구: { lat: 35.8714, lng: 128.6014 },
+    인천: { lat: 37.4563, lng: 126.7052 }, 광주: { lat: 35.1595, lng: 126.8526 }, 대전: { lat: 36.3504, lng: 127.3845 },
+    울산: { lat: 35.5384, lng: 129.3114 }, 세종: { lat: 36.4800, lng: 127.2890 }, 경기: { lat: 37.4138, lng: 127.5183 },
+    강원: { lat: 37.8228, lng: 128.1555 }, 충북: { lat: 36.6357, lng: 127.4917 }, 충남: { lat: 36.5184, lng: 126.8000 },
+    전북: { lat: 35.7175, lng: 127.1530 }, 전남: { lat: 34.8679, lng: 126.9910 }, 경북: { lat: 36.4919, lng: 128.8889 },
+    경남: { lat: 35.4606, lng: 128.2132 }, 제주: { lat: 33.4996, lng: 126.5312 },
+  };
+
 
   const elements = {
     form: document.querySelector('#emergency-hospital-form'),
@@ -34,6 +43,7 @@
     summaryPhone: document.querySelector('#emergency-phone-card'),
     summaryStatus: document.querySelector('#emergency-status-card'),
     mapTitle: document.querySelector('#emergency-map-title'),
+    map: document.querySelector('#emergency-map'),
     mapNotice: document.querySelector('.emergency-map-notice'),
     markers: document.querySelector('#emergency-map-markers'),
     list: document.querySelector('#emergency-result-list'),
@@ -54,6 +64,10 @@
     warnings: [],
     selectedId: '',
     kakaoCache: null,
+    kakaoReady: false,
+    map: null,
+    kakaoOverlays: [],
+    mapLoadStarted: false,
   };
 
   const escapeHtml = (value) => String(value ?? '')
@@ -95,6 +109,137 @@
     if (!util?.loadCache) return;
     state.kakaoCache = await util.loadCache(MEDICAL_KAKAO_CACHE_URL);
     if (state.items.length) render();
+  };
+
+  const getMapCenter = (items = state.items) => {
+    const selected = items.find((item) => item.id === state.selectedId);
+    const candidate = selected || items.find((item) => Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lng)));
+    if (candidate && Number.isFinite(Number(candidate.lat)) && Number.isFinite(Number(candidate.lng))) {
+      return { lat: Number(candidate.lat), lng: Number(candidate.lng) };
+    }
+    if (state.geo && Number.isFinite(Number(state.geo.lat)) && Number.isFinite(Number(state.geo.lng))) return state.geo;
+    return REGION_CENTERS[getRegionLabel()] || REGION_CENTERS.대전;
+  };
+
+  const loadScript = (src) => new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`) || document.querySelector('script[data-kakao-map-sdk]');
+    if (existing) {
+      if (window.kakao?.maps?.load) return resolve();
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', () => reject(new Error('카카오맵 SDK 스크립트 로드 실패')), { once: true });
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.dataset.kakaoMapSdk = 'true';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('카카오맵 SDK 스크립트 로드 실패'));
+    document.head.appendChild(script);
+  });
+
+  const resolveKakaoMapKey = async () => {
+    const fromWindow = window.HANNUNCHECK_CONFIG?.KAKAO_MAP_JS_KEY || window.HANNUNCALC_CONFIG?.KAKAO_MAP_JS_KEY || window.KAKAO_MAP_JS_KEY;
+    if (fromWindow) return fromWindow;
+    const meta = document.querySelector('meta[name="kakao-map-js-key"]')?.content?.trim();
+    if (meta) return meta;
+    try {
+      const config = await fetchJson('/api/config', { cache: 'no-store' });
+      return config?.kakaoMapJsKey || '';
+    } catch (_) {
+      return '';
+    }
+  };
+
+  const clearKakaoOverlays = () => {
+    state.kakaoOverlays.forEach((overlay) => overlay?.setMap?.(null));
+    state.kakaoOverlays = [];
+  };
+
+  const setMapFallbackMessage = (title, message) => {
+    if (!elements.mapNotice) return;
+    elements.mapNotice.innerHTML = `<strong>${escapeHtml(title)}</strong><span>${escapeHtml(message)}</span>`;
+  };
+
+  const initKakaoMap = async () => {
+    if (!elements.map || state.mapLoadStarted) return;
+    state.mapLoadStarted = true;
+    try {
+      const key = await resolveKakaoMapKey();
+      if (!key) throw new Error('NO_KAKAO_MAP_JS_KEY');
+      await loadScript(`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(key)}&libraries=services&autoload=false`);
+      if (!window.kakao?.maps?.load) throw new Error('카카오맵 SDK 객체를 찾지 못했습니다.');
+      await new Promise((resolve) => window.kakao.maps.load(resolve));
+      const center = getMapCenter();
+      state.map = new window.kakao.maps.Map(elements.map, {
+        center: new window.kakao.maps.LatLng(center.lat, center.lng),
+        level: state.careMode === 'emergency' ? 6 : 5,
+      });
+      state.kakaoReady = true;
+      elements.map.classList.remove('is-fallback');
+      renderMap(state.items);
+    } catch (error) {
+      state.kakaoReady = false;
+      state.map = null;
+      elements.map?.classList.add('is-fallback');
+      setMapFallbackMessage('지도 안내 모드', error?.message === 'NO_KAKAO_MAP_JS_KEY'
+        ? 'KAKAO_MAP_JS_KEY를 설정하면 실제 카카오 지도가 표시됩니다.'
+        : '카카오맵을 불러오지 못해 기본 지도 안내 모드로 표시합니다.');
+      renderMap(state.items);
+    }
+  };
+
+  const makeKakaoMarkerElement = (item, index) => {
+    const button = document.createElement('button');
+    const tone = item.statusTone || (Number(item.emergencyBeds) > 0 ? 'good' : 'neutral');
+    button.type = 'button';
+    button.className = `emergency-kakao-marker ${tone} ${state.selectedId === item.id ? 'selected' : ''}`;
+    button.setAttribute('aria-label', item.name || meta().label);
+    button.dataset.hospitalId = item.id || '';
+    button.innerHTML = `<span>${index + 1}</span><strong>${escapeHtml(markerText(item))}</strong>`;
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      state.selectedId = item.id;
+      render();
+    });
+    return button;
+  };
+
+  const renderKakaoMap = (items) => {
+    if (!state.kakaoReady || !state.map || !window.kakao?.maps) return false;
+    clearKakaoOverlays();
+    const center = getMapCenter(items);
+    const bounds = new window.kakao.maps.LatLngBounds();
+    const hasItems = Array.isArray(items) && items.length;
+    if (!hasItems) {
+      state.map.setCenter(new window.kakao.maps.LatLng(center.lat, center.lng));
+      state.map.setLevel(state.careMode === 'emergency' ? 7 : 6);
+      return true;
+    }
+    items.slice(0, 24).forEach((item, index) => {
+      if (!Number.isFinite(Number(item.lat)) || !Number.isFinite(Number(item.lng))) return;
+      const position = new window.kakao.maps.LatLng(Number(item.lat), Number(item.lng));
+      bounds.extend(position);
+      const overlay = new window.kakao.maps.CustomOverlay({
+        position,
+        yAnchor: 1,
+        zIndex: state.selectedId === item.id ? 30 : 20,
+        content: makeKakaoMarkerElement(item, index),
+      });
+      overlay.setMap(state.map);
+      state.kakaoOverlays.push(overlay);
+    });
+    if (state.kakaoOverlays.length > 1) state.map.setBounds(bounds, 42, 42, 42, 42);
+    else if (state.kakaoOverlays.length === 1) {
+      const target = items.find((item) => Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lng))) || { lat: center.lat, lng: center.lng };
+      state.map.setCenter(new window.kakao.maps.LatLng(Number(target.lat), Number(target.lng)));
+      state.map.setLevel(4);
+    } else {
+      state.map.setCenter(new window.kakao.maps.LatLng(center.lat, center.lng));
+      state.map.setLevel(state.careMode === 'emergency' ? 7 : 6);
+    }
+    setTimeout(() => window.kakao?.maps?.event?.trigger?.(state.map, 'resize'), 0);
+    return true;
   };
 
   const formatCriticalSummary = (item) => {
@@ -157,12 +302,24 @@
 
   const renderMap = (items) => {
     if (elements.mapTitle) elements.mapTitle.textContent = `${state.summary.criteria || getRegionLabel()} ${meta().mapSuffix}`;
+    const isIdle = state.dataMode === 'idle';
     if (elements.mapNotice) {
       const notice = state.careMode === 'emergency'
         ? '중증·장비 상태도 참고용입니다. 방문 전 전화 확인이 필요합니다.'
         : '운영시간은 참고용입니다. 야간 접수와 조제 가능 여부는 전화 확인이 필요합니다.';
-      elements.mapNotice.innerHTML = state.dataMode === 'idle' ? `<strong>조회 전</strong><span>조건을 선택하고 조회 버튼을 누르면 공공데이터 기준 후보를 표시합니다.</span>` : `<strong>국립중앙의료원 데이터</strong><span>${notice}</span>`;
+      elements.mapNotice.innerHTML = isIdle
+        ? `<strong>조회 전</strong><span>확인 버튼을 누르면 실제 지도와 목록에 공공데이터 기준 후보를 표시합니다.</span>`
+        : `<strong>공공데이터 기준</strong><span>${notice}</span>`;
     }
+
+    const renderedKakao = renderKakaoMap(items);
+    if (renderedKakao) {
+      if (elements.markers) elements.markers.innerHTML = '';
+      return;
+    }
+
+    clearKakaoOverlays();
+    if (elements.map) elements.map.classList.add('is-fallback');
     elements.markers.innerHTML = items.slice(0, 12).map((item, index) => {
       const pos = makeMapPosition(item, index, items.length);
       const tone = item.statusTone || (Number(item.emergencyBeds) > 0 ? 'good' : 'neutral');
@@ -326,7 +483,7 @@
       department: elements.department?.value || '',
       sort: elements.sort?.value || (state.careMode === 'emergency' ? 'distance' : 'night'),
       mode: state.careMode,
-      _v: 'v88',
+      _v: 'v89',
     });
     if (state.geo) {
       params.set('lat', String(state.geo.lat));
@@ -422,5 +579,6 @@
   });
 
   resetToIdle();
+  initKakaoMap();
   loadKakaoPlaceCache();
 })();

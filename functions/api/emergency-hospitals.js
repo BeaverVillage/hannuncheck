@@ -10,7 +10,7 @@ import {
   toNumber,
 } from './_lib/check-core.js';
 
-const SERVER_VERSION = 'v88-emergency-ev-map-layout-fix';
+const SERVER_VERSION = 'v89-emergency-kakao-map-rebuild';
 const NMC_SOURCE = 'NMC EMERGENCY MEDICAL DATA';
 const NMC_HOSPITAL_SOURCE = 'NMC HOSPITAL CLINIC DATA';
 const NMC_PHARMACY_SOURCE = 'NMC PHARMACY DATA';

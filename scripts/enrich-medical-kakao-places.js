@@ -17,6 +17,9 @@
  * 출력:
  *   assets/data/medical/kakao-place-cache.json
  *
+ * 전국 응급실 기본정보 캐시를 입력으로 사용할 때:
+ *   node scripts/enrich-medical-kakao-places.js --mode=emergency --source=assets/data/medical/emergency-national-cache.json
+ *
  * 주의:
  *   이 스크립트는 로컬/빌드 단계에서만 카카오 Local API를 호출합니다.
  *   사이트 런타임에서는 이 JSON 캐시와 카카오맵 검색 URL만 사용합니다.
@@ -28,8 +31,9 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const CACHE_PATH = path.join(ROOT, 'assets/data/medical/kakao-place-cache.json');
+const DEFAULT_SOURCE_CACHE_PATH = path.join(ROOT, 'assets/data/medical/emergency-national-cache.json');
 const KAKAO_LOCAL_ENDPOINT = 'https://dapi.kakao.com/v2/local/search/keyword.json';
-const VERSION = 'v86-medical-kakao-place-cache';
+const VERSION = 'v94-medical-kakao-place-cache';
 const DEFAULT_DELAY_MS = 240;
 const DEFAULT_RADIUS_METERS = 700;
 const HIGH_SCORE = 82;
@@ -110,16 +114,23 @@ async function main() {
   const stats = { collected: 0, processed: 0, skipped: 0, high: 0, medium: 0, low: 0, notFound: 0, missingData: 0, apiError: 0 };
 
   const candidates = [];
-  for (const mode of selectedModes) {
-    const config = SERVICE_CONFIG[mode];
-    if (!config) throw new Error(`지원하지 않는 mode입니다: ${mode}`);
-    const key = firstEnv(config.envKeys);
-    if (!key) {
-      console.warn(`[${mode}] API 키가 없어 수집을 건너뜁니다. 필요 키: ${config.envKeys.join(', ')}`);
-      continue;
+  const sourcePath = args.source ? path.resolve(ROOT, String(args.source)) : '';
+  if (sourcePath) {
+    const sourceCandidates = loadSourceCandidates(sourcePath, { mode: args.mode || 'emergency', region, district, keyword: args.keyword || '' });
+    candidates.push(...dedupeCandidates(sourceCandidates));
+    console.log(`[source] ${path.relative(ROOT, sourcePath)}에서 ${sourceCandidates.length}개 후보를 읽었습니다.`);
+  } else {
+    for (const mode of selectedModes) {
+      const config = SERVICE_CONFIG[mode];
+      if (!config) throw new Error(`지원하지 않는 mode입니다: ${mode}`);
+      const key = firstEnv(config.envKeys);
+      if (!key) {
+        console.warn(`[${mode}] API 키가 없어 수집을 건너뜁니다. 필요 키: ${config.envKeys.join(', ')}`);
+        continue;
+      }
+      const rowsFromApi = await fetchNmcCandidates({ mode, config, key, region, district, qt, rows, department: args.department || '', keyword: args.keyword || '' });
+      candidates.push(...dedupeCandidates(rowsFromApi));
     }
-    const rowsFromApi = await fetchNmcCandidates({ mode, config, key, region, district, qt, rows, department: args.department || '', keyword: args.keyword || '' });
-    candidates.push(...dedupeCandidates(rowsFromApi));
   }
 
   stats.collected = candidates.length;
@@ -181,6 +192,45 @@ async function main() {
 
   console.log('[medical-kakao-cache] done:', payload.meta);
   if (dryRun) console.log('[medical-kakao-cache] dry-run 모드라 파일을 쓰지 않았습니다.');
+}
+
+
+function loadSourceCandidates(sourcePath, { mode = 'emergency', region = '', district = '', keyword = '' } = {}) {
+  if (!fs.existsSync(sourcePath)) throw new Error(`source 파일을 찾을 수 없습니다: ${sourcePath}`);
+  const payload = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
+  const rawEntries = payload.entries || payload.items || [];
+  const entries = Array.isArray(rawEntries) ? rawEntries : Object.values(rawEntries);
+  const selectedMode = mode === 'all' ? '' : mode;
+  const normalizedRegion = normalizeRegion(region || '');
+  const normalizedDistrict = String(district || '').trim();
+  const normalizedKeyword = normalizeForMatch(keyword || '');
+  return entries
+    .map((entry, index) => normalizeSourceCacheItem(entry, selectedMode || entry.type || 'emergency', index + 1))
+    .filter((item) => item.sourceId && item.name)
+    .filter((item) => !selectedMode || item.type === selectedMode)
+    .filter((item) => {
+      if (normalizedRegion && !(item.address || '').includes(normalizedRegion) && item.region !== normalizedRegion) return false;
+      if (normalizedDistrict && !(item.address || '').includes(normalizedDistrict)) return false;
+      if (normalizedKeyword) {
+        const haystack = normalizeForMatch(`${item.name} ${item.address}`);
+        if (!haystack.includes(normalizedKeyword)) return false;
+      }
+      return true;
+    });
+}
+
+function normalizeSourceCacheItem(entry = {}, type = 'emergency', rank = 0) {
+  const sourceId = firstText(entry, ['sourceId', 'id', 'hpid', 'HPID']) || `${type}-${rank}`;
+  const normalizedType = entry.type || entry.kind || type || 'emergency';
+  return {
+    sourceId,
+    type: normalizedType,
+    name: firstText(entry, ['name', 'dutyName', 'hospitalName', 'pharmacyName']),
+    address: firstText(entry, ['address', 'dutyAddr', 'addr']),
+    region: firstText(entry, ['sido', 'region']) || extractRegion(entry.address || ''),
+    lat: firstNumber(entry, ['lat', 'wgs84Lat', 'latitude', 'dutyLat']),
+    lng: firstNumber(entry, ['lng', 'wgs84Lon', 'longitude', 'dutyLon']),
+  };
 }
 
 async function fetchNmcCandidates({ mode, config, key, region, district, qt, rows, department, keyword }) {

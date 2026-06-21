@@ -21,12 +21,12 @@
 <script data-schema="faqpage" type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"응급 상황이면 이 페이지를 먼저 봐야 하나요?","acceptedAnswer":{"@type":"Answer","text":"아닙니다. 생명이나 안전이 위급한 상황이면 119에 먼저 연락해야 합니다. 이 페이지는 공공데이터 기준 참고 정보를 정리하는 도구입니다."}},{"@type":"Question","name":"가용 병상 정보는 확정 정보인가요?","acceptedAnswer":{"@type":"Answer","text":"아닙니다. 제공기관 데이터 기준 참고 정보이며 실제 수용 가능 여부는 병원 상황에 따라 달라질 수 있습니다. 방문 전 반드시 병원에 전화로 확인해야 합니다."}},{"@type":"Question","name":"현재 위치 기준 조회가 가능한가요?","acceptedAnswer":{"@type":"Answer","text":"브라우저 위치 권한을 허용하면 현재 위치 기준 응급의료기관 정보를 조회할 수 있습니다. 위치 권한을 허용하지 않으면 지역 기준으로 조회합니다."}},{"@type":"Question","name":"야간 병원과 약국도 확인할 수 있나요?","acceptedAnswer":{"@type":"Answer","text":"응급실, 야간 병원, 야간 약국 탭으로 구분해 확인할 수 있습니다. 운영시간은 공공데이터 기준 참고 정보이므로 방문 전 전화 확인이 필요합니다."}}]}</script>
 <link href="/assets/css/base.css" rel="stylesheet"/>
 <link href="/assets/css/layout.css?v=20260620-v55-grocery-skeleton" rel="stylesheet"/>
-<link href="/assets/css/components.css?v=20260621-v93-emergency-marker-detail-main-copy-fix" rel="stylesheet"/>
-<link href="/assets/css/parking-calc-base.css?v=20260621-v93-emergency-marker-detail-main-copy-fix" rel="stylesheet"/>
-<link href="/assets/css/parking-calc-layout.css?v=20260621-v93-emergency-marker-detail-main-copy-fix" rel="stylesheet"/>
-<link href="/assets/css/parking-calc-components.css?v=20260621-v93-emergency-marker-detail-main-copy-fix" rel="stylesheet"/>
-<link href="/assets/css/tool-foundation.css?v=20260621-v93-emergency-marker-detail-main-copy-fix" rel="stylesheet"/>
-<script src="/assets/config/public-config.js?v=20260621-v93-emergency-marker-detail-main-copy-fix"></script>
+<link href="/assets/css/components.css?v=20260621-v94-emergency-national-local-cache" rel="stylesheet"/>
+<link href="/assets/css/parking-calc-base.css?v=20260621-v94-emergency-national-local-cache" rel="stylesheet"/>
+<link href="/assets/css/parking-calc-layout.css?v=20260621-v94-emergency-national-local-cache" rel="stylesheet"/>
+<link href="/assets/css/parking-calc-components.css?v=20260621-v94-emergency-national-local-cache" rel="stylesheet"/>
+<link href="/assets/css/tool-foundation.css?v=20260621-v94-emergency-national-local-cache" rel="stylesheet"/>
+<script src="/assets/config/public-config.js?v=20260621-v94-emergency-national-local-cache"></script>
 <!-- Google AdSense -->
 <script async="" crossorigin="anonymous" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6340743169950430"></script>
 </meta></head>
@@ -44,7 +44,7 @@
 </section>
 <section class="content-band tool-content-band">
 <div class="container emergency-tool-shell emergency-tool-shell--ev-format" data-emergency-hospital-tool="" id="emergency-hospital-tool">
-<section aria-label="응급실·야간 병원·약국 지도 확인" class="parking-app-shell emergency-map-app emergency-map-app--ev-format emergency-map-app--v88 emergency-map-app--v89 emergency-map-app--v90 emergency-map-app--v93" data-emergency-map>
+<section aria-label="응급실·야간 병원·약국 지도 확인" class="parking-app-shell emergency-map-app emergency-map-app--ev-format emergency-map-app--v88 emergency-map-app--v89 emergency-map-app--v90 emergency-map-app--v93 emergency-map-app--v94" data-emergency-map>
 <div class="parking-dashboard emergency-parking-dashboard">
 <div class="parking-dashboard__controls emergency-controls-band">
 <div class="parking-left-panel parking-control-column">
@@ -89,7 +89,7 @@
 </div>
 </div>
 <div class="parking-dashboard__main emergency-dashboard-main emergency-dashboard-main--v88 emergency-dashboard-main--v89 emergency-dashboard-main--v90">
-<section aria-label="응급실·야간 병원 목록" class="parking-dashboard__results parking-results-panel tool-panel emergency-results-panel emergency-results-panel--v88 emergency-results-panel--v89 emergency-results-panel--v90 emergency-results-panel--v93">
+<section aria-label="응급실·야간 병원 목록" class="parking-dashboard__results parking-results-panel tool-panel emergency-results-panel emergency-results-panel--v88 emergency-results-panel--v89 emergency-results-panel--v90 emergency-results-panel--v93 emergency-results-panel--v94">
 <div class="parking-panel-head"><span>목록</span><strong id="emergency-list-title">응급실 비교 목록</strong></div>
 <div class="parking-summary-bar emergency-summary-bar--v88"><strong id="emergency-list-summary">조회 전</strong><span>지도 위 검색 버튼을 누르면 목록에 표시됩니다.</span></div>
 <div aria-live="polite" class="status-message" id="emergency-status">조건을 선택한 뒤 확인 버튼을 누르면 공공데이터 기준 후보를 표시합니다.</div>
@@ -106,8 +106,8 @@
 <button data-emergency-sort="critical" type="button">중증 정보</button>
 <button data-emergency-sort="night" type="button">야간 운영</button>
 </div>
-<section aria-label="응급실·야간 병원 결과" class="parking-result-list emergency-result-list emergency-result-list--ev emergency-result-list--v88 emergency-result-list--v89 emergency-result-list--v90 emergency-result-list--v93" id="emergency-result-list"></section>
-<aside class="api-status-card emergency-detail-card emergency-detail-card--ev emergency-detail-card--v88 emergency-detail-card--v89 emergency-detail-card--v90 emergency-detail-card--v93" hidden="" id="emergency-detail-card"></aside>
+<section aria-label="응급실·야간 병원 결과" class="parking-result-list emergency-result-list emergency-result-list--ev emergency-result-list--v88 emergency-result-list--v89 emergency-result-list--v90 emergency-result-list--v93 emergency-result-list--v94" id="emergency-result-list"></section>
+<aside class="api-status-card emergency-detail-card emergency-detail-card--ev emergency-detail-card--v88 emergency-detail-card--v89 emergency-detail-card--v90 emergency-detail-card--v93 emergency-detail-card--v94" hidden="" id="emergency-detail-card"></aside>
 </section>
 <div class="parking-dashboard__map parking-map-column parking-map-panel emergency-map-column emergency-map-column--v88 emergency-map-column--v89 emergency-map-column--v90">
 <div class="parking-panel-head"><span>지도</span><strong id="emergency-map-title">대전 주변 응급실</strong></div>
@@ -134,7 +134,7 @@
   <div class="parking-mobile-sheet-controls" aria-label="모바일 빠른 설정"><button type="button" id="emergency-mobile-mode-button">응급실</button><button type="button" id="emergency-mobile-region-button">대전</button><button type="button" id="emergency-mobile-sort-button">가까운 순</button></div>
   <div class="parking-mobile-sheet-sort" id="emergency-mobile-sheet-sort" hidden><button class="active" data-emergency-mobile-sort="distance" type="button">가까운 순</button><button data-emergency-mobile-sort="beds" type="button">병상 우선</button><button data-emergency-mobile-sort="phone" type="button">전화 우선</button><button data-emergency-mobile-sort="critical" type="button">중증 정보</button><button data-emergency-mobile-sort="night" type="button">야간 운영</button></div>
   <section aria-label="모바일 응급실·야간 병원 목록" class="parking-mobile-results emergency-mobile-results" id="emergency-mobile-results"></section>
-<aside class="api-status-card emergency-detail-card emergency-detail-card--mobile emergency-detail-card--v93" hidden id="emergency-mobile-detail-card"></aside>
+<aside class="api-status-card emergency-detail-card emergency-detail-card--mobile emergency-detail-card--v93 emergency-detail-card--v94" hidden id="emergency-mobile-detail-card"></aside>
 </section>
 <section aria-label="응급실 확인 안내" class="emergency-warning-list emergency-warning-list--ev emergency-warning-list--v88 emergency-warning-list--v89 emergency-warning-list--v90" id="emergency-warning-list"></section>
 </div>
@@ -149,8 +149,8 @@
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-note"><strong>한눈체크</strong><p>생활 속에서 확인이 필요한 정보를 한눈에 정리하고, 결과의 의미와 한계를 함께 설명하는 생활 확인 도구입니다.</p></div><nav aria-label="푸터 메뉴"><a href="/about.html">소개</a><a href="/privacy.html">개인정보처리방침</a><a href="/disclaimer.html">면책 안내</a><a href="/data-sources.html">데이터 출처</a><a href="/contact.html">문의·정정 요청</a></nav></div></footer>
 <script src="/assets/js/app.js"></script>
-<script defer="" src="/assets/js/check-toolkit.js?v=20260621-v93-emergency-marker-detail-main-copy-fix"></script>
-<script defer="" src="/assets/js/kakao-place-link.js?v=20260621-v93-emergency-marker-detail-main-copy-fix"></script>
-<script defer="" src="/assets/js/emergency-hospital-check.js?v=20260621-v93-emergency-marker-detail-main-copy-fix"></script>
+<script defer="" src="/assets/js/check-toolkit.js?v=20260621-v94-emergency-national-local-cache"></script>
+<script defer="" src="/assets/js/kakao-place-link.js?v=20260621-v94-emergency-national-local-cache"></script>
+<script defer="" src="/assets/js/emergency-hospital-check.js?v=20260621-v94-emergency-national-local-cache"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@ import { featureEnvStatus, getEnv, jsonResponse } from './_lib/check-core.js';
 export async function onRequestGet({ env }) {
   const kakaoMapJsKey = getEnv(env, ['KAKAO_MAP_JS_KEY', 'KAKAO_JS_KEY']);
   return jsonResponse({
-    serverVersion: 'v93-emergency-marker-detail-main-copy-fix',
+    serverVersion: 'v94-emergency-national-local-cache',
     kakaoMapJsKey,
     hasKakaoMapJsKey: Boolean(kakaoMapJsKey),
     hasKakaoRestApiKey: Boolean(getEnv(env, ['KAKAO_REST_API_KEY'])),
@@ -17,6 +17,7 @@ export async function onRequestGet({ env }) {
     },
     localCaches: {
       medicalKakaoPlaceCache: '/assets/data/medical/kakao-place-cache.json',
+      emergencyNationalCache: '/assets/data/medical/emergency-national-cache.json',
     },
     message: kakaoMapJsKey
       ? 'Kakao Maps JavaScript key is configured. If the map still fails, check Kakao Developers Web platform domains.'

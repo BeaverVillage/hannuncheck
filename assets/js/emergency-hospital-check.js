@@ -10,7 +10,8 @@
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
   });
   const buildKakaoSearchUrl = toolkit.buildKakaoSearchUrl || ((item) => `https://map.kakao.com/link/search/${encodeURIComponent(`${item.name} ${item.address}`)}`);
-  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v93-emergency-marker-detail-main-copy-fix';
+  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v94-emergency-national-local-cache';
+  const EMERGENCY_NATIONAL_CACHE_URL = '/assets/data/medical/emergency-national-cache.json?v=20260621-v94-emergency-national-local-cache';
 
   const MODE_META = {
     emergency: { label: '응급실', searchLabel: '응급실 확인하기', listLabel: '응급실 비교 목록', mapSuffix: '응급실', detailTitle: '선택한 응급실' },
@@ -89,6 +90,8 @@
     warnings: [],
     selectedId: '',
     kakaoCache: null,
+    emergencyCache: null,
+    emergencyCacheReady: false,
     kakaoReady: false,
     map: null,
     kakaoOverlays: [],
@@ -176,6 +179,155 @@
     if (!util?.loadCache) return;
     state.kakaoCache = await util.loadCache(MEDICAL_KAKAO_CACHE_URL);
     if (state.items.length) render();
+  };
+
+
+  const normalizeRegionForCache = (value) => {
+    const raw = String(value || '').trim();
+    const full = {
+      서울: '서울특별시', 부산: '부산광역시', 대구: '대구광역시', 인천: '인천광역시', 광주: '광주광역시', 대전: '대전광역시', 울산: '울산광역시', 세종: '세종특별자치시',
+      경기: '경기도', 강원: '강원특별자치도', 충북: '충청북도', 충남: '충청남도', 전북: '전북특별자치도', 전남: '전라남도', 경북: '경상북도', 경남: '경상남도', 제주: '제주특별자치도',
+    }[raw];
+    return { raw, full: full || raw };
+  };
+
+  const normalizeTextForCache = (value) => String(value || '').trim().replace(/\s+/g, ' ');
+  const normalizeMatchText = (value) => normalizeTextForCache(value).replace(/[\s()\[\]{}·.,-]/g, '').toLowerCase();
+
+  const distanceBetweenM = (a, b) => {
+    const lat1 = Number(a?.lat); const lng1 = Number(a?.lng); const lat2 = Number(b?.lat); const lng2 = Number(b?.lng);
+    if (![lat1, lng1, lat2, lng2].every(Number.isFinite)) return null;
+    const toRad = (d) => d * Math.PI / 180;
+    const R = 6371000;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const x = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x)));
+  };
+
+  const normalizeEmergencyCacheEntry = (entry = {}) => {
+    const id = normalizeTextForCache(entry.id || entry.sourceId || entry.hpid || '');
+    const lat = Number(entry.lat);
+    const lng = Number(entry.lng);
+    const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lng) && lat >= 30 && lat <= 45 && lng >= 120 && lng <= 135;
+    const item = {
+      id,
+      sourceId: id,
+      kind: 'emergency',
+      type: 'emergency',
+      name: normalizeTextForCache(entry.name || entry.dutyName || '응급의료기관'),
+      address: normalizeTextForCache(entry.address || entry.dutyAddr || ''),
+      region: normalizeTextForCache(entry.sido || entry.region || ''),
+      district: normalizeTextForCache(entry.sigungu || entry.district || ''),
+      emergencyTel: normalizeTextForCache(entry.emergencyTel || entry.dutyTel3 || ''),
+      mainTel: normalizeTextForCache(entry.mainTel || entry.dutyTel1 || ''),
+      lat: hasCoordinates ? lat : null,
+      lng: hasCoordinates ? lng : null,
+      hasCoordinates,
+      distanceM: null,
+      emergencyBeds: null,
+      totalBeds: null,
+      statusLabel: '실시간 병상 확인 필요',
+      statusTone: 'neutral',
+      criticalCare: [],
+      criticalAvailableCount: 0,
+      facilityStatus: [],
+      facilityAvailableCount: 0,
+      messages: [],
+      sourceMode: 'local_emergency_cache',
+      source: 'LOCAL EMERGENCY NATIONAL CACHE',
+      updatedAt: normalizeTextForCache(entry.updatedAt || ''),
+      isLocalCacheOnly: true,
+    };
+    if (state.geo && item.hasCoordinates) item.distanceM = distanceBetweenM(state.geo, item);
+    return item;
+  };
+
+  const createEmergencyCacheIndex = (payload = {}) => {
+    const rawEntries = payload.entries || payload.items || [];
+    const entries = (Array.isArray(rawEntries) ? rawEntries : Object.values(rawEntries))
+      .map(normalizeEmergencyCacheEntry)
+      .filter((item) => item.id && item.name);
+    const byId = new Map();
+    const byName = new Map();
+    entries.forEach((item) => {
+      byId.set(item.id, item);
+      byId.set(`emergency:${item.id}`, item);
+      byId.set(`NMC_${item.id}`, item);
+      const nameKey = normalizeMatchText(item.name);
+      if (nameKey && !byName.has(nameKey)) byName.set(nameKey, item);
+    });
+    return { ...payload, entries, byId, byName };
+  };
+
+  const loadEmergencyNationalCache = async () => {
+    try {
+      const response = await fetch(EMERGENCY_NATIONAL_CACHE_URL, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`emergency cache ${response.status}`);
+      state.emergencyCache = createEmergencyCacheIndex(await response.json());
+      state.emergencyCacheReady = true;
+      if (state.items.length) {
+        state.items = mergeEmergencyCacheBasics(state.items);
+        render();
+      }
+    } catch (error) {
+      state.emergencyCache = createEmergencyCacheIndex({ entries: {} });
+      state.emergencyCacheReady = false;
+    }
+  };
+
+  const getEmergencyCacheMatch = (item = {}) => {
+    if (!state.emergencyCache) return null;
+    const id = normalizeTextForCache(item.id || item.sourceId || item.hpid || '');
+    if (id) {
+      const match = state.emergencyCache.byId?.get(id) || state.emergencyCache.byId?.get(`emergency:${id}`) || state.emergencyCache.byId?.get(`NMC_${id}`);
+      if (match) return match;
+    }
+    const nameKey = normalizeMatchText(item.name || '');
+    return nameKey ? state.emergencyCache.byName?.get(nameKey) || null : null;
+  };
+
+  const mergeEmergencyCacheBasics = (items = []) => items.map((item) => {
+    if (!isEmergencyItem(item)) return item;
+    const cached = getEmergencyCacheMatch(item);
+    if (!cached) return item;
+    const hasItemCoords = hasMapCoordinates(item);
+    const merged = {
+      ...cached,
+      ...item,
+      sourceId: item.sourceId || item.id || cached.sourceId,
+      id: item.id || cached.id,
+      name: item.name || cached.name,
+      address: item.address || cached.address,
+      emergencyTel: item.emergencyTel || cached.emergencyTel,
+      mainTel: item.mainTel || cached.mainTel,
+      lat: hasItemCoords ? item.lat : cached.lat,
+      lng: hasItemCoords ? item.lng : cached.lng,
+      hasCoordinates: hasItemCoords || cached.hasCoordinates,
+      isLocalCacheOnly: false,
+      locationSourceMode: hasItemCoords ? item.locationSourceMode : 'local_emergency_cache',
+    };
+    if (!hasUsableDistance(merged.distanceM) && state.geo && merged.hasCoordinates) merged.distanceM = distanceBetweenM(state.geo, merged);
+    return merged;
+  });
+
+  const filterEmergencyCache = () => {
+    if (state.careMode !== 'emergency' || !state.emergencyCache?.entries?.length) return [];
+    const { raw, full } = normalizeRegionForCache(elements.region?.value || getRegionLabel());
+    const district = normalizeTextForCache(elements.district?.value || '');
+    const keyword = normalizeMatchText(elements.keyword?.value || elements.mapKeyword?.value || '');
+    const result = state.emergencyCache.entries.filter((item) => {
+      const address = item.address || '';
+      if (full && raw && !address.includes(full) && !address.includes(raw) && item.region !== full && item.region !== raw) return false;
+      if (district && !address.includes(district) && item.district !== district) return false;
+      if (keyword && !normalizeMatchText(`${item.name} ${item.address}`).includes(keyword)) return false;
+      return true;
+    }).map((item) => {
+      const copy = { ...item };
+      if (state.geo && copy.hasCoordinates) copy.distanceM = distanceBetweenM(state.geo, copy);
+      return copy;
+    });
+    return sortItems(result, elements.sort?.value || 'distance').slice(0, 40);
   };
 
   const hasMapCoordinates = (item) => {
@@ -617,7 +769,7 @@
       department: elements.department?.value || '',
       sort: elements.sort?.value || (state.careMode === 'emergency' ? 'distance' : 'night'),
       mode: state.careMode,
-      _v: 'v92',
+      _v: 'v94',
     });
     if (state.geo) {
       params.set('lat', String(state.geo.lat));
@@ -630,22 +782,46 @@
     if (state.loading) return;
     state.loading = true;
     setStatus(`${meta().label} 정보를 불러오는 중입니다. 응급 상황이면 119에 먼저 연락하세요.`, 'info');
+    const localFallback = filterEmergencyCache();
+    if (localFallback.length) {
+      state.dataMode = 'cache';
+      state.items = localFallback;
+      state.summary = { criteria: `${getRegionLabel()} 응급실 기본정보 캐시`, count: localFallback.length, sourceMode: 'local_emergency_cache' };
+      state.warnings = ['응급실 기본정보와 지도 위치는 로컬 캐시 기준입니다. 실시간 병상·중증 정보는 공공데이터 응답으로 보강합니다.'];
+      state.selectedId = state.items[0]?.id || '';
+      render();
+    }
     try {
       const data = await fetchJson(buildApiUrl(), { cache: 'no-store' });
       if (data?.ok === false) throw Object.assign(new Error(data.message || `${meta().label} 정보를 불러오지 못했습니다.`), { data });
       state.dataMode = 'api';
-      state.items = Array.isArray(data.items) ? data.items : [];
-      state.summary = data.summary || {};
+      const apiItems = mergeEmergencyCacheBasics(Array.isArray(data.items) ? data.items : []);
+      state.items = apiItems.length ? apiItems : localFallback;
+      state.summary = data.summary || (localFallback.length ? { criteria: `${getRegionLabel()} 응급실 기본정보 캐시`, count: localFallback.length, sourceMode: 'local_emergency_cache' } : {});
       state.warnings = Array.isArray(data.warnings) ? data.warnings : [];
+      if (!apiItems.length && localFallback.length) {
+        state.dataMode = 'cache';
+        state.warnings.push('실시간 응급실 상태 정보는 확인하지 못해 로컬 기본정보 캐시를 표시합니다. 방문 전 전화 확인이 필요합니다.');
+      }
       state.selectedId = state.items[0]?.id || '';
       const suffix = state.careMode === 'emergency' ? '중증·상태 정보도 방문 전 전화 확인이 필요합니다.' : '운영시간과 접수 마감은 방문 전 전화 확인이 필요합니다.';
       setStatus(`${state.items.length.toLocaleString('ko-KR')}곳의 ${meta().label} 정보를 확인했습니다. ${suffix}`, 'success');
       render();
     } catch (error) {
       const message = error?.data?.message || error?.message || `${meta().label} 정보를 불러오지 못했습니다.`;
-      setStatus(`${message} 응급 상황이면 119에 먼저 연락해 주세요.`, 'error');
-      state.warnings = [message, '실제 방문 전 전화 확인이 필요합니다.'];
-      renderWarnings();
+      if (localFallback.length) {
+        state.dataMode = 'cache';
+        state.items = localFallback;
+        state.summary = { criteria: `${getRegionLabel()} 응급실 기본정보 캐시`, count: localFallback.length, sourceMode: 'local_emergency_cache' };
+        state.warnings = [message, '실시간 병상·중증 정보는 확인하지 못해 로컬 기본정보 캐시를 표시합니다. 실제 방문 전 전화 확인이 필요합니다.'];
+        state.selectedId = state.items[0]?.id || '';
+        setStatus(`실시간 상태 정보는 확인하지 못했지만 ${localFallback.length.toLocaleString('ko-KR')}곳의 기본정보 캐시를 표시합니다.`, 'warning');
+        render();
+      } else {
+        setStatus(`${message} 응급 상황이면 119에 먼저 연락해 주세요.`, 'error');
+        state.warnings = [message, '실제 방문 전 전화 확인이 필요합니다.'];
+        renderWarnings();
+      }
     } finally {
       state.loading = false;
     }
@@ -799,4 +975,5 @@
   resetToIdle();
   initKakaoMap();
   loadKakaoPlaceCache();
+  loadEmergencyNationalCache();
 })();

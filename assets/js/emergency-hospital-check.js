@@ -10,7 +10,7 @@
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
   });
   const buildKakaoSearchUrl = toolkit.buildKakaoSearchUrl || ((item) => `https://map.kakao.com/link/search/${encodeURIComponent(`${item.name} ${item.address}`)}`);
-  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v86-final-qa';
+  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v87-emergency-ev-format-fix';
 
   const MODE_META = {
     emergency: { label: '응급실', searchLabel: '응급실 확인하기', listLabel: '응급실 비교 목록', mapSuffix: '응급실', detailTitle: '선택한 응급실' },
@@ -202,15 +202,15 @@
       const metaGrid = isEmergency
         ? `<div><dt>가용 병상</dt><dd>${formatBeds(item.emergencyBeds)}</dd></div><div><dt>거리</dt><dd>${formatDistance(item.distanceM)}</dd></div><div><dt>전화</dt><dd>${escapeHtml(phone || '전화 확인')}</dd></div>`
         : `<div><dt>운영시간</dt><dd>${escapeHtml(item.operationTime || '전화 확인')}</dd></div><div><dt>거리</dt><dd>${formatDistance(item.distanceM)}</dd></div><div><dt>전화</dt><dd>${escapeHtml(phone || '전화 확인')}</dd></div>`;
-      return `<article class="emergency-hospital-card ${state.selectedId === item.id ? 'selected' : ''}" data-hospital-id="${escapeHtml(item.id)}">
+      return `<article class="parking-result-card emergency-hospital-card emergency-hospital-card--ev ${state.selectedId === item.id ? 'selected' : ''}" data-hospital-id="${escapeHtml(item.id)}">
         <div class="emergency-rank"><span>${index + 1}</span></div>
         <div class="emergency-main">
-          <div class="emergency-title-row"><h3>${escapeHtml(item.name || meta().label)}</h3><span class="emergency-status ${escapeHtml(item.statusTone || 'neutral')}">${escapeHtml(item.statusLabel || '전화 확인 필요')}</span></div>
+          <div class="parking-card-head emergency-title-row"><div><strong>${escapeHtml(item.name || meta().label)}</strong></div><span class="emergency-status ${escapeHtml(item.statusTone || 'neutral')}">${escapeHtml(item.statusLabel || '전화 확인 필요')}</span></div>
           <p>${escapeHtml(item.address || '주소 정보 없음')}</p>
           <dl class="emergency-meta-grid">${metaGrid}</dl>
           ${renderStatusChips(item)}
         </div>
-        <div class="emergency-actions">
+        <div class="parking-card-actions emergency-actions">
           ${phone ? `<a class="primary-mini-link" href="${buildTelLink(phone)}">전화하기</a>` : '<span class="secondary-mini-link disabled">전화 확인</span>'}
           <a class="secondary-mini-link" href="${kakaoUrl}" target="_blank" rel="noopener">${escapeHtml(kakaoLabel)}</a>
           <button type="button" class="secondary-mini-link as-button" data-detail-id="${escapeHtml(item.id)}">상세 보기</button>
@@ -324,7 +324,7 @@
       department: elements.department?.value || '',
       sort: elements.sort?.value || (state.careMode === 'emergency' ? 'distance' : 'night'),
       mode: state.careMode,
-      _v: 'v86',
+      _v: 'v87',
     });
     if (state.geo) {
       params.set('lat', String(state.geo.lat));

@@ -16,7 +16,7 @@
 - 거래 전 체크리스트
 - 컴퓨터 사양 확인
 
-## v86-final-qa
+## v87-emergency-ev-map-format-fix
 
 이번 버전은 운영 UI 최종 점검본입니다. 메인, sitemap, 데이터 출처, 환경변수 예시, 응급실 지도형 UI, 외출 위험 오류 문구, 의료기관 카카오맵 로컬 캐시 연결 상태를 다시 확인했습니다.
 
@@ -62,7 +62,7 @@ HIRA_API_KEY=
 
 ## 배포 확인
 
-배포 후 `/api/config`의 `serverVersion`이 `v86-final-qa`로 보이면 이번 최종 점검본이 반영된 것입니다.
+배포 후 `/api/config`의 `serverVersion`이 `v87-emergency-ev-map-format-fix`로 보이면 이번 최종 점검본이 반영된 것입니다.
 
 ## 의료기관 카카오맵 캐시 생성
 

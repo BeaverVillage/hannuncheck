@@ -20,8 +20,11 @@
     <script data-schema="faqpage" type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"응급 상황이면 이 페이지를 먼저 봐야 하나요?","acceptedAnswer":{"@type":"Answer","text":"아닙니다. 생명이나 안전이 위급한 상황이면 119에 먼저 연락해야 합니다. 이 페이지는 공공데이터 기준 참고 정보를 정리하는 도구입니다."}},{"@type":"Question","name":"가용 병상 정보는 확정 정보인가요?","acceptedAnswer":{"@type":"Answer","text":"아닙니다. 제공기관 데이터 기준 참고 정보이며 실제 수용 가능 여부는 병원 상황에 따라 달라질 수 있습니다. 방문 전 반드시 병원에 전화로 확인해야 합니다."}},{"@type":"Question","name":"현재 위치 기준 조회가 가능한가요?","acceptedAnswer":{"@type":"Answer","text":"브라우저 위치 권한을 허용하면 현재 위치 기준 응급의료기관 정보를 조회할 수 있습니다. 위치 권한을 허용하지 않으면 지역 기준으로 조회합니다."}},{"@type":"Question","name":"야간 병원과 약국도 확인할 수 있나요?","acceptedAnswer":{"@type":"Answer","text":"응급실, 야간 병원, 야간 약국 탭으로 구분해 확인할 수 있습니다. 운영시간은 공공데이터 기준 참고 정보이므로 방문 전 전화 확인이 필요합니다."}}]}</script>
     <link rel="stylesheet" href="/assets/css/base.css">
     <link rel="stylesheet" href="/assets/css/layout.css?v=20260620-v55-grocery-skeleton">
-    <link rel="stylesheet" href="/assets/css/components.css?v=20260621-v86-final-qa">
-    <link rel="stylesheet" href="/assets/css/tool-foundation.css?v=20260621-v86-final-qa">
+    <link rel="stylesheet" href="/assets/css/components.css?v=20260621-v87-emergency-ev-format-fix">
+    <link rel="stylesheet" href="/assets/css/parking-calc-base.css?v=20260621-v87-emergency-ev-format-fix">
+    <link rel="stylesheet" href="/assets/css/parking-calc-layout.css?v=20260621-v87-emergency-ev-format-fix">
+    <link rel="stylesheet" href="/assets/css/parking-calc-components.css?v=20260621-v87-emergency-ev-format-fix">
+    <link rel="stylesheet" href="/assets/css/tool-foundation.css?v=20260621-v87-emergency-ev-format-fix">
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6340743169950430" crossorigin="anonymous"></script>
   </head>
@@ -39,41 +42,74 @@
       </section>
 
       <section class="content-band tool-content-band">
-        <div class="container emergency-tool-shell emergency-tool-shell--final" id="emergency-hospital-tool" data-emergency-hospital-tool>
-          <article class="check-console tool-console emergency-console emergency-console--final">
-            <div class="console-header"><span class="console-dots" aria-hidden="true"><span></span><span></span><span></span></span><strong>응급실·야간 병원·약국 확인</strong></div>
-            <div class="emergency-map-brief emergency-map-brief--final" role="alert"><strong>응급 상황이면 119에 먼저 연락하세요.</strong><span>가용 병상과 야간 운영 정보는 공공데이터 기준 참고 정보입니다. 방문 전 기관에 전화로 확인해 주세요.</span></div>
-            <div class="emergency-final-grid">
-              <aside class="emergency-control-column" aria-label="응급실·야간 병원 검색 조건">
-                <div class="emergency-mode-tabs emergency-mode-tabs--final" role="tablist" aria-label="확인 유형"><button type="button" class="active" data-care-mode="emergency">응급실</button><button type="button" data-care-mode="hospital">야간 병원</button><button type="button" data-care-mode="pharmacy">야간 약국</button></div>
-                <form class="emergency-form emergency-form--final" id="emergency-hospital-form">
-                  <div class="step-label">1단계 · 어디를 확인하나요?</div>
-                  <div class="emergency-filter-grid emergency-filter-grid--final">
-                    <div class="form-row"><label for="emergency-region">지역</label><select id="emergency-region"><option value="서울">서울</option><option value="부산">부산</option><option value="대구">대구</option><option value="인천">인천</option><option value="광주">광주</option><option value="대전" selected>대전</option><option value="울산">울산</option><option value="세종">세종</option><option value="경기">경기</option><option value="강원">강원</option><option value="충북">충북</option><option value="충남">충남</option><option value="전북">전북</option><option value="전남">전남</option><option value="경북">경북</option><option value="경남">경남</option><option value="제주">제주</option></select></div>
-                    <div class="form-row"><label for="emergency-district">시군구</label><input id="emergency-district" type="text" placeholder="서구, 강남구" autocomplete="address-level2"></div>
-                    <div class="form-row"><label for="emergency-keyword">기관명</label><input id="emergency-keyword" type="text" placeholder="중앙, 365, 소아" autocomplete="off"></div>
-                    <div class="form-row"><label for="emergency-department">진료과목</label><select id="emergency-department"><option value="">전체</option><option value="D001">내과</option><option value="D002">소아청소년과</option><option value="D005">정형외과</option><option value="D006">신경외과</option><option value="D008">산부인과</option><option value="D009">안과</option><option value="D010">이비인후과</option></select></div>
-                    <div class="form-row"><label for="emergency-sort">보기 기준</label><select id="emergency-sort"><option value="distance" selected>가까운 순</option><option value="beds">가용 병상 우선</option><option value="phone">전화 가능 우선</option><option value="critical">중증 정보 우선</option><option value="night">야간 운영 우선</option></select></div>
-                  </div>
-                  <div class="step-label step-label--secondary">2단계 · 빠른 기준</div>
-                  <div class="emergency-quick-row emergency-quick-row--final" aria-label="빠른 선택"><button type="button" class="active" data-emergency-sort="distance">가까운 순</button><button type="button" data-emergency-sort="beds">병상 우선</button><button type="button" data-emergency-sort="phone">전화 우선</button><button type="button" data-emergency-sort="critical">중증 정보</button><button type="button" data-emergency-sort="night">야간 운영</button></div>
-                  <div class="emergency-actions emergency-actions--final"><button class="submit-button" type="submit" id="emergency-submit">응급실 확인하기</button><button class="secondary-action-button" type="button" id="emergency-use-location">현재 위치 사용</button></div>
-                  <p class="preview-note" id="emergency-status" aria-live="polite">지역 또는 현재 위치를 적용한 뒤 확인 버튼을 누르면 공공데이터 기준 정보를 확인합니다.</p>
-                </form>
-              </aside>
-              <section class="emergency-results-column" aria-label="응급실·야간 병원 조회 결과">
-                <section class="emergency-summary-grid emergency-summary-grid--final" aria-label="응급실 요약"><article class="emergency-summary-card main" id="emergency-count-card"></article><article class="emergency-summary-card" id="emergency-beds-card"></article><article class="emergency-summary-card" id="emergency-phone-card"></article><article class="emergency-summary-card" id="emergency-status-card"></article></section>
-                <div class="emergency-map-stage emergency-map-stage--final">
-                  <section class="emergency-map-card emergency-map-card--primary emergency-map-card--final" aria-label="응급실 지도"><div class="emergency-map-head"><span>지도</span><strong id="emergency-map-title">대전 주변 응급실</strong></div><div class="emergency-map" id="emergency-map" role="img" aria-label="응급실 위치 지도"><div class="emergency-map-grid" aria-hidden="true"></div><div class="emergency-map-notice"><strong>조회 전</strong><span>조건을 선택하고 조회 버튼을 누르면 공공데이터 기준 후보를 표시합니다.</span></div><div class="emergency-map-markers" id="emergency-map-markers"></div></div><p class="fine-print">지도 표시는 위치 참고용입니다. 정확한 길찾기와 실제 방문 가능 여부는 전화와 지도 앱에서 다시 확인해 주세요.</p></section>
-                  <div class="emergency-right-stack emergency-right-stack--final">
-                    <section class="emergency-result-panel emergency-result-panel--final" aria-label="응급실 목록"><div class="emergency-list-head"><span id="emergency-list-summary">조회 전</span><strong id="emergency-list-title">응급실 비교 목록</strong></div><div class="emergency-list" id="emergency-result-list"></div></section>
-                    <aside class="api-status-card emergency-detail-card emergency-detail-card--map emergency-detail-card--final" id="emergency-detail-card"><h3>선택한 기관</h3><p>목록에서 항목을 선택하면 전화번호, 병상 정보, 운영시간, 중증질환 참고 정보, 카카오맵 버튼이 표시됩니다.</p></aside>
-                  </div>
+        <div class="container emergency-tool-shell emergency-tool-shell--ev-format" id="emergency-hospital-tool" data-emergency-hospital-tool>
+          <section aria-label="응급실·야간 병원·약국 지도 확인" class="parking-app-shell emergency-map-app emergency-map-app--ev-format">
+            <div class="parking-dashboard">
+              <div class="parking-dashboard__controls">
+                <div class="parking-left-panel parking-control-column">
+                  <form class="tool-panel parking-input-panel emergency-form emergency-form--ev-format" id="emergency-hospital-form">
+                    <div class="parking-control-card parking-control-card--destination emergency-control-card emergency-control-card--mode">
+                      <div class="parking-control-title"><strong>확인 유형</strong><span>응급실·야간 병원·야간 약국을 선택합니다.</span></div>
+                      <div class="emergency-mode-tabs emergency-mode-tabs--ev" role="tablist" aria-label="확인 유형">
+                        <button type="button" class="active" data-care-mode="emergency">응급실</button>
+                        <button type="button" data-care-mode="hospital">야간 병원</button>
+                        <button type="button" data-care-mode="pharmacy">야간 약국</button>
+                      </div>
+                      <p class="fine-print strong-note">응급 상황이면 119에 먼저 연락하세요. 이 페이지는 방문 전 후보를 빠르게 확인하는 참고 도구입니다.</p>
+                    </div>
+                    <div class="parking-control-card parking-control-card--schedule emergency-control-card emergency-control-card--place">
+                      <div class="parking-control-title"><strong>검색 조건</strong><span>지역 또는 기관명을 기준으로 찾습니다.</span></div>
+                      <div class="field-row parking-date-grid emergency-filter-grid emergency-filter-grid--ev">
+                        <div class="field form-row"><label for="emergency-region">지역</label><select id="emergency-region"><option value="서울">서울</option><option value="부산">부산</option><option value="대구">대구</option><option value="인천">인천</option><option value="광주">광주</option><option value="대전" selected>대전</option><option value="울산">울산</option><option value="세종">세종</option><option value="경기">경기</option><option value="강원">강원</option><option value="충북">충북</option><option value="충남">충남</option><option value="전북">전북</option><option value="전남">전남</option><option value="경북">경북</option><option value="경남">경남</option><option value="제주">제주</option></select></div>
+                        <div class="field form-row"><label for="emergency-district">시군구</label><input id="emergency-district" type="text" placeholder="서구, 강남구" autocomplete="address-level2"></div>
+                        <div class="field form-row"><label for="emergency-keyword">기관명</label><input id="emergency-keyword" type="text" placeholder="중앙, 365, 소아" autocomplete="off"></div>
+                        <div class="field form-row"><label for="emergency-department">진료과목</label><select id="emergency-department"><option value="">전체</option><option value="D001">내과</option><option value="D002">소아청소년과</option><option value="D005">정형외과</option><option value="D010">산부인과</option><option value="D012">안과</option><option value="D013">이비인후과</option><option value="D014">피부과</option></select></div>
+                      </div>
+                    </div>
+                    <div class="parking-control-card parking-control-card--options emergency-control-card emergency-control-card--options">
+                      <div class="parking-control-title"><strong>보기 기준</strong><span>지도와 목록 정렬 기준입니다.</span></div>
+                      <div class="field parking-sort-field form-row"><label for="emergency-sort">정렬</label><select id="emergency-sort"><option value="distance" selected>가까운 순</option><option value="beds">가용 병상 우선</option><option value="phone">전화 우선</option><option value="critical">중증 정보 우선</option><option value="night">야간 운영 우선</option></select></div>
+                      <div class="quick-duration-row emergency-quick-row emergency-quick-row--ev" aria-label="빠른 기준">
+                        <button type="button" class="active" data-emergency-sort="distance">가까운 순</button>
+                        <button type="button" data-emergency-sort="beds">병상 우선</button>
+                        <button type="button" data-emergency-sort="phone">전화 우선</button>
+                        <button type="button" data-emergency-sort="critical">중증 정보</button>
+                        <button type="button" data-emergency-sort="night">야간 운영</button>
+                      </div>
+                      <button class="primary-button wide-button" type="submit" id="emergency-submit">응급실 확인하기</button>
+                      <button class="secondary-action-button wide-button" type="button" id="emergency-use-location">현재 위치 사용</button>
+                      <p class="fine-print" id="emergency-status" aria-live="polite">조건을 선택한 뒤 확인 버튼을 누르면 공공데이터 기준 정보를 확인합니다.</p>
+                    </div>
+                  </form>
                 </div>
-                <section class="emergency-warning-list emergency-warning-list--bottom emergency-warning-list--final" id="emergency-warning-list" aria-label="응급실 확인 안내"></section>
-              </section>
+              </div>
+              <div class="parking-dashboard__main emergency-dashboard-main">
+                <section aria-label="응급실·야간 병원 목록" class="parking-dashboard__results parking-results-panel tool-panel emergency-results-panel">
+                  <div class="parking-panel-head"><span>결과 목록</span><strong id="emergency-list-title">응급실 비교 목록</strong></div>
+                  <div class="parking-summary-bar"><strong id="emergency-list-summary">조회 전</strong><span>조건을 선택하고 확인 버튼을 누르면 지도와 목록에 표시됩니다.</span></div>
+                  <div aria-label="응급실 요약" class="parking-data-badges emergency-summary-grid emergency-summary-grid--ev">
+                    <article class="emergency-summary-card emergency-summary-pill" id="emergency-count-card"><span>조회 후보</span><strong>0곳</strong><small>조건 선택 후 확인</small></article>
+                    <article class="emergency-summary-card emergency-summary-pill" id="emergency-beds-card"><span>가용 병상</span><strong>0곳</strong><small>전화 확인 필요</small></article>
+                    <article class="emergency-summary-card emergency-summary-pill" id="emergency-phone-card"><span>전화 후보</span><strong>0곳</strong><small>전화 확인 우선</small></article>
+                    <article class="emergency-summary-card emergency-summary-pill" id="emergency-status-card"><span>상태 정보</span><strong>0곳</strong><small>공공데이터 기준</small></article>
+                  </div>
+                  <section aria-label="응급실·야간 병원 결과" class="parking-result-list emergency-result-list emergency-result-list--ev" id="emergency-result-list"></section>
+                  <aside class="api-status-card emergency-detail-card emergency-detail-card--ev" id="emergency-detail-card"><h3>선택한 기관</h3><p>목록에서 항목을 선택하면 전화번호, 병상 정보, 운영시간, 중증질환 참고 정보, 카카오맵 버튼이 표시됩니다.</p></aside>
+                </section>
+                <div class="parking-dashboard__map parking-map-column parking-map-panel emergency-map-column">
+                  <div class="parking-panel-head"><span>지도</span><strong id="emergency-map-title">대전 주변 응급실</strong></div>
+                  <section aria-label="응급실·야간 병원 지도" class="parking-map-card emergency-map-card emergency-map-card--ev">
+                    <div aria-label="응급실 지도" class="parking-map emergency-map is-fallback" id="emergency-map" role="img">
+                      <div class="parking-map-fallback emergency-map-notice"><strong>조회 전</strong><span>조건을 선택하고 조회 버튼을 누르면 공공데이터 기준 후보를 표시합니다.</span></div>
+                      <div aria-hidden="true" class="parking-map-grid"></div>
+                      <div aria-hidden="true" class="parking-map-markers emergency-map-markers" id="emergency-map-markers"></div>
+                    </div>
+                  </section>
+                  <section class="emergency-warning-list emergency-warning-list--ev" id="emergency-warning-list" aria-label="응급실 확인 안내"></section>
+                </div>
+              </div>
             </div>
-          </article>
+          </section>
         </div>
       </section>
 
@@ -83,8 +119,8 @@
     </main>
     <footer class="site-footer"><div class="container footer-grid"><div class="footer-note"><strong>한눈체크</strong><p>생활 속에서 확인이 필요한 정보를 한눈에 정리하고, 결과의 의미와 한계를 함께 설명하는 생활 확인 도구입니다.</p></div><nav aria-label="푸터 메뉴"><a href="/about.html">소개</a><a href="/privacy.html">개인정보처리방침</a><a href="/disclaimer.html">면책 안내</a><a href="/data-sources.html">데이터 출처</a><a href="/contact.html">문의·정정 요청</a></nav></div></footer>
     <script src="/assets/js/app.js"></script>
-    <script src="/assets/js/check-toolkit.js?v=20260621-v86-final-qa" defer></script>
-    <script src="/assets/js/kakao-place-link.js?v=20260621-v86-final-qa" defer></script>
-    <script src="/assets/js/emergency-hospital-check.js?v=20260621-v86-final-qa" defer></script>
+    <script src="/assets/js/check-toolkit.js?v=20260621-v87-emergency-ev-format-fix" defer></script>
+    <script src="/assets/js/kakao-place-link.js?v=20260621-v87-emergency-ev-format-fix" defer></script>
+    <script src="/assets/js/emergency-hospital-check.js?v=20260621-v87-emergency-ev-format-fix" defer></script>
   </body>
 </html>

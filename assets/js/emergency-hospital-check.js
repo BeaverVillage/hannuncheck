@@ -10,43 +10,12 @@
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
   });
   const buildKakaoSearchUrl = toolkit.buildKakaoSearchUrl || ((item) => `https://map.kakao.com/link/search/${encodeURIComponent(`${item.name} ${item.address}`)}`);
+  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v86-final-qa';
 
   const MODE_META = {
-    emergency: { label: '응급실', searchLabel: '응급실 확인하기', listLabel: '응급실 비교 목록', sampleLabel: '샘플 응급실', mapSuffix: '응급실', detailTitle: '선택한 응급실' },
-    hospital: { label: '야간 병원', searchLabel: '야간 병원 확인하기', listLabel: '야간 병원 비교 목록', sampleLabel: '샘플 야간 병원', mapSuffix: '야간 병원', detailTitle: '선택한 야간 병원' },
-    pharmacy: { label: '야간 약국', searchLabel: '야간 약국 확인하기', listLabel: '야간 약국 비교 목록', sampleLabel: '샘플 야간 약국', mapSuffix: '야간 약국', detailTitle: '선택한 야간 약국' },
-  };
-
-  const SAMPLE_ITEMS = {
-    emergency: [
-      {
-        id: 'sample-er-01', kind: 'emergency', name: '한눈대학교병원 응급실', address: '대전 서구 둔산로 100', region: '대전', distanceM: 2100,
-        emergencyBeds: 9, totalBeds: 120, emergencyTel: '042-000-0119', mainTel: '042-000-0000', statusLabel: '병상·중증 정보 있음', statusTone: 'good', lat: 36.3504, lng: 127.3845, updatedAt: '샘플',
-        facilityStatus: [{ label: 'CT', tone: 'good', value: 'Y' }, { label: 'MRI', tone: 'good', value: 'Y' }, { label: '수술실', tone: 'good', value: '2' }], facilityAvailableCount: 3,
-        criticalCare: [{ label: '심근경색 재관류', tone: 'good', value: 'Y' }, { label: '응급내시경', tone: 'good', value: 'Y' }, { label: '중증화상', tone: 'caution', value: 'N' }], criticalAvailableCount: 2,
-        messages: [{ type: '상태 메시지', message: '샘플 메시지입니다. 실제 데이터는 조회 후 표시됩니다.' }],
-      },
-      {
-        id: 'sample-er-02', kind: 'emergency', name: '대전중앙병원 응급의료센터', address: '대전 중구 중앙로 80', region: '대전', distanceM: 3600,
-        emergencyBeds: 2, totalBeds: 70, emergencyTel: '042-111-0119', mainTel: '042-111-0000', statusLabel: '가용 병상 있음', statusTone: 'good', lat: 36.3287, lng: 127.4210, updatedAt: '샘플',
-        facilityStatus: [{ label: 'CT', tone: 'good', value: 'Y' }, { label: 'MRI', tone: 'caution', value: 'N' }], facilityAvailableCount: 1,
-        criticalCare: [{ label: '응급투석', tone: 'good', value: 'Y' }], criticalAvailableCount: 1, messages: [],
-      },
-      {
-        id: 'sample-er-03', kind: 'emergency', name: '유성응급의료기관', address: '대전 유성구 대학로 30', region: '대전', distanceM: 6400,
-        emergencyBeds: null, totalBeds: null, emergencyTel: '042-222-0119', mainTel: '042-222-0000', statusLabel: '전화 확인 필요', statusTone: 'neutral', lat: 36.3621, lng: 127.3562, updatedAt: '샘플',
-        facilityStatus: [{ label: 'CT', tone: 'neutral', value: '확인 필요' }], facilityAvailableCount: 0, criticalCare: [], criticalAvailableCount: 0,
-        messages: [{ type: '상태 메시지', message: '병상 정보가 없으면 전화 확인이 필요합니다.' }],
-      },
-    ],
-    hospital: [
-      { id: 'sample-hp-01', kind: 'hospital', name: '한눈야간의원', address: '대전 서구 둔산중로 20', region: '대전', distanceM: 1800, mainTel: '042-333-1000', statusLabel: '야간 운영 참고', statusTone: 'good', operationTime: '09:00 ~ 22:00', hospitalType: '의원', department: '내과·소아청소년과', isNightCandidate: true, lat: 36.3490, lng: 127.3812, messages: [] },
-      { id: 'sample-hp-02', kind: 'hospital', name: '대전가정의학과의원', address: '대전 중구 중앙로 55', region: '대전', distanceM: 4100, mainTel: '042-333-2000', statusLabel: '운영시간 확인', statusTone: 'neutral', operationTime: '09:00 ~ 18:30', hospitalType: '의원', department: '가정의학과', isNightCandidate: true, lat: 36.3270, lng: 127.4200, messages: [] },
-    ],
-    pharmacy: [
-      { id: 'sample-ph-01', kind: 'pharmacy', name: '한눈365약국', address: '대전 서구 둔산로 11', region: '대전', distanceM: 1200, mainTel: '042-444-7000', statusLabel: '심야 운영 참고', statusTone: 'good', operationTime: '08:30 ~ 23:30', hospitalType: '약국', department: '처방·일반의약품', isNightCandidate: true, lat: 36.3510, lng: 127.3841, messages: [] },
-      { id: 'sample-ph-02', kind: 'pharmacy', name: '대전중앙약국', address: '대전 중구 중앙로 90', region: '대전', distanceM: 3700, mainTel: '042-444-8000', statusLabel: '운영시간 확인', statusTone: 'neutral', operationTime: '09:00 ~ 19:00', hospitalType: '약국', department: '약국', isNightCandidate: true, lat: 36.3290, lng: 127.4193, messages: [] },
-    ],
+    emergency: { label: '응급실', searchLabel: '응급실 확인하기', listLabel: '응급실 비교 목록', mapSuffix: '응급실', detailTitle: '선택한 응급실' },
+    hospital: { label: '야간 병원', searchLabel: '야간 병원 확인하기', listLabel: '야간 병원 비교 목록', mapSuffix: '야간 병원', detailTitle: '선택한 야간 병원' },
+    pharmacy: { label: '야간 약국', searchLabel: '야간 약국 확인하기', listLabel: '야간 약국 비교 목록', mapSuffix: '야간 약국', detailTitle: '선택한 야간 약국' },
   };
 
   const elements = {
@@ -60,7 +29,6 @@
     submit: document.querySelector('#emergency-submit'),
     status: document.querySelector('#emergency-status'),
     location: document.querySelector('#emergency-use-location'),
-    reset: document.querySelector('#emergency-demo-reset'),
     summaryCount: document.querySelector('#emergency-count-card'),
     summaryBeds: document.querySelector('#emergency-beds-card'),
     summaryPhone: document.querySelector('#emergency-phone-card'),
@@ -77,7 +45,7 @@
   };
 
   const state = {
-    dataMode: 'sample',
+    dataMode: 'idle',
     careMode: 'emergency',
     loading: false,
     geo: null,
@@ -85,6 +53,7 @@
     summary: {},
     warnings: [],
     selectedId: '',
+    kakaoCache: null,
   };
 
   const escapeHtml = (value) => String(value ?? '')
@@ -96,7 +65,6 @@
 
   const meta = () => MODE_META[state.careMode] || MODE_META.emergency;
   const getRegionLabel = () => elements.region?.value || '대전';
-  const isSample = () => state.dataMode === 'sample';
   const numberOrMax = (value) => Number.isFinite(Number(value)) ? Number(value) : 999999999;
   const numberOrNeg = (value) => Number.isFinite(Number(value)) ? Number(value) : -1;
   const buildTelLink = (phone) => phone ? `tel:${String(phone).replace(/[^0-9+]/g, '')}` : '';
@@ -111,6 +79,24 @@
 
   const isEmergencyItem = (item) => (item?.kind || state.careMode) === 'emergency';
 
+  const getKakaoAction = (item) => {
+    const util = window.HannunKakaoPlaceLink;
+    const directMatch = item?.kakaoPlace || item?.kakaoPlaceMatch || item?.kakao || null;
+    const cachedMatch = util?.findMatch ? util.findMatch(state.kakaoCache, item, { mode: state.careMode }) : null;
+    const match = directMatch || cachedMatch;
+    if (util?.getAction) {
+      return util.getAction(item, match, { allowMedium: state.careMode !== 'emergency', mode: state.careMode });
+    }
+    return { type: 'search', label: '카카오맵 검색', url: buildKakaoSearchUrl(item), confidence: 'none' };
+  };
+
+  const loadKakaoPlaceCache = async () => {
+    const util = window.HannunKakaoPlaceLink;
+    if (!util?.loadCache) return;
+    state.kakaoCache = await util.loadCache(MEDICAL_KAKAO_CACHE_URL);
+    if (state.items.length) render();
+  };
+
   const formatCriticalSummary = (item) => {
     const total = Array.isArray(item.criticalCare) ? item.criticalCare.length : 0;
     const good = Number(item.criticalAvailableCount || countGood(item.criticalCare));
@@ -123,14 +109,6 @@
     const good = Number(item.facilityAvailableCount || countGood(item.facilityStatus));
     if (!total) return '확인 필요';
     return `${good}/${total} 가능`;
-  };
-
-  const getSampleItems = () => {
-    const region = getRegionLabel();
-    let items = SAMPLE_ITEMS[state.careMode] || SAMPLE_ITEMS.emergency;
-    items = items.filter((item) => !region || region === 'all' || item.region === region);
-    if (!items.length) items = SAMPLE_ITEMS[state.careMode] || SAMPLE_ITEMS.emergency;
-    return sortItems(items, elements.sort?.value || 'distance');
   };
 
   const sortItems = (items, sort) => [...items].sort((a, b) => {
@@ -149,14 +127,14 @@
       const withBeds = items.filter((item) => Number.isFinite(Number(item.emergencyBeds)) && Number(item.emergencyBeds) > 0).length;
       const criticalCount = items.filter((item) => Number(item.criticalAvailableCount) > 0).length;
       const messageCount = items.filter((item) => Array.isArray(item.messages) && item.messages.length).length;
-      elements.summaryCount.innerHTML = `<span>${isSample() ? '샘플 후보' : '조회 후보'}</span><strong>${count.toLocaleString('ko-KR')}곳</strong><small>${escapeHtml(getRegionLabel())} · 응급실 상태 확인</small>`;
+      elements.summaryCount.innerHTML = `<span>조회 후보</span><strong>${count.toLocaleString('ko-KR')}곳</strong><small>${escapeHtml(getRegionLabel())} · 응급실 상태 확인</small>`;
       elements.summaryBeds.innerHTML = `<span>가용 병상 표시</span><strong>${withBeds.toLocaleString('ko-KR')}곳</strong><small>공공데이터 기준 · 전화 확인 필요</small>`;
       elements.summaryPhone.innerHTML = `<span>전화 가능 후보</span><strong>${phoneCount.toLocaleString('ko-KR')}곳</strong><small>${nearest ? `가까운 후보 ${formatDistance(nearest.distanceM)}` : '전화 확인 우선'}</small>`;
       if (elements.summaryStatus) elements.summaryStatus.innerHTML = `<span>중증·상태 정보</span><strong>${criticalCount.toLocaleString('ko-KR')}곳</strong><small>${messageCount ? `상태 메시지 ${messageCount}곳` : '병상 외 상태 정보 참고'}</small>`;
       return;
     }
     const nightCount = items.filter((item) => item.isNightCandidate).length;
-    elements.summaryCount.innerHTML = `<span>${isSample() ? '샘플 후보' : '조회 후보'}</span><strong>${count.toLocaleString('ko-KR')}곳</strong><small>${escapeHtml(getRegionLabel())} · ${escapeHtml(meta().label)} 확인</small>`;
+    elements.summaryCount.innerHTML = `<span>조회 후보</span><strong>${count.toLocaleString('ko-KR')}곳</strong><small>${escapeHtml(getRegionLabel())} · ${escapeHtml(meta().label)} 확인</small>`;
     elements.summaryBeds.innerHTML = `<span>야간 운영 참고</span><strong>${nightCount.toLocaleString('ko-KR')}곳</strong><small>운영시간 기준 · 접수 마감 전화 확인</small>`;
     elements.summaryPhone.innerHTML = `<span>전화 가능 후보</span><strong>${phoneCount.toLocaleString('ko-KR')}곳</strong><small>${nearest ? `가까운 후보 ${formatDistance(nearest.distanceM)}` : '전화 확인 우선'}</small>`;
     if (elements.summaryStatus) elements.summaryStatus.innerHTML = `<span>운영시간 표시</span><strong>${items.filter((item) => item.operationTime).length.toLocaleString('ko-KR')}곳</strong><small>공공데이터 기준 운영시간 참고</small>`;
@@ -178,17 +156,17 @@
   };
 
   const renderMap = (items) => {
-    if (elements.mapTitle) elements.mapTitle.textContent = isSample() ? `${getRegionLabel()} 주변 ${meta().mapSuffix} 샘플` : `${state.summary.criteria || getRegionLabel()} ${meta().mapSuffix}`;
+    if (elements.mapTitle) elements.mapTitle.textContent = `${state.summary.criteria || getRegionLabel()} ${meta().mapSuffix}`;
     if (elements.mapNotice) {
       const notice = state.careMode === 'emergency'
         ? '중증·장비 상태도 참고용입니다. 방문 전 전화 확인이 필요합니다.'
         : '운영시간은 참고용입니다. 야간 접수와 조제 가능 여부는 전화 확인이 필요합니다.';
-      elements.mapNotice.innerHTML = `<strong>${isSample() ? `${meta().label} 미리보기` : '국립중앙의료원 데이터'}</strong><span>${isSample() ? '검색 버튼을 누르면 실제 공공데이터 정보를 조회합니다.' : notice}</span>`;
+      elements.mapNotice.innerHTML = state.dataMode === 'idle' ? `<strong>조회 전</strong><span>조건을 선택하고 조회 버튼을 누르면 공공데이터 기준 후보를 표시합니다.</span>` : `<strong>국립중앙의료원 데이터</strong><span>${notice}</span>`;
     }
     elements.markers.innerHTML = items.slice(0, 12).map((item, index) => {
       const pos = makeMapPosition(item, index, items.length);
       const tone = item.statusTone || (Number(item.emergencyBeds) > 0 ? 'good' : 'neutral');
-      return `<button type="button" class="emergency-map-marker ${escapeHtml(tone)}" style="left:${pos.x}%;top:${pos.y}%" data-hospital-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)}"><span>${index + 1}</span><strong>${escapeHtml(markerText(item))}</strong></button>`;
+      return `<button type="button" class="emergency-map-marker ${escapeHtml(tone)} ${state.selectedId === item.id ? 'selected' : ''}" style="left:${pos.x}%;top:${pos.y}%" data-hospital-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)}"><span>${index + 1}</span><strong>${escapeHtml(markerText(item))}</strong></button>`;
     }).join('');
   };
 
@@ -209,19 +187,21 @@
   };
 
   const renderList = (items) => {
-    elements.listSummary.textContent = isSample() ? meta().sampleLabel : `조회 결과 ${items.length}곳`;
+    elements.listSummary.textContent = items.length ? `조회 결과 ${items.length}곳` : '조회 전';
     if (elements.listTitle) elements.listTitle.textContent = meta().listLabel;
     if (!items.length) {
-      elements.list.innerHTML = `<div class="hc-empty-state"><strong>${escapeHtml(meta().label)} 정보를 찾지 못했습니다</strong><p>지역을 바꾸거나 긴급 상황이면 119 또는 기관 전화로 확인해 주세요.</p></div>`;
+      elements.list.innerHTML = state.dataMode === 'idle' ? `<div class="hc-empty-state"><strong>조회 전입니다</strong><p>지역과 보기 기준을 선택한 뒤 ${escapeHtml(meta().searchLabel)}를 눌러 주세요.</p></div>` : `<div class="hc-empty-state"><strong>${escapeHtml(meta().label)} 정보를 찾지 못했습니다</strong><p>지역을 바꾸거나 긴급 상황이면 119 또는 기관 전화로 확인해 주세요.</p></div>`;
       return;
     }
     elements.list.innerHTML = items.map((item, index) => {
       const phone = item.emergencyTel || item.mainTel || '';
-      const kakaoUrl = buildKakaoSearchUrl(item);
+      const kakaoAction = getKakaoAction(item);
+      const kakaoUrl = kakaoAction.url;
+      const kakaoLabel = kakaoAction.label;
       const isEmergency = isEmergencyItem(item);
       const metaGrid = isEmergency
-        ? `<div><dt>가용 병상</dt><dd>${formatBeds(item.emergencyBeds)}</dd></div><div><dt>거리</dt><dd>${formatDistance(item.distanceM)}</dd></div><div><dt>중증 정보</dt><dd>${escapeHtml(formatCriticalSummary(item))}</dd></div><div><dt>장비 상태</dt><dd>${escapeHtml(formatFacilitySummary(item))}</dd></div>`
-        : `<div><dt>운영시간</dt><dd>${escapeHtml(item.operationTime || '전화 확인')}</dd></div><div><dt>거리</dt><dd>${formatDistance(item.distanceM)}</dd></div><div><dt>기관 유형</dt><dd>${escapeHtml(item.hospitalType || (state.careMode === 'pharmacy' ? '약국' : '병·의원'))}</dd></div><div><dt>진료/분류</dt><dd>${escapeHtml(item.department || '전화 확인')}</dd></div>`;
+        ? `<div><dt>가용 병상</dt><dd>${formatBeds(item.emergencyBeds)}</dd></div><div><dt>거리</dt><dd>${formatDistance(item.distanceM)}</dd></div><div><dt>전화</dt><dd>${escapeHtml(phone || '전화 확인')}</dd></div>`
+        : `<div><dt>운영시간</dt><dd>${escapeHtml(item.operationTime || '전화 확인')}</dd></div><div><dt>거리</dt><dd>${formatDistance(item.distanceM)}</dd></div><div><dt>전화</dt><dd>${escapeHtml(phone || '전화 확인')}</dd></div>`;
       return `<article class="emergency-hospital-card ${state.selectedId === item.id ? 'selected' : ''}" data-hospital-id="${escapeHtml(item.id)}">
         <div class="emergency-rank"><span>${index + 1}</span></div>
         <div class="emergency-main">
@@ -232,7 +212,7 @@
         </div>
         <div class="emergency-actions">
           ${phone ? `<a class="primary-mini-link" href="${buildTelLink(phone)}">전화하기</a>` : '<span class="secondary-mini-link disabled">전화 확인</span>'}
-          <a class="secondary-mini-link" href="${kakaoUrl}" target="_blank" rel="noopener">카카오맵</a>
+          <a class="secondary-mini-link" href="${kakaoUrl}" target="_blank" rel="noopener">${escapeHtml(kakaoLabel)}</a>
           <button type="button" class="secondary-mini-link as-button" data-detail-id="${escapeHtml(item.id)}">상세 보기</button>
         </div>
       </article>`;
@@ -263,11 +243,13 @@
   const renderDetail = (item) => {
     if (!elements.detail) return;
     if (!item) {
-      elements.detail.innerHTML = `<h3>${escapeHtml(meta().detailTitle)}</h3><p>목록에서 항목을 선택하면 전화번호, 운영시간, 상태 정보, 카카오맵 검색 버튼이 표시됩니다.</p>`;
+      elements.detail.innerHTML = `<h3>${escapeHtml(meta().detailTitle)}</h3><p>목록에서 항목을 선택하면 전화번호, 운영시간, 상태 정보, 카카오맵 버튼이 표시됩니다.</p>`;
       return;
     }
     const phone = item.emergencyTel || item.mainTel || '';
-    const kakaoUrl = buildKakaoSearchUrl(item);
+    const kakaoAction = getKakaoAction(item);
+    const kakaoUrl = kakaoAction.url;
+    const kakaoLabel = kakaoAction.label;
     if (!isEmergencyItem(item)) {
       elements.detail.innerHTML = `<h3>${escapeHtml(item.name || meta().label)}</h3>
         <p class="emergency-detail-address">${escapeHtml(item.address || '주소 정보 없음')}</p>
@@ -280,7 +262,7 @@
         <p class="fine-print">${escapeHtml(item.updatedAt ? `갱신 정보: ${item.updatedAt}` : '갱신 시점 정보가 없으면 기관에 직접 확인해 주세요.')}</p>
         <div class="emergency-detail-actions">
           ${phone ? `<a class="primary-link" href="${buildTelLink(phone)}">전화하기</a>` : ''}
-          <a class="secondary-link" href="${kakaoUrl}" target="_blank" rel="noopener">카카오맵 검색</a>
+          <a class="secondary-link" href="${kakaoUrl}" target="_blank" rel="noopener">${escapeHtml(kakaoLabel)}</a>
         </div>`;
       return;
     }
@@ -297,7 +279,7 @@
       <p class="fine-print">${escapeHtml(item.statusUpdatedAt || item.updatedAt ? `갱신 정보: ${item.statusUpdatedAt || item.updatedAt}` : '갱신 시점 정보가 없으면 병원에 직접 확인해 주세요.')}</p>
       <div class="emergency-detail-actions">
         ${phone ? `<a class="primary-link" href="${buildTelLink(phone)}">전화하기</a>` : ''}
-        <a class="secondary-link" href="${kakaoUrl}" target="_blank" rel="noopener">카카오맵 검색</a>
+        <a class="secondary-link" href="${kakaoUrl}" target="_blank" rel="noopener">${escapeHtml(kakaoLabel)}</a>
       </div>`;
   };
 
@@ -323,16 +305,14 @@
     });
   };
 
-  const loadSample = () => {
-    state.dataMode = 'sample';
-    state.items = getSampleItems();
-    state.summary = { criteria: `${getRegionLabel()} ${meta().sampleLabel}` };
-    state.warnings = state.careMode === 'emergency'
-      ? ['샘플 데이터입니다. 실제 응급실 조회는 검색 버튼을 누르면 국립중앙의료원 API 기준으로 표시됩니다.', '중증질환 수용가능정보와 장비 상태는 참고 정보이며 실제 수용 가능 여부는 전화 확인이 필요합니다.', '응급 상황이면 119에 먼저 연락하세요.']
-      : ['샘플 데이터입니다. 실제 조회는 검색 버튼을 누르면 국립중앙의료원 API 기준으로 표시됩니다.', '야간 병원·약국 운영시간과 접수 마감은 실제 현장 상황과 다를 수 있습니다. 방문 전 전화 확인이 필요합니다.'];
-    state.selectedId = state.items[0]?.id || '';
+  const resetToIdle = () => {
+    state.dataMode = 'idle';
+    state.items = [];
+    state.summary = { criteria: getRegionLabel() };
+    state.warnings = [];
+    state.selectedId = '';
     syncModeUi();
-    setStatus(`${meta().sampleLabel} 정보를 표시했습니다. 실제 조회는 ${meta().searchLabel}를 눌러 주세요.`, 'info');
+    setStatus(`조건을 선택한 뒤 ${meta().searchLabel}를 눌러 주세요.`, 'info');
     render();
   };
 
@@ -344,7 +324,7 @@
       department: elements.department?.value || '',
       sort: elements.sort?.value || (state.careMode === 'emergency' ? 'distance' : 'night'),
       mode: state.careMode,
-      _v: 'v80',
+      _v: 'v86',
     });
     if (state.geo) {
       params.set('lat', String(state.geo.lat));
@@ -390,7 +370,7 @@
       state.careMode = next;
       if (state.careMode !== 'emergency' && ['beds', 'critical'].includes(elements.sort?.value)) elements.sort.value = 'night';
       if (state.careMode === 'emergency' && elements.sort?.value === 'night') elements.sort.value = 'distance';
-      loadSample();
+      resetToIdle();
     });
   });
 
@@ -408,17 +388,12 @@
     }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 180000 });
   });
 
-  elements.reset?.addEventListener('click', () => {
-    state.geo = null;
-    loadSample();
-  });
-
   elements.quickButtons.forEach((button) => {
     button.addEventListener('click', () => {
       const sort = button.dataset.emergencySort;
       if (sort && elements.sort) elements.sort.value = sort;
       syncModeUi();
-      if (isSample()) loadSample();
+      
     });
   });
 
@@ -440,9 +415,10 @@
   });
 
   ['change', 'input'].forEach((eventName) => {
-    elements.region?.addEventListener(eventName, () => { if (isSample()) loadSample(); });
-    elements.sort?.addEventListener(eventName, () => { syncModeUi(); if (isSample()) loadSample(); });
+    elements.region?.addEventListener(eventName, () => {  });
+    elements.sort?.addEventListener(eventName, () => { syncModeUi();  });
   });
 
-  loadSample();
+  resetToIdle();
+  loadKakaoPlaceCache();
 })();

@@ -3,7 +3,7 @@ const KMA_WARNING_ENDPOINT = 'https://apis.data.go.kr/1360000/WthrWrnInfoService
 const KMA_FORECAST_ENDPOINT = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst';
 const KMA_LIVING_INDEX_BASE = 'https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4';
 
-const SERVER_VERSION = 'v81-outdoor-risk-final';
+const SERVER_VERSION = 'v86-final-qa';
 
 const SIDO_ALIASES = {
   서울특별시: '서울', 서울: '서울', 부산광역시: '부산', 부산: '부산', 대구광역시: '대구', 대구: '대구', 인천광역시: '인천', 인천: '인천', 광주광역시: '광주', 광주: '광주', 대전광역시: '대전', 대전: '대전', 울산광역시: '울산', 울산: '울산', 세종특별자치시: '세종', 세종: '세종', 경기도: '경기', 경기: '경기', 강원특별자치도: '강원', 강원도: '강원', 강원: '강원', 충청북도: '충북', 충북: '충북', 충청남도: '충남', 충남: '충남', 전북특별자치도: '전북', 전라북도: '전북', 전북: '전북', 전라남도: '전남', 전남: '전남', 경상북도: '경북', 경북: '경북', 경상남도: '경남', 경남: '경남', 제주특별자치도: '제주', 제주도: '제주', 제주: '제주'
@@ -69,7 +69,7 @@ export async function onRequestGet({ request, env }) {
       : { ok: false, message: livingResult.reason?.message || '생활기상지수 조회를 생략했습니다.' };
     const warning = warningResult.status === 'fulfilled'
       ? warningResult.value
-      : { ok: false, message: warningResult.reason?.message || '기상특보 조회를 생략했습니다.' };
+      : { ok: false, message: '기상특보 정보는 제공기관 응답 상태에 따라 일부 생략될 수 있습니다.' };
     const summary = buildAirSummary(representative, stations, purpose, forecast, livingIndex);
     const risk = buildOutdoorRisk(representative, purpose, timeSlot, forecast, livingIndex);
 
@@ -274,7 +274,7 @@ async function fetchKmaWarning(env, fallbackKey) {
   if (!key) return { ok: false, message: '기상청 특보 API 키가 설정되지 않았습니다.' };
   const today = new Date();
   const ymd = today.toISOString().slice(0, 10).replace(/-/g, '');
-  const from = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10).replace(/-/g, '');
+  const from = new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10).replace(/-/g, '');
   const url = new URL(KMA_WARNING_ENDPOINT);
   url.searchParams.set('serviceKey', key);
   url.searchParams.set('pageNo', '1');

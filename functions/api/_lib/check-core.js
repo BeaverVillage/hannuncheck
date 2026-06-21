@@ -172,11 +172,6 @@ export async function fetchTextWithTimeout(url, options = {}) {
 
 export function featureEnvStatus(env) {
   return {
-    fuelStation: {
-      label: '주유비·최저가 주유소 확인',
-      ready: hasEnv(env, ['OPINET_API_KEY']),
-      requiredEnv: ['OPINET_API_KEY'],
-    },
     outdoorRisk: {
       label: '외출 위험 종합 체크',
       ready: hasEnv(env, ['AIRKOREA_API_KEY', 'DATA_GO_KR_SERVICE_KEY', 'PUBLIC_DATA_SERVICE_KEY'])

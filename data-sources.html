@@ -11,7 +11,7 @@
     <link rel="canonical" href="https://hannuncheck.com/data-sources.html">
     <link rel="stylesheet" href="/assets/css/base.css">
     <link rel="stylesheet" href="/assets/css/layout.css?v=20260620-v55-grocery-skeleton">
-    <link rel="stylesheet" href="/assets/css/components.css?v=20260621-v81-main-seo-integration">
+    <link rel="stylesheet" href="/assets/css/components.css?v=20260621-v86-final-qa">
     <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6340743169950430"
      crossorigin="anonymous"></script>
@@ -44,7 +44,6 @@
           <li><strong>카카오 Local API 및 Kakao Maps JavaScript API</strong> — 목적지 검색, 주소 좌표 변환, 전기차 충전소 지도 표시를 위해 사용합니다.</li>
           <li><strong>KAMIS 농산물유통정보 가격정보 Open API</strong> — 장보기 물가 확인 기능에서 농수축산물 가격정보를 표시하기 위해 사용합니다.</li>
           <li><strong>한국소비자원 참가격 생필품 가격 정보 Open API</strong> — KAMIS에서 강한 매칭이 없는 가공식품·생활밀접 생필품 가격을 보조 확인하기 위해 사용합니다.</li>
-          <li><strong>한국석유공사 오피넷 주유소 가격 정보</strong> — 최저가 주유소 확인 기능에서 유종별 가격, 지역별 최저가 주유소, 반경 내 주유소, 전국 평균가격, 예상 주유비 계산에 사용합니다.</li>
           <li><strong>국립중앙의료원 전국 응급의료기관 정보 조회 서비스</strong> — 응급실 위치, 전화번호, 가용 병상, 중증질환 수용가능정보, 응급실·중증질환 메시지 확인에 사용합니다.</li>
           <li><strong>국립중앙의료원 전국 병·의원 찾기 서비스</strong> — 야간 병원 탭에서 병·의원명, 주소, 전화번호, 운영시간, 진료과목 참고에 사용합니다.</li>
           <li><strong>국립중앙의료원 전국 약국 정보 조회 서비스</strong> — 야간 약국 탭에서 약국명, 주소, 전화번호, 운영시간 참고에 사용합니다.</li>
@@ -59,20 +58,18 @@
           <li>전기차 충전소 정보: 한국환경공단 전기자동차 충전소 정보 OpenAPI 및 공공데이터포털 제공 정보 기준</li>
           <li>대기질 정보: 한국환경공단 에어코리아 대기오염정보 기준</li>
           <li>기상 정보: 기상청 단기예보 조회서비스와 생활기상지수 조회서비스 기준. 강수확률, 기온, 풍속, 자외선지수 등은 예보·지수 기준이며 실제 체감과 다를 수 있습니다.</li>
-          <li>장소·좌표 검색: 카카오 Local API 및 Kakao Maps JavaScript API 기준</li>
+          <li>장소·좌표 검색: 카카오 Local API 및 Kakao Maps JavaScript API 기준. 의료기관 카카오맵 바로가기는 로컬 place_url 캐시가 있으면 바로가기를 사용하고, 없으면 카카오맵 검색으로 연결합니다.</li>
           <li>장보기 물가 정보: KAMIS 농산물유통정보 가격정보 Open API 및 한국소비자원 참가격 생필품 가격 정보 Open API 기준</li>
-          <li>주유소 가격 정보: 한국석유공사 오피넷 주유소 가격 정보 기준. 가격은 제공 시점 기준이며 실제 현장 가격과 차이가 있을 수 있습니다.</li>
           <li>응급실 정보: 국립중앙의료원 전국 응급의료기관 정보 조회 서비스 기준. 응급실 위치, 전화번호, 가용 병상, 중증질환 수용가능정보, 응급실·중증질환 메시지를 참고하며 실제 수용 가능 여부는 병원 상황에 따라 달라질 수 있습니다.</li>
         </ul>
         <p>한눈체크는 원본 데이터를 그대로 보증하지 않으며, 사용자가 방문·결제·외출 전에 확인할 후보와 체크 포인트를 정리하는 참고 도구입니다.</p>
       </section>
       <section class="page-card">
         <h2>신규 생활 확인 데이터 적용 상태</h2>
-        <p>주유소, 외출 위험, 응급실·야간 병원·약국 기능은 10차 통합 기준으로 실제 API 연동 구조까지 반영되어 있습니다. 단, API 응답 상태, 기관별 데이터 갱신 시점, 현장 상황에 따라 결과는 달라질 수 있습니다.</p>
+        <p>외출 위험, 응급실·야간 병원·약국 기능은 실제 API 연동 구조까지 반영되어 있습니다. 단, API 응답 상태, 기관별 데이터 갱신 시점, 현장 상황에 따라 결과는 달라질 수 있습니다.</p>
         <ul class="checklist">
-          <li><strong>최저가 주유소 확인</strong> — 오피넷 기준 지역별 최저가, 반경 내 주유소, 전국 평균가격을 조회하고 사용자가 입력한 주유량·연비로 예상 주유비를 계산합니다.</li>
           <li><strong>외출 위험 종합 체크</strong> — 에어코리아 대기질, 기상청 단기예보, 생활기상지수를 합쳐 외출 위험도와 활동별 참고 문구를 생성합니다.</li>
-          <li><strong>응급실·야간 병원·약국 확인</strong> — 국립중앙의료원 공공데이터 기준 응급실, 병·의원, 약국 후보를 표시하고 전화 확인을 우선 안내합니다.</li>
+          <li><strong>응급실·야간 병원·약국 확인</strong> — 국립중앙의료원 공공데이터 기준 응급실, 병·의원, 약국 후보를 표시하고 전화 확인을 우선 안내합니다. 카카오맵 장소 바로가기는 별도 로컬 캐시에 저장된 장소 링크만 사용하며, 병상·운영 상태는 캐시하지 않습니다.</li>
           <li><strong>건강보험심사평가원 병원·약국 정보</strong> — 향후 병원·약국 기본정보 보강이 필요할 때 보조 데이터로 사용할 수 있도록 환경변수 예시와 출처 안내에 반영했습니다.</li>
         </ul>
       </section>

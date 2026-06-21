@@ -1,0 +1,18 @@
+{
+  "version": "v86-medical-kakao-place-cache",
+  "generatedAt": null,
+  "meta": {
+    "version": "v86-medical-kakao-place-cache",
+    "type": "medical",
+    "source": "Kakao Local API 로컬 장소 매칭 캐시",
+    "updatedAt": null,
+    "totalEntries": 0,
+    "matched": 0,
+    "medium": 0,
+    "lowConfidence": 0,
+    "notFound": 0,
+    "apiError": 0,
+    "note": "이 파일은 scripts/enrich-medical-kakao-places.js로 생성합니다. 의료 상태·병상·운영 여부는 캐시하지 않고 카카오맵 장소 바로가기 정보만 저장합니다."
+  },
+  "entries": {}
+}

@@ -3,7 +3,7 @@ import { featureEnvStatus, getEnv, jsonResponse } from './_lib/check-core.js';
 export async function onRequestGet({ env }) {
   const kakaoMapJsKey = getEnv(env, ['KAKAO_MAP_JS_KEY', 'KAKAO_JS_KEY']);
   return jsonResponse({
-    serverVersion: 'v81-main-seo-integration',
+    serverVersion: 'v86-final-qa',
     kakaoMapJsKey,
     hasKakaoMapJsKey: Boolean(kakaoMapJsKey),
     hasKakaoRestApiKey: Boolean(getEnv(env, ['KAKAO_REST_API_KEY'])),
@@ -12,12 +12,14 @@ export async function onRequestGet({ env }) {
     hasHolidayApiKey: Boolean(getEnv(env, ['HOLIDAY_API_KEY', 'PUBLIC_DATA_API_KEY', 'DATA_GO_KR_SERVICE_KEY'])),
     featureEnvStatus: featureEnvStatus(env),
     plannedFeatures: {
-      fuelStation: '주유비·최저가 주유소 확인',
       outdoorRisk: '외출 위험 종합 체크',
       emergencyHospital: '응급실·야간 병원·약국 확인',
     },
+    localCaches: {
+      medicalKakaoPlaceCache: '/assets/data/medical/kakao-place-cache.json',
+    },
     message: kakaoMapJsKey
       ? 'Kakao Maps JavaScript key is configured. If the map still fails, check Kakao Developers Web platform domains.'
-      : '카카오맵 키가 없어 샘플 지도 계산 모드로 표시합니다.',
+      : '카카오맵 키가 없어 기본 지도 안내 모드로 표시합니다.',
   });
 }

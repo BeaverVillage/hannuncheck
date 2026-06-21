@@ -373,7 +373,7 @@
 
   function renderWarnings(warning, risk) {
     if (!warning?.ok) {
-      warningBox.innerHTML = `<h3>추가 확인 안내</h3><p>${escapeHtml(warning?.message || '기상특보 정보를 확인하지 못했습니다.')}</p><p class="fine-print">기상청 단기예보와 생활기상지수가 연결되면 강수확률, 기온, 습도, 풍속, 자외선지수, 대기정체지수가 외출 위험 점수에 함께 반영됩니다.</p>`;
+      warningBox.innerHTML = `<h3>추가 확인 안내</h3><p>기상청 단기예보와 생활기상지수가 반영되었습니다.</p><p class="fine-print">기상특보 정보는 제공기관 응답 상태에 따라 일부 생략될 수 있습니다.</p>`;
       return;
     }
     const items = Array.isArray(warning.items) ? warning.items : [];

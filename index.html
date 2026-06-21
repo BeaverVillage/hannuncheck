@@ -1,330 +1,307 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="ko">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="naver-site-verification" content="1cf7b1f007f077b86659a324cb20becb08bf5eb7" />
-    <meta name="theme-color" content="#1e3a5f">
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <meta name="description" content="한눈체크는 주유소 가격, 응급실·야간 병원, 외출 위험, 장보기 물가, 주차비, 전기차 충전소, 사업자 정보를 한 화면에서 확인하는 생활 확인 도구입니다.">
-    <title>한눈체크 - 주유소·응급실·외출 위험 생활 확인 도구</title>
-    <link rel="canonical" href="https://hannuncheck.com/">
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="ko_KR">
-    <meta property="og:site_name" content="한눈체크">
-    <meta property="og:title" content="한눈체크 - 주유소·응급실·외출 위험 생활 확인 도구">
-    <meta property="og:description" content="주유소 가격, 응급실·야간 병원, 외출 위험, 장보기 물가, 주차비, 전기차 충전소, 사업자 정보를 기능별로 확인합니다.">
-    <meta property="og:url" content="https://hannuncheck.com/">
-    <script data-schema="home-1" type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"한눈체크","url":"https://hannuncheck.com/","inLanguage":"ko-KR","description":"생활 속 확인이 필요한 정보를 기능별로 점검하고 결과의 한계를 함께 안내하는 생활 확인 도구입니다.","potentialAction":{"@type":"SearchAction","target":"https://hannuncheck.com/?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
-    <script data-schema="home-2" type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":"한눈체크 주요 기능","itemListElement":[{"@type":"ListItem","position":1,"name":"전기차 충전소 지도","url":"https://hannuncheck.com/tools/ev-charger-map.html"},{"@type":"ListItem","position":2,"name":"주차비 확인 지도","url":"https://hannuncheck.com/tools/parking-fee-check.html"},{"@type":"ListItem","position":3,"name":"최저가 주유소 확인","url":"https://hannuncheck.com/tools/fuel-station-check.html"},{"@type":"ListItem","position":4,"name":"외출 위험 종합 체크","url":"https://hannuncheck.com/tools/outdoor-air.html"},{"@type":"ListItem","position":5,"name":"응급실·야간 병원·약국 확인","url":"https://hannuncheck.com/tools/emergency-hospital-check.html"},{"@type":"ListItem","position":6,"name":"장보기 물가 확인","url":"https://hannuncheck.com/tools/grocery-price-check.html"},{"@type":"ListItem","position":7,"name":"컴퓨터 사양 확인","url":"https://hannuncheck.com/tools/pc-spec.html"},{"@type":"ListItem","position":8,"name":"사업자등록 상태 조회","url":"https://hannuncheck.com/tools/business-status.html"},{"@type":"ListItem","position":9,"name":"쇼핑몰 정보 비교","url":"https://hannuncheck.com/tools/store-compare.html"},{"@type":"ListItem","position":10,"name":"사업자 진위확인","url":"https://hannuncheck.com/tools/business-validate.html"},{"@type":"ListItem","position":11,"name":"통신판매업 신고 조회","url":"https://hannuncheck.com/tools/mail-order.html"},{"@type":"ListItem","position":12,"name":"거래 전 체크리스트","url":"https://hannuncheck.com/tools/pre-payment-checklist.html"}]}</script>
-    <link rel="stylesheet" href="/assets/css/base.css">
-    <link rel="stylesheet" href="/assets/css/layout.css?v=20260620-v55-grocery-skeleton">
-    <link rel="stylesheet" href="/assets/css/components.css?v=20260620-v55-grocery-skeleton">
-    <!-- Google AdSense -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6340743169950430"
-     crossorigin="anonymous"></script>
-</head>
-  <body>
-    <header class="site-header">
-      <a class="brand" href="/index.html" aria-label="한눈체크 홈">
-        <span class="brand-mark">한</span>
-        <span>
-          <strong>한눈체크</strong>
-          <small>생활 확인 도구</small>
-        </span>
-      </a>
-      <nav class="site-nav" aria-label="주요 메뉴">
-        <a href="/index.html#features" data-tool-drawer>주요 기능</a>
-        <a href="/index.html#safe-position">운영 원칙</a>
-        <a href="/contact.html">문의</a>
-      </nav>
-    </header>
-    <main>
-      <section class="hero-band">
-        <div class="container hero-grid feature-hero-grid">
-          <div class="hero-copy">
-            <p class="eyebrow">Information check tools</p>
-            <h1 class="hero-title"><span class="hero-title-main">확인할 수 있는 정보를</span><br><span>한눈에 체크하세요</span></h1>
-            <p class="lead">
-              주유소 가격, 응급실·야간 병원, 외출 위험, 장보기 물가, 주차비, 전기차 충전소, 사업자 정보처럼 직접 확인해야 하는 정보를 기능별로 점검하고, 결과의 의미와 한계를 함께 설명합니다.
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="1cf7b1f007f077b86659a324cb20becb08bf5eb7" name="naver-site-verification">
+<meta content="#1e3a5f" name="theme-color"/>
+<link href="/favicon.svg" rel="icon" type="image/svg+xml"/>
+<meta content="한눈체크는 응급실·야간 병원, 외출 위험, 장보기 물가, 주차비, 전기차 충전소, 사업자 정보를 한 화면에서 확인하는 생활 확인 도구입니다." name="description"/>
+<title>한눈체크 - 생활 안전·외출·물가 확인 도구</title>
+<link href="https://hannuncheck.com/" rel="canonical"/>
+<meta content="website" property="og:type"/>
+<meta content="ko_KR" property="og:locale"/>
+<meta content="한눈체크" property="og:site_name"/>
+<meta content="한눈체크 - 생활 안전·외출·물가 확인 도구" property="og:title"/>
+<meta content="응급실·야간 병원, 외출 위험, 장보기 물가, 주차비, 전기차 충전소, 사업자 정보를 기능별로 확인합니다." property="og:description"/>
+<meta content="https://hannuncheck.com/" property="og:url"/>
+<script data-schema="home-1" type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"한눈체크","url":"https://hannuncheck.com/","inLanguage":"ko-KR","description":"생활 속 확인이 필요한 정보를 기능별로 점검하고 결과의 한계를 함께 안내하는 생활 확인 도구입니다.","potentialAction":{"@type":"SearchAction","target":"https://hannuncheck.com/?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
+<script data-schema="home-2" type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":"한눈체크 주요 기능","itemListElement":[{"@type":"ListItem","position":1,"name":"전기차 충전소 지도","url":"https://hannuncheck.com/tools/ev-charger-map.html"},{"@type":"ListItem","position":2,"name":"주차비 확인 지도","url":"https://hannuncheck.com/tools/parking-fee-check.html"},{"@type":"ListItem","position":3,"name":"외출 위험 종합 체크","url":"https://hannuncheck.com/tools/outdoor-air.html"},{"@type":"ListItem","position":4,"name":"응급실·야간 병원·약국 확인","url":"https://hannuncheck.com/tools/emergency-hospital-check.html"},{"@type":"ListItem","position":5,"name":"장보기 물가 확인","url":"https://hannuncheck.com/tools/grocery-price-check.html"},{"@type":"ListItem","position":6,"name":"컴퓨터 사양 확인","url":"https://hannuncheck.com/tools/pc-spec.html"},{"@type":"ListItem","position":7,"name":"사업자등록 상태 조회","url":"https://hannuncheck.com/tools/business-status.html"},{"@type":"ListItem","position":8,"name":"쇼핑몰 정보 비교","url":"https://hannuncheck.com/tools/store-compare.html"},{"@type":"ListItem","position":9,"name":"사업자 진위확인","url":"https://hannuncheck.com/tools/business-validate.html"},{"@type":"ListItem","position":10,"name":"통신판매업 신고 조회","url":"https://hannuncheck.com/tools/mail-order.html"},{"@type":"ListItem","position":11,"name":"거래 전 체크리스트","url":"https://hannuncheck.com/tools/pre-payment-checklist.html"}]}</script>
+<link href="/assets/css/base.css" rel="stylesheet"/>
+<link href="/assets/css/layout.css?v=20260620-v55-grocery-skeleton" rel="stylesheet"/>
+<link href="/assets/css/components.css?v=20260620-v55-grocery-skeleton" rel="stylesheet"/>
+<!-- Google AdSense -->
+<script async="" crossorigin="anonymous" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6340743169950430"></script>
+</meta></head>
+<body>
+<header class="site-header">
+<a aria-label="한눈체크 홈" class="brand" href="/index.html">
+<span class="brand-mark">한</span>
+<span>
+<strong>한눈체크</strong>
+<small>생활 확인 도구</small>
+</span>
+</a>
+<nav aria-label="주요 메뉴" class="site-nav">
+<a data-tool-drawer="" href="/index.html#features">주요 기능</a>
+<a href="/index.html#safe-position">운영 원칙</a>
+<a href="/contact.html">문의</a>
+</nav>
+</header>
+<main>
+<section class="hero-band">
+<div class="container hero-grid feature-hero-grid">
+<div class="hero-copy">
+<p class="eyebrow">Information check tools</p>
+<h1 class="hero-title"><span class="hero-title-main">확인할 수 있는 정보를</span><br/><span>한눈에 체크하세요</span></h1>
+<p class="lead">
+              응급실·야간 병원, 외출 위험, 장보기 물가, 주차비, 전기차 충전소, 사업자 정보처럼 직접 확인해야 하는 정보를 기능별로 점검하고, 결과의 의미와 한계를 함께 설명합니다.
             </p>
-            <div class="identity-note">
-              <strong>한눈체크는 생활 속 확인 작업을 돕는 정보 확인 도구입니다.</strong><br>
+<div class="identity-note">
+<strong>한눈체크는 생활 속 확인 작업을 돕는 정보 확인 도구입니다.</strong><br/>
               각 기능은 확인 가능한 값과 확인이 제한되는 값을 구분해 보여주고, 결과를 어떻게 해석해야 하는지 설명합니다. 공식 조회 결과와 기기 측정값은 참고용이며, 특정 업체의 사기 여부·법 위반 여부·거래 안전성이나 특정 기기의 절대 성능을 단정하지 않습니다.
             </div>
-            <div class="hero-actions">
-              <a class="primary-link" href="#features">모든 기능 보기</a>
-              <a class="secondary-link" href="#safe-position">운영 원칙 확인</a>
-            </div>
-          </div>
-
-          <aside class="hero-panel feature-panel hero-window-panel" aria-label="한눈체크 자주 쓰는 기능">
-            <div class="console-header hero-window-header">
-              <span class="console-dots" aria-hidden="true"><span></span><span></span><span></span></span>
-              <strong>자주 쓰는 기능</strong>
-            </div>
-            <div class="hero-window-body">
-            <div class="feature-panel-header">
-              <p class="eyebrow">Frequently used</p>
-              <h2>자주 쓰는 기능</h2>
-              <p>생활 속에서 바로 확인하기 좋은 기능을 먼저 보여줍니다.</p>
-            </div>
-            <div class="tool-card-stack compact">
-              <a class="tool-card primary-tool" href="/tools/ev-charger-map.html">
-                <span class="tool-icon">01</span>
-                <span><strong>전기차 충전소 지도</strong><small>목적지 주변 충전소 상태와 사용 가능성 확인</small></span>
-                <em>바로가기</em>
-              </a>
-              <a class="tool-card" href="/tools/parking-fee-check.html">
-                <span class="tool-icon">02</span>
-                <span><strong>주차비 확인 지도</strong><small>목적지 주변 주차장 요금·운영정보 확인</small></span>
-                <em>바로가기</em>
-              </a>
-              <a class="tool-card" href="/tools/fuel-station-check.html">
-                <span class="tool-icon">03</span>
-                <span><strong>최저가 주유소 확인</strong><small>유종별 주유소 가격·거리·부가서비스 비교</small></span>
-                <em>바로가기</em>
-              </a>
-              <a class="tool-card" href="/tools/outdoor-air.html">
-                <span class="tool-icon">04</span>
-                <span><strong>외출 위험 종합 체크</strong><small>대기질·날씨·자외선 기준 외출 참고</small></span>
-                <em>바로가기</em>
-              </a>
-              <a class="tool-card" href="/tools/emergency-hospital-check.html">
-                <span class="tool-icon">05</span>
-                <span><strong>응급실·야간 병원 확인</strong><small>응급실·야간 병원·약국 참고</small></span>
-                <em>바로가기</em>
-              </a>
-              <a class="tool-card" href="/tools/grocery-price-check.html">
-                <span class="tool-icon">06</span>
-                <span><strong>장보기 물가 확인</strong><small>농수축산물 가격 흐름과 지역별 차이 확인</small></span>
-                <em>바로가기</em>
-              </a>
-              <a class="tool-card" href="/tools/pc-spec.html">
-                <span class="tool-icon">07</span>
-                <span><strong>컴퓨터 사양 확인</strong><small>브라우저 기반 기기 정보와 입력 사양 해석</small></span>
-                <em>바로가기</em>
-              </a>
-            </div>
-            </div>
-          </aside>
-        </div>
-      
+<div class="hero-actions">
+<a class="primary-link" href="#features">모든 기능 보기</a>
+<a class="secondary-link" href="#safe-position">운영 원칙 확인</a>
+</div>
+</div>
+<aside aria-label="한눈체크 자주 쓰는 기능" class="hero-panel feature-panel hero-window-panel">
+<div class="console-header hero-window-header">
+<span aria-hidden="true" class="console-dots"><span></span><span></span><span></span></span>
+<strong>자주 쓰는 기능</strong>
+</div>
+<div class="hero-window-body">
+<div class="feature-panel-header">
+<p class="eyebrow">Frequently used</p>
+<h2>자주 쓰는 기능</h2>
+<p>생활 속에서 바로 확인하기 좋은 기능을 먼저 보여줍니다.</p>
+</div>
+<div class="tool-card-stack compact"><a class="tool-card primary-tool" href="/tools/ev-charger-map.html">
+<span class="tool-icon">01</span>
+<span><strong>전기차 충전소 지도</strong><small>목적지 주변 충전소 상태와 사용 가능성 확인</small></span>
+<em>바로가기</em>
+</a>
+<a class="tool-card" href="/tools/parking-fee-check.html">
+<span class="tool-icon">02</span>
+<span><strong>주차비 확인 지도</strong><small>목적지 주변 주차장 요금·운영정보 확인</small></span>
+<em>바로가기</em>
+</a>
+<a class="tool-card" href="/tools/outdoor-air.html">
+<span class="tool-icon">03</span>
+<span><strong>외출 위험 종합 체크</strong><small>대기질·날씨·자외선 기준 외출 참고</small></span>
+<em>바로가기</em>
+</a>
+<a class="tool-card" href="/tools/emergency-hospital-check.html">
+<span class="tool-icon">04</span>
+<span><strong>응급실·야간 병원 확인</strong><small>응급실·야간 병원·약국 참고</small></span>
+<em>바로가기</em>
+</a>
+<a class="tool-card" href="/tools/grocery-price-check.html">
+<span class="tool-icon">05</span>
+<span><strong>장보기 물가 확인</strong><small>농수축산물 가격 흐름과 지역별 차이 확인</small></span>
+<em>바로가기</em>
+</a>
+</div>
+</div>
+</aside>
+</div>
 </section>
+<section class="content-band" id="features">
+<div class="container">
+<div class="section-intro">
+<p class="eyebrow">Choose a tool</p>
+<h2>필요한 기능을 선택하세요</h2>
+<p>기능을 생활 상황별로 묶었습니다. 차량 이동, 생활 안전, 물가, 거래 확인, 기기 확인 중 필요한 항목을 바로 선택하세요.</p>
+</div>
+<div class="feature-category-stack">
+<section aria-labelledby="vehicle-tools-title" class="feature-category-section">
+<div class="feature-category-head">
+<span>차량 생활 확인</span>
+<h3 id="vehicle-tools-title">이동 전 충전과 주차 정보를 확인합니다</h3>
+<p>전기차 충전소와 주차비 확인 지도를 같은 흐름으로 확인할 수 있게 정리했습니다.</p>
+</div>
+<div class="tool-card-grid category-grid vehicle-grid">
+<a class="big-tool-card" href="/tools/ev-charger-map.html"><span class="feature-icon">01</span><h3>전기차 충전소 지도</h3><p>장소 주변 충전소의 상태, 충전 타입, 거리, 주차료, 이용 제한을 지도와 카드로 확인합니다.</p><strong>충전소 확인하기 →</strong></a>
+<a class="big-tool-card" href="/tools/parking-fee-check.html"><span class="feature-icon">02</span><h3>주차비 확인 지도</h3><p>목적지 주변 주차장의 예상 요금, 운영시간, 실시간 가능 대수 제공 여부를 확인합니다.</p><strong>주차비 확인하기 →</strong></a>
 
-      <section class="content-band" id="features">
-        <div class="container">
-          <div class="section-intro">
-            <p class="eyebrow">Choose a tool</p>
-            <h2>필요한 기능을 선택하세요</h2>
-            <p>기능을 생활 상황별로 묶었습니다. 차량 이동, 생활 안전, 물가, 거래 확인, 기기 확인 중 필요한 항목을 바로 선택하세요.</p>
-          </div>
-
-          <div class="feature-category-stack">
-            <section class="feature-category-section" aria-labelledby="vehicle-tools-title">
-              <div class="feature-category-head">
-                <span>차량 생활 확인</span>
-                <h3 id="vehicle-tools-title">이동 전 비용과 이용 가능성을 확인합니다</h3>
-                <p>충전소, 주차장, 주유소를 같은 흐름으로 확인할 수 있게 정리했습니다.</p>
-              </div>
-              <div class="tool-card-grid category-grid vehicle-grid">
-                <a class="big-tool-card" href="/tools/ev-charger-map.html"><span class="feature-icon">01</span><h3>전기차 충전소 지도</h3><p>장소 주변 충전소의 상태, 충전 타입, 거리, 주차료, 이용 제한을 지도와 카드로 확인합니다.</p><strong>충전소 확인하기 →</strong></a>
-                <a class="big-tool-card" href="/tools/parking-fee-check.html"><span class="feature-icon">02</span><h3>주차비 확인 지도</h3><p>목적지 주변 주차장의 예상 요금, 운영시간, 실시간 가능 대수 제공 여부를 확인합니다.</p><strong>주차비 확인하기 →</strong></a>
-                <a class="big-tool-card" href="/tools/fuel-station-check.html"><span class="feature-icon">03</span><h3>최저가 주유소 확인</h3><p>지역과 유종, 주유량을 선택해 주유소 가격, 거리, 브랜드, 예상 주유비를 비교합니다.</p><strong>주유소 확인하기 →</strong></a>
-              </div>
-            </section>
-
-            <section class="feature-category-section" aria-labelledby="safety-tools-title">
-              <div class="feature-category-head">
-                <span>생활 안전 확인</span>
-                <h3 id="safety-tools-title">외출과 응급 상황 전 확인할 정보를 정리합니다</h3>
-                <p>대기질·날씨·자외선, 응급실·야간 병원·약국 정보를 참고용으로 확인합니다.</p>
-              </div>
-              <div class="tool-card-grid category-grid safety-grid">
-                <a class="big-tool-card" href="/tools/outdoor-air.html"><span class="feature-icon">04</span><h3>외출 위험 종합 체크</h3><p>대기질, 단기예보, 생활기상지수를 바탕으로 외출 위험도와 활동별 참고 포인트를 정리합니다.</p><strong>외출 체크하기 →</strong></a>
-                <a class="big-tool-card" href="/tools/emergency-hospital-check.html"><span class="feature-icon">05</span><h3>응급실·야간 병원 확인</h3><p>응급실 위치·전화·가용 병상과 야간 병원·약국 운영시간을 참고하고 전화 확인 포인트를 정리합니다.</p><strong>응급실·야간 병원 확인하기 →</strong></a>
-              </div>
-            </section>
-
-            <section class="feature-category-section" aria-labelledby="price-tools-title">
-              <div class="feature-category-head">
-                <span>생활 물가 확인</span>
-                <h3 id="price-tools-title">자주 사는 품목의 가격 흐름을 확인합니다</h3>
-                <p>농수축산물과 생필품 가격을 공공데이터 기준으로 참고합니다.</p>
-              </div>
-              <div class="tool-card-grid category-grid one-card-grid">
-                <a class="big-tool-card" href="/tools/grocery-price-check.html"><span class="feature-icon">06</span><h3>장보기 물가 확인</h3><p>쌀, 배추, 대파, 사과, 계란처럼 자주 사는 품목의 가격 흐름과 지역별 차이를 확인합니다.</p><strong>물가 확인하기 →</strong></a>
-              </div>
-            </section>
-
-            <section class="feature-category-section" aria-labelledby="trade-tools-title">
-              <div class="feature-category-head">
-                <span>사업자·거래 확인</span>
-                <h3 id="trade-tools-title">거래 전 공식 정보와 입력값을 비교합니다</h3>
-                <p>사업자 상태, 진위확인, 통신판매업 신고정보, 쇼핑몰 하단 정보를 참고용으로 점검합니다.</p>
-              </div>
-              <div class="tool-card-grid category-grid trade-grid">
-                <a class="big-tool-card" href="/tools/business-status.html"><span class="feature-icon">07</span><h3>사업자등록 상태 조회</h3><p>사업자등록번호 10자리로 계속사업자, 휴업자, 폐업자 여부와 과세유형을 확인합니다.</p><strong>상태 조회하기 →</strong></a>
-                <a class="big-tool-card" href="/tools/business-validate.html"><span class="feature-icon">08</span><h3>사업자 진위확인</h3><p>사업자번호, 대표자명, 개업일자를 입력해 국세청 등록정보와의 일치 여부를 확인합니다.</p><strong>진위확인하기 →</strong></a>
-                <a class="big-tool-card" href="/tools/mail-order.html"><span class="feature-icon">09</span><h3>통신판매업 신고 조회</h3><p>온라인 쇼핑몰의 통신판매업 신고 정보가 확인되는지 조회합니다.</p><strong>신고 정보 조회하기 →</strong></a>
-                <a class="big-tool-card" href="/tools/store-compare.html"><span class="feature-icon">10</span><h3>쇼핑몰 정보 비교</h3><p>쇼핑몰 하단에 표시된 상호명, 대표자명, 신고번호, 도메인을 공식 정보와 비교합니다.</p><strong>정보 비교하기 →</strong></a>
-                <a class="big-tool-card" href="/tools/pre-payment-checklist.html"><span class="feature-icon">11</span><h3>거래 전 체크리스트</h3><p>입금 전 확인해야 할 사업자 정보, 결제수단, 환불정책, 고객센터 항목을 정리합니다.</p><strong>체크리스트 보기 →</strong></a>
-              </div>
-            </section>
-
-            <section class="feature-category-section" aria-labelledby="device-tools-title">
-              <div class="feature-category-head">
-                <span>기기 확인</span>
-                <h3 id="device-tools-title">브라우저에서 확인 가능한 기기 정보를 정리합니다</h3>
-                <p>브라우저 보안 정책상 제한되는 항목은 직접 입력으로 보완합니다.</p>
-              </div>
-              <div class="tool-card-grid category-grid one-card-grid">
-                <a class="big-tool-card" href="/tools/pc-spec.html"><span class="feature-icon">12</span><h3>컴퓨터 사양 확인</h3><p>운영체제, CPU 논리 코어, 메모리 추정, GPU/WebGL, 화면 해상도와 CPU 간단 테스트를 확인합니다.</p><strong>사양 확인하기 →</strong></a>
-              </div>
-            </section>
-          </div>
-        </div>
-      </section>
-
-      <section class="content-band muted" id="guides">
-        <div class="container">
-          <div class="section-intro">
-            <p class="eyebrow">Guides</p>
-            <h2>확인 결과 해석 가이드</h2>
-            <p>단순 조회와 측정으로 끝나지 않도록, 확인 결과를 어떻게 받아들이면 좋은지 정리했습니다.</p>
-          </div>
-          <div class="guide-grid">
-            <a class="guide-link-card" href="/guides/business-registration-status.html">
-              <h3>사업자등록 상태 조회로 확인할 수 있는 것</h3>
-              <p>계속사업자, 휴업자, 폐업자, 과세유형을 어떤 의미로 봐야 하는지 설명합니다.</p>
-              <strong>읽어보기 →</strong>
-            </a>
-            <a class="guide-link-card" href="/guides/active-closed-business.html">
-              <h3>계속사업자·휴업자·폐업자의 차이</h3>
-              <p>상태별로 거래 전 어떤 추가 확인이 필요한지 정리합니다.</p>
-              <strong>읽어보기 →</strong>
-            </a>
-            <a class="guide-link-card" href="/guides/mail-order-business.html">
-              <h3>통신판매업 신고정보 확인 가이드</h3>
-              <p>온라인 쇼핑몰에서 신고정보를 확인할 때 주의할 점을 설명합니다.</p>
-              <strong>읽어보기 →</strong>
-            </a>
-            <a class="guide-link-card" href="/guides/store-footer-info.html">
-              <h3>쇼핑몰 하단 사업자정보 확인법</h3>
-              <p>상호명, 대표자명, 사업자번호, 신고번호, 주소를 비교하는 방법입니다.</p>
-              <strong>읽어보기 →</strong>
-            </a>
-            <a class="guide-link-card" href="/guides/before-bank-transfer.html">
-              <h3>무통장입금 전 확인해야 할 항목</h3>
-              <p>입금 전 결제수단, 환불정책, 고객센터, 사업자정보를 함께 확인하는 절차입니다.</p>
-              <strong>읽어보기 →</strong>
-            </a>
-            <a class="guide-link-card" href="/guides/official-info-limit.html">
-              <h3>공식 정보가 정상이어도 주의해야 하는 이유</h3>
-              <p>공식 등록정보가 정상이라는 사실과 거래 안전성은 다른 문제입니다.</p>
-              <strong>읽어보기 →</strong>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <section class="content-band" id="safe-position">
-        <div class="container two-column">
-          <div class="notice-card blue">
-            <p class="eyebrow">Safe position</p>
-            <h2>확인 가능한 정보를 실제로 확인합니다</h2>
-            <p>한눈체크는 공식 공개 데이터, 브라우저에서 제공하는 기기 정보, 사용자가 직접 입력한 값을 바탕으로 확인 결과를 정리합니다. 확인이 제한되는 항목은 도움말과 직접 입력으로 보완합니다.</p>
-          </div>
-          <div class="notice-card warning">
-            <p class="eyebrow">Notice</p>
-            <h2>조회·측정 결과는 참고용입니다</h2>
-            <p>조회·측정 결과는 참고용 정보입니다. 실제 거래 판단, 응급실 수용 가능 여부, 외출 안전성, 주유소·주차장 현장 상태, 하드웨어 성능은 데이터 반영 시점과 사용 환경에 따라 달라질 수 있습니다.</p>
-          </div>
-        </div>
-        <div class="container">
-          <div class="principle-grid">
-            <article class="notice-card"><h3>기능별 데이터 출처와 한계를 함께 표시합니다</h3><p>각 도구는 어떤 데이터와 기준을 활용하는지, 결과가 실제와 달라질 수 있는 이유를 함께 안내합니다.</p></article>
-            <article class="notice-card"><h3>확인 결과를 단정하지 않습니다</h3><p>충전 가능 여부, 주차 가능 여부, 외출 안전성, 거래 안전성처럼 변동 가능한 결과는 참고 정보로만 표시합니다.</p></article>
-            <article class="notice-card"><h3>모바일에서도 바로 확인할 수 있게 정리합니다</h3><p>주요 기능은 모바일 화면에서 입력, 결과, 상세 안내를 쉽게 확인할 수 있도록 구성합니다.</p></article>
-          </div>
-        </div>
-      </section>
-
-      <section class="content-band" id="how-to">
-        <div class="container">
-          <div class="section-intro">
-            <p class="eyebrow">How to use</p>
-            <h2>사용 흐름</h2>
-          </div>
-          <div class="three-column">
-            <article class="step-card">
-              <span class="step-number">1</span>
-              <h3>기능 선택</h3>
-              <p>차량 생활, 생활 안전, 생활 물가, 사업자·거래, 기기 확인 중 필요한 기능을 선택합니다.</p>
-            </article>
-            <article class="step-card">
-              <span class="step-number">2</span>
-              <h3>정보 입력</h3>
-              <p>자동으로 확인 가능한 값은 바로 확인하고, 정확한 모델명이나 공식 조회에 필요한 값은 직접 입력합니다.</p>
-            </article>
-            <article class="step-card">
-              <span class="step-number">3</span>
-              <h3>결과 확인</h3>
-              <p>조회·측정·입력값 해석 결과를 함께 보면서 의미와 한계를 확인합니다.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="content-band compact muted" id="faq">
-        <div class="container">
-          <div class="section-intro">
-            <p class="eyebrow">FAQ</p>
-            <h2>자주 묻는 질문</h2>
-          </div>
-          <div class="faq-grid">
-            <article class="faq-card">
-              <h3>한눈체크는 어떤 사이트인가요?</h3>
-              <p>생활 속에서 확인이 필요한 정보를 기능별로 점검하고, 결과의 의미와 한계를 설명하는 생활 확인 도구입니다.</p>
-            </article>
-            <article class="faq-card">
-              <h3>컴퓨터 사양을 정확히 전부 읽을 수 있나요?</h3>
-              <p>아닙니다. 브라우저 보안 정책상 정확한 CPU 모델명, 저장장치 모델명 등은 직접 입력해야 더 정확합니다.</p>
-            </article>
-            <article class="faq-card">
-              <h3>사업자 정보가 정상이면 안전한 쇼핑몰인가요?</h3>
-              <p>아닙니다. 정상 등록정보는 참고 자료일 뿐이며, 실제 거래 안전성·배송·환불 이행을 보장하지 않습니다.</p>
-            </article>
-            <article class="faq-card">
-              <h3>한눈체크에서 사기 여부를 알려주나요?</h3>
-              <p>사기 여부, 법 위반 여부, 거래 안전성을 판정하지 않습니다. 공식 정보 확인과 입력값 비교만 참고용으로 제공합니다.</p>
-            </article>
-            <article class="faq-card">
-              <h3>입력값은 저장되나요?</h3>
-              <p>조회와 화면 해석에 필요한 범위에서만 사용하며, 직접 입력값을 한눈체크 자체 DB에 저장하지 않는 구조로 운영합니다.</p>
-            </article>
-            <article class="faq-card">
-              <h3>광고가 조회 버튼처럼 보일 수 있나요?</h3>
-              <p>광고 도입 시 조회 버튼·결과 버튼과 충분히 분리해 사용자가 기능과 광고를 혼동하지 않도록 배치합니다.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-    </main>
-    <footer class="site-footer">
-      <div class="container footer-grid">
-        <div class="footer-note">
-          <strong>한눈체크</strong>
-          <p>생활 속에서 확인이 필요한 정보를 한눈에 정리하고, 결과의 의미와 한계를 함께 설명하는 생활 확인 도구입니다. 조회·측정 결과는 참고용이며, 실제 판단을 보장하지 않습니다.</p>
-        </div>
-        <nav aria-label="푸터 메뉴">
-          <a href="/about.html">소개</a>
-          <a href="/privacy.html">개인정보처리방침</a>
-          <a href="/disclaimer.html">면책 안내</a>
-          <a href="/data-sources.html">데이터 출처</a>
-          <a href="/contact.html">문의·정정 요청</a>
-        </nav>
-      </div>
-    </footer>
-  </body>
+</div>
+</section>
+<section aria-labelledby="safety-tools-title" class="feature-category-section">
+<div class="feature-category-head">
+<span>생활 안전 확인</span>
+<h3 id="safety-tools-title">외출과 응급 상황 전 확인할 정보를 정리합니다</h3>
+<p>대기질·날씨·자외선, 응급실·야간 병원·약국 정보를 참고용으로 확인합니다.</p>
+</div>
+<div class="tool-card-grid category-grid safety-grid">
+<a class="big-tool-card" href="/tools/outdoor-air.html"><span class="feature-icon">03</span><h3>외출 위험 종합 체크</h3><p>대기질, 단기예보, 생활기상지수를 바탕으로 외출 위험도와 활동별 참고 포인트를 정리합니다.</p><strong>외출 체크하기 →</strong></a>
+<a class="big-tool-card" href="/tools/emergency-hospital-check.html"><span class="feature-icon">04</span><h3>응급실·야간 병원 확인</h3><p>응급실 위치·전화·가용 병상과 야간 병원·약국 운영시간을 참고하고 전화 확인 포인트를 정리합니다.</p><strong>응급실·야간 병원 확인하기 →</strong></a>
+</div>
+</section>
+<section aria-labelledby="price-tools-title" class="feature-category-section">
+<div class="feature-category-head">
+<span>생활 물가 확인</span>
+<h3 id="price-tools-title">자주 사는 품목의 가격 흐름을 확인합니다</h3>
+<p>농수축산물과 생필품 가격을 공공데이터 기준으로 참고합니다.</p>
+</div>
+<div class="tool-card-grid category-grid one-card-grid">
+<a class="big-tool-card" href="/tools/grocery-price-check.html"><span class="feature-icon">05</span><h3>장보기 물가 확인</h3><p>쌀, 배추, 대파, 사과, 계란처럼 자주 사는 품목의 가격 흐름과 지역별 차이를 확인합니다.</p><strong>물가 확인하기 →</strong></a>
+</div>
+</section>
+<section aria-labelledby="trade-tools-title" class="feature-category-section">
+<div class="feature-category-head">
+<span>사업자·거래 확인</span>
+<h3 id="trade-tools-title">거래 전 공식 정보와 입력값을 비교합니다</h3>
+<p>사업자 상태, 진위확인, 통신판매업 신고정보, 쇼핑몰 하단 정보를 참고용으로 점검합니다.</p>
+</div>
+<div class="tool-card-grid category-grid trade-grid">
+<a class="big-tool-card" href="/tools/business-status.html"><span class="feature-icon">06</span><h3>사업자등록 상태 조회</h3><p>사업자등록번호 10자리로 계속사업자, 휴업자, 폐업자 여부와 과세유형을 확인합니다.</p><strong>상태 조회하기 →</strong></a>
+<a class="big-tool-card" href="/tools/business-validate.html"><span class="feature-icon">07</span><h3>사업자 진위확인</h3><p>사업자번호, 대표자명, 개업일자를 입력해 국세청 등록정보와의 일치 여부를 확인합니다.</p><strong>진위확인하기 →</strong></a>
+<a class="big-tool-card" href="/tools/mail-order.html"><span class="feature-icon">08</span><h3>통신판매업 신고 조회</h3><p>온라인 쇼핑몰의 통신판매업 신고 정보가 확인되는지 조회합니다.</p><strong>신고 정보 조회하기 →</strong></a>
+<a class="big-tool-card" href="/tools/store-compare.html"><span class="feature-icon">09</span><h3>쇼핑몰 정보 비교</h3><p>쇼핑몰 하단에 표시된 상호명, 대표자명, 신고번호, 도메인을 공식 정보와 비교합니다.</p><strong>정보 비교하기 →</strong></a>
+<a class="big-tool-card" href="/tools/pre-payment-checklist.html"><span class="feature-icon">10</span><h3>거래 전 체크리스트</h3><p>입금 전 확인해야 할 사업자 정보, 결제수단, 환불정책, 고객센터 항목을 정리합니다.</p><strong>체크리스트 보기 →</strong></a>
+</div>
+</section>
+<section aria-labelledby="device-tools-title" class="feature-category-section">
+<div class="feature-category-head">
+<span>기기 확인</span>
+<h3 id="device-tools-title">브라우저에서 확인 가능한 기기 정보를 정리합니다</h3>
+<p>브라우저 보안 정책상 제한되는 항목은 직접 입력으로 보완합니다.</p>
+</div>
+<div class="tool-card-grid category-grid one-card-grid">
+<a class="big-tool-card" href="/tools/pc-spec.html"><span class="feature-icon">11</span><h3>컴퓨터 사양 확인</h3><p>운영체제, CPU 논리 코어, 메모리 추정, GPU/WebGL, 화면 해상도와 CPU 간단 테스트를 확인합니다.</p><strong>사양 확인하기 →</strong></a>
+</div>
+</section>
+</div>
+</div>
+</section>
+<section class="content-band muted" id="guides">
+<div class="container">
+<div class="section-intro">
+<p class="eyebrow">Guides</p>
+<h2>확인 결과 해석 가이드</h2>
+<p>단순 조회와 측정으로 끝나지 않도록, 확인 결과를 어떻게 받아들이면 좋은지 정리했습니다.</p>
+</div>
+<div class="guide-grid">
+<a class="guide-link-card" href="/guides/business-registration-status.html">
+<h3>사업자등록 상태 조회로 확인할 수 있는 것</h3>
+<p>계속사업자, 휴업자, 폐업자, 과세유형을 어떤 의미로 봐야 하는지 설명합니다.</p>
+<strong>읽어보기 →</strong>
+</a>
+<a class="guide-link-card" href="/guides/active-closed-business.html">
+<h3>계속사업자·휴업자·폐업자의 차이</h3>
+<p>상태별로 거래 전 어떤 추가 확인이 필요한지 정리합니다.</p>
+<strong>읽어보기 →</strong>
+</a>
+<a class="guide-link-card" href="/guides/mail-order-business.html">
+<h3>통신판매업 신고정보 확인 가이드</h3>
+<p>온라인 쇼핑몰에서 신고정보를 확인할 때 주의할 점을 설명합니다.</p>
+<strong>읽어보기 →</strong>
+</a>
+<a class="guide-link-card" href="/guides/store-footer-info.html">
+<h3>쇼핑몰 하단 사업자정보 확인법</h3>
+<p>상호명, 대표자명, 사업자번호, 신고번호, 주소를 비교하는 방법입니다.</p>
+<strong>읽어보기 →</strong>
+</a>
+<a class="guide-link-card" href="/guides/before-bank-transfer.html">
+<h3>무통장입금 전 확인해야 할 항목</h3>
+<p>입금 전 결제수단, 환불정책, 고객센터, 사업자정보를 함께 확인하는 절차입니다.</p>
+<strong>읽어보기 →</strong>
+</a>
+<a class="guide-link-card" href="/guides/official-info-limit.html">
+<h3>공식 정보가 정상이어도 주의해야 하는 이유</h3>
+<p>공식 등록정보가 정상이라는 사실과 거래 안전성은 다른 문제입니다.</p>
+<strong>읽어보기 →</strong>
+</a>
+</div>
+</div>
+</section>
+<section class="content-band" id="safe-position">
+<div class="container two-column">
+<div class="notice-card blue">
+<p class="eyebrow">Safe position</p>
+<h2>확인 가능한 정보를 실제로 확인합니다</h2>
+<p>한눈체크는 공식 공개 데이터, 브라우저에서 제공하는 기기 정보, 사용자가 직접 입력한 값을 바탕으로 확인 결과를 정리합니다. 확인이 제한되는 항목은 도움말과 직접 입력으로 보완합니다.</p>
+</div>
+<div class="notice-card warning">
+<p class="eyebrow">Notice</p>
+<h2>조회·측정 결과는 참고용입니다</h2>
+<p>조회·측정 결과는 참고용 정보입니다. 실제 거래 판단, 응급실 수용 가능 여부, 외출 안전성, 주차장 현장 상태, 하드웨어 성능은 데이터 반영 시점과 사용 환경에 따라 달라질 수 있습니다.</p>
+</div>
+</div>
+<div class="container">
+<div class="principle-grid">
+<article class="notice-card"><h3>기능별 데이터 출처와 한계를 함께 표시합니다</h3><p>각 도구는 어떤 데이터와 기준을 활용하는지, 결과가 실제와 달라질 수 있는 이유를 함께 안내합니다.</p></article>
+<article class="notice-card"><h3>확인 결과를 단정하지 않습니다</h3><p>충전 가능 여부, 주차 가능 여부, 외출 안전성, 거래 안전성처럼 변동 가능한 결과는 참고 정보로만 표시합니다.</p></article>
+<article class="notice-card"><h3>모바일에서도 바로 확인할 수 있게 정리합니다</h3><p>주요 기능은 모바일 화면에서 입력, 결과, 상세 안내를 쉽게 확인할 수 있도록 구성합니다.</p></article>
+</div>
+</div>
+</section>
+<section class="content-band" id="how-to">
+<div class="container">
+<div class="section-intro">
+<p class="eyebrow">How to use</p>
+<h2>사용 흐름</h2>
+</div>
+<div class="three-column">
+<article class="step-card">
+<span class="step-number">1</span>
+<h3>기능 선택</h3>
+<p>차량 생활, 생활 안전, 생활 물가, 사업자·거래, 기기 확인 중 필요한 기능을 선택합니다.</p>
+</article>
+<article class="step-card">
+<span class="step-number">2</span>
+<h3>정보 입력</h3>
+<p>자동으로 확인 가능한 값은 바로 확인하고, 정확한 모델명이나 공식 조회에 필요한 값은 직접 입력합니다.</p>
+</article>
+<article class="step-card">
+<span class="step-number">3</span>
+<h3>결과 확인</h3>
+<p>조회·측정·입력값 해석 결과를 함께 보면서 의미와 한계를 확인합니다.</p>
+</article>
+</div>
+</div>
+</section>
+<section class="content-band compact muted" id="faq">
+<div class="container">
+<div class="section-intro">
+<p class="eyebrow">FAQ</p>
+<h2>자주 묻는 질문</h2>
+</div>
+<div class="faq-grid">
+<article class="faq-card">
+<h3>한눈체크는 어떤 사이트인가요?</h3>
+<p>생활 속에서 확인이 필요한 정보를 기능별로 점검하고, 결과의 의미와 한계를 설명하는 생활 확인 도구입니다.</p>
+</article>
+<article class="faq-card">
+<h3>컴퓨터 사양을 정확히 전부 읽을 수 있나요?</h3>
+<p>아닙니다. 브라우저 보안 정책상 정확한 CPU 모델명, 저장장치 모델명 등은 직접 입력해야 더 정확합니다.</p>
+</article>
+<article class="faq-card">
+<h3>사업자 정보가 정상이면 안전한 쇼핑몰인가요?</h3>
+<p>아닙니다. 정상 등록정보는 참고 자료일 뿐이며, 실제 거래 안전성·배송·환불 이행을 보장하지 않습니다.</p>
+</article>
+<article class="faq-card">
+<h3>한눈체크에서 사기 여부를 알려주나요?</h3>
+<p>사기 여부, 법 위반 여부, 거래 안전성을 판정하지 않습니다. 공식 정보 확인과 입력값 비교만 참고용으로 제공합니다.</p>
+</article>
+<article class="faq-card">
+<h3>입력값은 저장되나요?</h3>
+<p>조회와 화면 해석에 필요한 범위에서만 사용하며, 직접 입력값을 한눈체크 자체 DB에 저장하지 않는 구조로 운영합니다.</p>
+</article>
+<article class="faq-card">
+<h3>광고가 조회 버튼처럼 보일 수 있나요?</h3>
+<p>광고 도입 시 조회 버튼·결과 버튼과 충분히 분리해 사용자가 기능과 광고를 혼동하지 않도록 배치합니다.</p>
+</article>
+</div>
+</div>
+</section>
+</main>
+<footer class="site-footer">
+<div class="container footer-grid">
+<div class="footer-note">
+<strong>한눈체크</strong>
+<p>생활 속에서 확인이 필요한 정보를 한눈에 정리하고, 결과의 의미와 한계를 함께 설명하는 생활 확인 도구입니다. 조회·측정 결과는 참고용이며, 실제 판단을 보장하지 않습니다.</p>
+</div>
+<nav aria-label="푸터 메뉴">
+<a href="/about.html">소개</a>
+<a href="/privacy.html">개인정보처리방침</a>
+<a href="/disclaimer.html">면책 안내</a>
+<a href="/data-sources.html">데이터 출처</a>
+<a href="/contact.html">문의·정정 요청</a>
+</nav>
+</div>
+</footer>
+</body>
 </html>

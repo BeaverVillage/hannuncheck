@@ -1,5 +1,5 @@
 /* 한눈체크 신규 확인 기능 공통 UI 기반(v71)
-   주유소, 외출 위험, 응급실·야간 병원 기능에서 재사용할 안전한 보조 스타일입니다. */
+   외출 위험, 응급실·야간 병원 기능에서 재사용할 안전한 보조 스타일입니다. */
 .hc-tool-shell {
   display: grid;
   gap: 24px;
@@ -107,567 +107,6 @@
   .hc-result-card {
     border-radius: 18px;
     padding: 18px;
-  }
-}
-
-/* v75 최저가 주유소 확인 UI */
-.fuel-hero-band {
-  background: linear-gradient(135deg, #eef6ff 0%, #f8fbff 58%, #fff7ed 100%);
-}
-
-.fuel-tool-shell {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
-  gap: 24px;
-  align-items: start;
-}
-
-.fuel-console {
-  min-width: 0;
-}
-
-.fuel-form {
-  padding: 24px;
-  display: grid;
-  gap: 18px;
-}
-
-.fuel-filter-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.fuel-quick-row,
-.fuel-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
-
-.fuel-quick-row button {
-  border: 1px solid #bfdbfe;
-  background: #fff;
-  color: #0f3d73;
-  border-radius: 999px;
-  padding: 10px 14px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.fuel-quick-row button.active,
-.fuel-quick-row button:hover {
-  border-color: #2563eb;
-  background: #eff6ff;
-  color: #1d4ed8;
-}
-
-.fuel-summary-grid {
-  padding: 0 24px 24px;
-  display: grid;
-  grid-template-columns: 1.35fr 1fr 1fr;
-  gap: 14px;
-}
-
-.fuel-summary-card {
-  border: 1px solid #bfdbfe;
-  border-radius: 18px;
-  background: #f8fbff;
-  padding: 18px;
-  min-width: 0;
-}
-
-.fuel-summary-card.main {
-  background: linear-gradient(135deg, #eff6ff, #fff);
-}
-
-.fuel-summary-card span,
-.fuel-station-price span {
-  display: block;
-  color: #526983;
-  font-size: 0.9rem;
-  font-weight: 800;
-}
-
-.fuel-summary-card strong {
-  display: block;
-  color: #1d4ed8;
-  font-size: clamp(1.4rem, 3vw, 2rem);
-  margin-top: 6px;
-}
-
-.fuel-summary-card small {
-  display: block;
-  color: #526983;
-  margin-top: 4px;
-  line-height: 1.5;
-}
-
-.fuel-dashboard {
-  display: grid;
-  grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
-  gap: 18px;
-  padding: 0 24px 24px;
-}
-
-.fuel-map-card,
-.fuel-result-panel {
-  border: 1px solid #bfdbfe;
-  border-radius: 22px;
-  background: #fff;
-  padding: 18px;
-  min-width: 0;
-}
-
-.fuel-map-head,
-.fuel-list-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
-  color: #526983;
-  font-size: 0.92rem;
-}
-
-.fuel-map-head strong,
-.fuel-list-head strong {
-  color: #0f172a;
-}
-
-.fuel-map {
-  position: relative;
-  overflow: hidden;
-  min-height: 360px;
-  border-radius: 18px;
-  border: 1px solid #dbeafe;
-  background: radial-gradient(circle at 24% 22%, rgba(59, 130, 246, 0.12), transparent 28%), linear-gradient(135deg, #f8fbff, #eaf3ff);
-}
-
-.fuel-map-grid {
-  position: absolute;
-  inset: 0;
-  opacity: 0.72;
-  background-image: linear-gradient(rgba(30, 58, 95, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(30, 58, 95, 0.07) 1px, transparent 1px);
-  background-size: 44px 44px;
-}
-
-.fuel-map-notice {
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 16px;
-  display: grid;
-  gap: 4px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid #bfdbfe;
-  background: rgba(255, 255, 255, 0.92);
-  color: #526983;
-  line-height: 1.45;
-}
-
-.fuel-map-notice strong {
-  color: #0f172a;
-}
-
-.fuel-marker {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  display: grid;
-  gap: 2px;
-  min-width: 58px;
-  border: 1px solid #bfdbfe;
-  border-radius: 999px;
-  background: #fff;
-  color: #0f3d73;
-  padding: 7px 9px;
-  box-shadow: 0 12px 26px rgba(30, 58, 95, 0.18);
-  cursor: pointer;
-  font-weight: 900;
-}
-
-.fuel-marker span {
-  position: absolute;
-  top: -10px;
-  left: -6px;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: #2563eb;
-  color: #fff;
-  font-size: 0.72rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.fuel-marker strong {
-  font-size: 0.78rem;
-}
-
-.fuel-marker.good { border-color: #86efac; background: #f0fdf4; color: #166534; }
-.fuel-marker.caution { border-color: #fed7aa; background: #fff7ed; color: #9a3412; }
-
-.fuel-list {
-  display: grid;
-  gap: 12px;
-}
-
-.fuel-station-card {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 14px;
-  align-items: center;
-  border: 1px solid #dbeafe;
-  border-radius: 18px;
-  background: #f8fbff;
-  padding: 14px;
-}
-
-.fuel-station-rank {
-  min-width: 42px;
-  height: 42px;
-  border-radius: 999px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #1d4ed8;
-  font-weight: 900;
-}
-
-.fuel-station-title {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.fuel-station-title strong,
-.fuel-detail-name strong {
-  color: #0f172a;
-  font-size: 1.04rem;
-}
-
-.fuel-station-title span,
-.fuel-detail-name span {
-  color: #526983;
-  font-weight: 800;
-}
-
-.fuel-station-main p {
-  margin: 4px 0 8px;
-  color: #526983;
-  line-height: 1.5;
-}
-
-.fuel-station-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  align-items: center;
-}
-
-.fuel-station-tags > span:not(.hc-state-badge) {
-  border: 1px solid #dbeafe;
-  border-radius: 999px;
-  background: #fff;
-  color: #526983;
-  padding: 6px 9px;
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.fuel-station-price {
-  text-align: right;
-  min-width: 112px;
-}
-
-.fuel-station-price strong {
-  display: block;
-  color: #1d4ed8;
-  font-size: 1.32rem;
-  margin-top: 4px;
-}
-
-.fuel-station-price small {
-  color: #526983;
-}
-
-.fuel-station-actions {
-  grid-column: 2 / 4;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.fuel-station-actions button,
-.fuel-station-actions a {
-  border: 1px solid #bfdbfe;
-  background: #fff;
-  color: #1d4ed8;
-  text-decoration: none;
-  border-radius: 999px;
-  padding: 9px 12px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.fuel-station-actions button:hover,
-.fuel-station-actions a:hover {
-  background: #eff6ff;
-}
-
-.fuel-side-panel {
-  display: grid;
-  gap: 18px;
-}
-
-.fuel-detail-card {
-  display: grid;
-  gap: 10px;
-}
-
-.fuel-detail-card h3 {
-  margin: 0;
-  color: #0f3d73;
-}
-
-.fuel-detail-name {
-  display: grid;
-  gap: 2px;
-}
-
-.fuel-detail-price {
-  border: 1px solid #bfdbfe;
-  background: #f8fbff;
-  border-radius: 16px;
-  padding: 14px;
-}
-
-.fuel-detail-price span {
-  color: #526983;
-  font-weight: 800;
-}
-
-.fuel-detail-price strong {
-  display: block;
-  color: #1d4ed8;
-  font-size: 1.8rem;
-  margin-top: 4px;
-}
-
-.fuel-detail-list {
-  margin: 0;
-}
-
-@media (max-width: 1080px) {
-  .fuel-tool-shell,
-  .fuel-dashboard {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 760px) {
-  .fuel-form,
-  .fuel-summary-grid,
-  .fuel-dashboard {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  .fuel-filter-grid,
-  .fuel-summary-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .fuel-map {
-    min-height: 300px;
-  }
-
-  .fuel-station-card {
-    grid-template-columns: 1fr;
-  }
-
-  .fuel-station-rank {
-    width: fit-content;
-  }
-
-  .fuel-station-price {
-    text-align: left;
-  }
-
-  .fuel-station-actions {
-    grid-column: auto;
-    justify-content: flex-start;
-  }
-}
-
-.error-text {
-  color: #b91c1c !important;
-}
-
-.fuel-warning-list {
-  border: 1px solid #fed7aa;
-  background: #fff7ed;
-  color: #9a3412;
-  border-radius: 16px;
-  padding: 12px 14px;
-  display: grid;
-  gap: 6px;
-}
-
-.fuel-warning-list p {
-  margin: 0;
-  font-size: 0.92rem;
-  font-weight: 800;
-}
-
-/* v77 주유비 계산 UX */
-.fuel-cost-input-panel {
-  border: 1px solid #dbeafe;
-  background: #f8fbff;
-  border-radius: 20px;
-  padding: 16px;
-  display: grid;
-  gap: 12px;
-}
-
-.fuel-cost-input-head,
-.fuel-cost-result-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  color: #526983;
-  font-size: 0.92rem;
-}
-
-.fuel-cost-input-head strong,
-.fuel-cost-result-head strong {
-  color: #0f172a;
-  font-size: 1rem;
-}
-
-.fuel-cost-input-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.fuel-inline-input {
-  display: flex;
-  align-items: center;
-  border: 1px solid #bfdbfe;
-  border-radius: 14px;
-  background: #fff;
-  overflow: hidden;
-}
-
-.fuel-inline-input input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  padding: 11px 12px;
-  font-weight: 900;
-  color: #0f172a;
-  background: transparent;
-}
-
-.fuel-inline-input span {
-  border-left: 1px solid #dbeafe;
-  padding: 0 12px;
-  color: #526983;
-  font-size: 0.86rem;
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.fuel-cost-result-panel {
-  margin: 0 24px 24px;
-  border: 1px solid #bfdbfe;
-  border-radius: 22px;
-  background: linear-gradient(135deg, #fff, #f8fbff);
-  padding: 18px;
-  display: grid;
-  gap: 14px;
-}
-
-.fuel-cost-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.fuel-cost-card {
-  border: 1px solid #dbeafe;
-  border-radius: 18px;
-  background: #fff;
-  padding: 15px;
-  min-width: 0;
-}
-
-.fuel-cost-card.main {
-  border-color: #93c5fd;
-  background: #eff6ff;
-}
-
-.fuel-cost-card.good {
-  border-color: #86efac;
-  background: #f0fdf4;
-}
-
-.fuel-cost-card.caution {
-  border-color: #fed7aa;
-  background: #fff7ed;
-}
-
-.fuel-cost-card span {
-  display: block;
-  color: #526983;
-  font-size: 0.86rem;
-  font-weight: 900;
-}
-
-.fuel-cost-card strong {
-  display: block;
-  color: #1d4ed8;
-  font-size: clamp(1.15rem, 2.3vw, 1.55rem);
-  margin-top: 6px;
-}
-
-.fuel-cost-card small {
-  display: block;
-  color: #526983;
-  line-height: 1.45;
-  margin-top: 4px;
-}
-
-@media (max-width: 900px) {
-  .fuel-cost-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 760px) {
-  .fuel-cost-input-grid,
-  .fuel-cost-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .fuel-cost-result-panel {
-    margin-left: 16px;
-    margin-right: 16px;
-  }
-
-  .fuel-cost-input-head,
-  .fuel-cost-result-head {
-    align-items: flex-start;
-    flex-direction: column;
   }
 }
 
@@ -1294,5 +733,434 @@
   .emergency-mode-tabs button {
     flex: 1 1 30%;
     padding: 10px 11px;
+  }
+}
+
+/* v83 응급실 지도형 공통 포맷 정리 */
+.emergency-tool-shell--map {
+  display: block;
+}
+
+.emergency-console--map-aligned {
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+.emergency-map-brief {
+  margin: 22px 24px 0;
+  border: 1px solid #fecaca;
+  background: linear-gradient(135deg, #fff1f2, #fff7ed);
+  color: #7f1d1d;
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  line-height: 1.5;
+}
+
+.emergency-map-brief strong {
+  font-size: 1rem;
+}
+
+.emergency-map-brief span {
+  color: #7f1d1d;
+  font-weight: 800;
+}
+
+.emergency-form--map {
+  padding: 18px 24px 16px;
+}
+
+.emergency-filter-grid--map {
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+}
+
+.emergency-map-tool-actions {
+  justify-content: flex-start;
+}
+
+.emergency-summary-grid--compact {
+  padding: 0 24px 18px;
+}
+
+.emergency-summary-grid--compact .emergency-summary-card {
+  border-radius: 18px;
+  padding: 14px 15px;
+}
+
+.emergency-map-stage {
+  display: grid;
+  grid-template-columns: minmax(380px, 0.98fr) minmax(360px, 1.02fr);
+  gap: 18px;
+  padding: 0 24px 22px;
+  align-items: start;
+}
+
+.emergency-map-card--primary,
+.emergency-right-stack .emergency-result-panel,
+.emergency-detail-card--map {
+  border: 1px solid #dbeafe;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+}
+
+.emergency-map-card--primary {
+  padding: 18px;
+}
+
+.emergency-map-card--primary .emergency-map {
+  min-height: 560px;
+}
+
+.emergency-right-stack {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.emergency-right-stack .emergency-result-panel {
+  padding: 18px;
+}
+
+.emergency-right-stack .emergency-list {
+  max-height: 420px;
+}
+
+.emergency-detail-card--map {
+  padding: 18px;
+}
+
+.emergency-warning-list--bottom {
+  margin: 0 24px 24px;
+}
+
+.emergency-hospital-card {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.emergency-hospital-card:hover {
+  transform: translateY(-1px);
+  border-color: #bfdbfe;
+}
+
+.emergency-detail-actions .primary-link,
+.emergency-detail-actions .secondary-link {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+}
+
+@media (max-width: 1180px) {
+  .emergency-filter-grid--map {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .emergency-map-stage {
+    grid-template-columns: 1fr;
+  }
+
+  .emergency-map-card--primary .emergency-map {
+    min-height: 420px;
+  }
+
+  .emergency-right-stack .emergency-list {
+    max-height: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .emergency-map-brief,
+  .emergency-form--map,
+  .emergency-summary-grid--compact,
+  .emergency-map-stage,
+  .emergency-warning-list--bottom {
+    margin-left: 16px;
+    margin-right: 16px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .emergency-filter-grid--map {
+    grid-template-columns: 1fr;
+  }
+
+  .emergency-map-card--primary .emergency-map {
+    min-height: 320px;
+  }
+
+  .emergency-map-brief {
+    display: block;
+  }
+
+  .emergency-map-brief span {
+    display: block;
+    margin-top: 4px;
+  }
+}
+
+/* v85 응급실·야간 병원 지도형 운영 UI 최종 정리 */
+.emergency-console--final {
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+.emergency-map-brief--final {
+  margin: 20px 22px 0;
+  padding: 12px 14px;
+}
+
+.emergency-final-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px 22px 24px;
+  align-items: start;
+}
+
+.emergency-control-column {
+  border: 1px solid #dbeafe;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+  padding: 18px;
+  min-width: 0;
+}
+
+.emergency-mode-tabs--final {
+  margin: 0 0 16px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.emergency-mode-tabs--final button {
+  width: 100%;
+  padding: 10px 8px;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.emergency-form--final {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.emergency-filter-grid--final {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.emergency-form--final .form-row label {
+  display: block;
+  margin-bottom: 6px;
+  color: #334155;
+  font-size: 0.84rem;
+  font-weight: 950;
+}
+
+.emergency-form--final input,
+.emergency-form--final select {
+  width: 100%;
+  min-height: 44px;
+}
+
+.step-label--secondary {
+  margin-top: 18px;
+}
+
+.emergency-quick-row--final {
+  margin: 10px 0 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.emergency-quick-row--final button {
+  width: 100%;
+  justify-content: center;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.emergency-actions--final {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 9px;
+}
+
+.emergency-actions--final .submit-button,
+.emergency-actions--final .secondary-action-button {
+  width: 100%;
+  justify-content: center;
+}
+
+.emergency-results-column {
+  min-width: 0;
+}
+
+.emergency-summary-grid--final {
+  margin: 0 0 14px;
+  padding: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.emergency-summary-grid--final .emergency-summary-card {
+  padding: 13px 14px;
+  border-radius: 18px;
+}
+
+.emergency-map-stage--final {
+  padding: 0;
+  grid-template-columns: minmax(420px, 1.05fr) minmax(330px, 0.95fr);
+  gap: 16px;
+}
+
+.emergency-map-card--final {
+  padding: 16px;
+}
+
+.emergency-map-card--final .emergency-map {
+  min-height: 520px;
+  border-radius: 20px;
+}
+
+.emergency-right-stack--final {
+  gap: 14px;
+}
+
+.emergency-result-panel--final {
+  padding: 16px;
+}
+
+.emergency-result-panel--final .emergency-list {
+  max-height: 350px;
+  gap: 10px;
+}
+
+.emergency-detail-card--final {
+  padding: 16px;
+}
+
+.emergency-hospital-card {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 13px;
+}
+
+.emergency-hospital-card .emergency-actions {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 2px;
+}
+
+.emergency-meta-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.emergency-meta-grid div {
+  padding: 9px;
+  border-radius: 12px;
+}
+
+.emergency-status-chip-row:not(.detail) {
+  display: none;
+}
+
+.emergency-map-marker.selected {
+  outline: 3px solid rgba(30, 58, 95, 0.28);
+  transform: translate(-50%, -50%) scale(1.06);
+  z-index: 4;
+}
+
+.emergency-warning-list--final {
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+}
+
+@media (max-width: 1180px) {
+  .emergency-final-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .emergency-mode-tabs--final {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .emergency-filter-grid--final {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .emergency-quick-row--final {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .emergency-actions--final {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.75fr);
+  }
+
+  .emergency-map-stage--final {
+    grid-template-columns: 1fr;
+  }
+
+  .emergency-result-panel--final .emergency-list {
+    max-height: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .emergency-map-brief--final {
+    margin: 16px 16px 0;
+  }
+
+  .emergency-final-grid {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .emergency-control-column,
+  .emergency-map-card--final,
+  .emergency-result-panel--final,
+  .emergency-detail-card--final {
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .emergency-mode-tabs--final,
+  .emergency-filter-grid--final,
+  .emergency-quick-row--final,
+  .emergency-actions--final,
+  .emergency-summary-grid--final,
+  .emergency-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .emergency-summary-grid--final {
+    gap: 10px;
+  }
+
+  .emergency-map-card--final .emergency-map {
+    min-height: 330px;
+  }
+
+  .emergency-hospital-card {
+    grid-template-columns: 1fr;
+  }
+
+  .emergency-hospital-card .emergency-actions {
+    grid-column: auto;
   }
 }

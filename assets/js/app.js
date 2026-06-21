@@ -5,7 +5,6 @@
       tools: [
         ['전기차 충전소 지도', '/tools/ev-charger-map.html', '목적지 주변 충전소 상태와 사용 가능성 확인'],
         ['주차비 확인 지도', '/tools/parking-fee-check.html', '목적지 주변 주차장 요금과 운영정보 확인'],
-        ['최저가 주유소 확인', '/tools/fuel-station-check.html', '유종별 주유소 가격·거리·예상 주유비 비교']
       ]
     },
     {

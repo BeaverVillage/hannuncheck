@@ -1,5 +1,5 @@
 const KAMIS_BASE_ENDPOINT = 'https://www.kamis.or.kr/service/price/xml.do';
-const KAMIS_GROCERY_API_VERSION = 'v69-pricego-spec-query-fix';
+const KAMIS_GROCERY_API_VERSION = 'v70-source-tag-fix';
 const PRICE_GO_ENDPOINTS = [
   'https://openapi.price.go.kr/openApiImpl/ProductPriceInfoService',
   'http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService',
@@ -89,6 +89,8 @@ const KAMIS_MIN_RESOLVED_SCORE = 70;
 const KAMIS_STRONG_MATCH_SCORE = 95;
 const PRICE_GO_MIN_MATCH_SCORE = 92;
 const PRICE_GO_MAX_PRODUCT_CANDIDATES = 8;
+const KAMIS_SOURCE_LABEL = 'KAMIS 농산물유통정보 가격정보 Open API';
+const KAMIS_SOURCE_TAG = 'KAMIS PRICE DATA';
 const PRICE_GO_SOURCE_LABEL = '한국소비자원 참가격 생필품 가격 정보 OpenAPI';
 const PRICE_GO_SOURCE_TAG = '참가격 생필품 가격';
 const PRICE_GO_HTTPS_ERROR_STATUSES = new Set([525, 526]);
@@ -235,8 +237,8 @@ export async function onRequestGet({ request, env }) {
         results: [],
         warnings: ['입력어가 여러 품목과 연결될 수 있어 자동 조회하지 않았습니다.'],
         source: 'KAMIS 농산물유통정보 가격정보 Open API',
-        sourceTag,
-        sourceLabel: 'KAMIS 농산물유통정보 가격정보 Open API',
+        sourceTag: KAMIS_SOURCE_TAG,
+        sourceLabel: KAMIS_SOURCE_LABEL,
       });
     }
 
@@ -335,9 +337,9 @@ export async function onRequestGet({ request, env }) {
       summary,
       results: results.slice(0, 40),
       warnings: [...new Set(warnings)].slice(0, 8),
-      source: 'KAMIS 농산물유통정보 가격정보 Open API',
-      sourceTag,
-      sourceLabel: 'KAMIS 농산물유통정보 가격정보 Open API',
+      source: KAMIS_SOURCE_LABEL,
+      sourceTag: KAMIS_SOURCE_TAG,
+      sourceLabel: KAMIS_SOURCE_LABEL,
     });
   } catch (error) {
     console.log('[KAMIS grocery fatal]', { requestId, version: KAMIS_GROCERY_API_VERSION, message: error?.message || String(error) });
@@ -345,7 +347,7 @@ export async function onRequestGet({ request, env }) {
   }
 }
 
-function buildNoPriceResponse({ requestId, item, region, market, warnings = [], code = 'no_price', message, candidates = [], sourceTag = 'KAMIS PRICE DATA' }) {
+function buildNoPriceResponse({ requestId, item, region, market, warnings = [], code = 'no_price', message, candidates = [], sourceTag = KAMIS_SOURCE_TAG }) {
   return {
     ok: true,
     code,
@@ -369,9 +371,9 @@ function buildNoPriceResponse({ requestId, item, region, market, warnings = [], 
     },
     results: [],
     warnings: [...new Set(warnings)].slice(0, 8),
-    source: 'KAMIS 농산물유통정보 가격정보 Open API',
+    source: KAMIS_SOURCE_LABEL,
     sourceTag,
-    sourceLabel: 'KAMIS 농산물유통정보 가격정보 Open API',
+    sourceLabel: KAMIS_SOURCE_LABEL,
   };
 }
 

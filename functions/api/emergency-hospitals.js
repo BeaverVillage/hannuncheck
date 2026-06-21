@@ -10,7 +10,7 @@ import {
   toNumber,
 } from './_lib/check-core.js';
 
-const SERVER_VERSION = 'v92-emergency-list-coordinate-mobile-fix';
+const SERVER_VERSION = 'v93-emergency-marker-detail-main-copy-fix';
 const NMC_SOURCE = 'NMC EMERGENCY MEDICAL DATA';
 const NMC_HOSPITAL_SOURCE = 'NMC HOSPITAL CLINIC DATA';
 const NMC_PHARMACY_SOURCE = 'NMC PHARMACY DATA';
@@ -117,6 +117,11 @@ export async function onRequestGet({ request, env }) {
       })
       : await fetchRealtimeBeds({ key, region, district, requestId });
 
+    const locationResult = await fetchEmergencyLocationList({ key, region, district, requestId }).catch((error) => {
+      console.log('[NMC emergency location merge unavailable]', { requestId, message: error?.message || String(error) });
+      return { items: [], sourceMode: 'location_merge_unavailable' };
+    });
+
     const statusResult = await fetchStatusEnhancements({ key, region, district, requestId }).catch((error) => {
       warnings.push('중증질환 수용가능정보와 응급실 메시지 일부를 불러오지 못했습니다. 병상·전화 정보 중심으로 확인해 주세요.');
       console.log('[NMC emergency status fallback]', { requestId, message: error?.message || String(error) });
@@ -124,10 +129,8 @@ export async function onRequestGet({ request, env }) {
     });
     const statusMaps = buildStatusMaps(statusResult);
 
-    let items = listResult.items.map((item) => enhanceEmergencyItem({
-      ...item,
-      distanceM: Number.isFinite(item.distanceM) ? item.distanceM : (useLocation ? haversineDistanceM({ lat, lng }, item) : Infinity),
-    }, statusMaps));
+    let items = mergeEmergencyLocationData(listResult.items, locationResult.items, useLocation ? { lat, lng } : null)
+      .map((item) => enhanceEmergencyItem(item, statusMaps));
 
     if (sort === 'beds') {
       items = [...items].sort((a, b) => numberOrNeg(b.emergencyBeds) - numberOrNeg(a.emergencyBeds) || numberOrMax(a.distanceM) - numberOrMax(b.distanceM));
@@ -143,6 +146,10 @@ export async function onRequestGet({ request, env }) {
       warnings.push('중증질환 수용가능정보는 공공데이터 제공 시점 기준입니다. 실제 수용 가능 여부는 병원 전화나 119 안내로 확인해야 합니다.');
     }
     const noCoordinateCount = items.filter((item) => !item.hasCoordinates).length;
+    const coordinateCount = items.length - noCoordinateCount;
+    if (coordinateCount && locationResult.items?.length) {
+      warnings.push(`지도 좌표는 응급의료기관 위치정보를 병합해 표시했습니다. 실제 길찾기는 카카오맵에서 다시 확인해 주세요.`);
+    }
     if (noCoordinateCount) {
       warnings.push(`지도 좌표가 제공되지 않은 ${noCoordinateCount.toLocaleString('ko-KR')}곳은 목록과 상세 정보에서 확인해 주세요.`);
     }
@@ -504,6 +511,76 @@ async function fetchNearbyEmergency({ key, lat, lng, requestId }) {
     criteria: '현재 위치 기준 응급의료기관',
     items: rows.map((row, index) => normalizeEmergencyItem(row, index + 1, 'nearby_location', { lat, lng })).filter((item) => item.id || item.name),
   };
+}
+
+
+async function fetchEmergencyLocationList({ key, region, district, requestId }) {
+  const params = {
+    ServiceKey: key,
+    pageNo: '1',
+    numOfRows: '120',
+    _type: 'json',
+  };
+  if (region) params.STAGE1 = region;
+  if (district) params.STAGE2 = district;
+  const result = await fetchNmc('getEgytListInfoInqire', params, requestId);
+  const rows = extractItems(result.data);
+  return {
+    sourceMode: 'emergency_location_list',
+    criteria: `${shortRegion(region) || '전국'}${district ? ` ${district}` : ''} 응급의료기관 위치정보`,
+    items: rows.map((row, index) => normalizeEmergencyLocationItem(row, index + 1)).filter((item) => item.id || item.name),
+  };
+}
+
+function normalizeEmergencyLocationItem(row, rank = 0) {
+  const coords = sanitizeCoordinates(
+    firstNumber(row, ['wgs84Lat', 'WGS84_LAT', 'lat', 'latitude', 'dutyLat', 'dutyMapLat', 'mapLat']),
+    firstNumber(row, ['wgs84Lon', 'WGS84_LON', 'lon', 'lng', 'longitude', 'dutyLon', 'dutyMapLon', 'mapLon'])
+  );
+  const name = firstText(row, ['dutyName', 'DUTY_NAME', 'dutyNm', 'hospName', 'yadmNm']);
+  const address = firstText(row, ['dutyAddr', 'DUTY_ADDR', 'addr', 'address']);
+  return {
+    id: firstText(row, ['hpid', 'HPID', 'id']) || `nmc-location-${rank}`,
+    rank,
+    name,
+    address,
+    region: inferRegion(address),
+    lat: coords.lat,
+    lng: coords.lng,
+    hasCoordinates: coords.hasCoordinates,
+    emergencyTel: normalizePhone(firstText(row, ['dutyTel3', 'DUTY_TEL3', 'emergencyTel', 'tel3'])),
+    mainTel: normalizePhone(firstText(row, ['dutyTel1', 'DUTY_TEL1', 'telno', 'mainTel', 'tel1'])),
+    sourceMode: 'emergency_location_list',
+  };
+}
+
+function mergeEmergencyLocationData(items = [], locationItems = [], origin = null) {
+  const byId = new Map();
+  const byName = new Map();
+  for (const location of locationItems) {
+    if (location.id) byId.set(location.id, location);
+    if (location.name) byName.set(normalizeNameKey(location.name), location);
+  }
+  return items.map((item) => {
+    const match = byId.get(item.id) || byName.get(normalizeNameKey(item.name)) || null;
+    const mergedLat = item.hasCoordinates ? item.lat : match?.lat;
+    const mergedLng = item.hasCoordinates ? item.lng : match?.lng;
+    const coords = sanitizeCoordinates(mergedLat, mergedLng);
+    const distanceM = Number.isFinite(Number(item.distanceM)) && Number(item.distanceM) > 0
+      ? Number(item.distanceM)
+      : (origin && coords.hasCoordinates ? haversineDistanceM(origin, { lat: coords.lat, lng: coords.lng }) : null);
+    return {
+      ...item,
+      address: item.address || match?.address || '',
+      emergencyTel: item.emergencyTel || match?.emergencyTel || '',
+      mainTel: item.mainTel || match?.mainTel || '',
+      lat: coords.lat,
+      lng: coords.lng,
+      hasCoordinates: coords.hasCoordinates,
+      distanceM: Number.isFinite(distanceM) && distanceM > 0 ? Math.round(distanceM) : null,
+      locationSourceMode: match?.sourceMode || item.locationSourceMode || '',
+    };
+  });
 }
 
 async function fetchStatusEnhancements({ key, region, district, requestId }) {

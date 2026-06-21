@@ -2914,3 +2914,148 @@
     grid-column: auto !important;
   }
 }
+
+/* v93 emergency marker/detail/main-copy stabilization */
+.emergency-map-app--v93 .parking-dashboard__results {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.62rem !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.emergency-map-app--v93 .parking-dashboard__results .parking-result-list {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 0 8px 0 0 !important;
+}
+
+.emergency-map-app--v93 .emergency-detail-card--v93:not([hidden]) {
+  display: block !important;
+  flex: 0 0 auto !important;
+  max-height: 310px !important;
+  overflow-y: auto !important;
+  margin: 0.15rem 0 0 !important;
+  padding: 0.88rem !important;
+  border-radius: 17px !important;
+  box-shadow: 0 10px 24px rgba(15, 35, 55, 0.08) !important;
+}
+
+.emergency-map-app--v93 .emergency-detail-card--v93 h3 {
+  margin: 0 0 0.35rem !important;
+  font-size: 0.98rem !important;
+  line-height: 1.35 !important;
+}
+
+.emergency-map-app--v93 .emergency-detail-address {
+  margin: 0 0 0.55rem !important;
+  font-size: 0.82rem !important;
+  line-height: 1.45 !important;
+}
+
+.emergency-map-app--v93 .emergency-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.45rem !important;
+}
+
+.emergency-map-app--v93 .emergency-status-group {
+  margin-top: 0.62rem !important;
+}
+
+.emergency-map-app--v93 .emergency-status-group h4 {
+  margin-bottom: 0.32rem !important;
+  font-size: 0.86rem !important;
+}
+
+.emergency-map-app--v93 .emergency-message-box {
+  padding: 0.58rem !important;
+}
+
+.emergency-map-app--v93 .emergency-detail-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.5rem !important;
+  margin-top: 0.72rem !important;
+}
+
+.emergency-map-app--v93 .emergency-kakao-marker {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 9999 !important;
+  border: 2px solid rgba(255, 255, 255, 0.72) !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.3), 0 0 0 5px rgba(37, 99, 235, 0.12) !important;
+}
+
+.emergency-map-app--v93 .emergency-kakao-marker.selected {
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.36), 0 0 0 6px rgba(239, 68, 68, 0.18) !important;
+}
+
+.emergency-map-app--v93 .emergency-result-list .emergency-hospital-card--compact,
+.emergency-map-app--v93 .parking-mobile-results .emergency-hospital-card--compact {
+  min-height: 88px !important;
+  padding: 0.9rem !important;
+}
+
+.emergency-map-app--v93 .emergency-hospital-card--compact .emergency-card-summary {
+  min-height: 1.15rem !important;
+}
+
+.emergency-map-app--v93 .emergency-status-chip-row--compact {
+  display: none !important;
+}
+
+.emergency-map-app--v93 .emergency-actions--compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  margin-top: 0.58rem !important;
+}
+
+.emergency-map-app--v93 .emergency-warning-list--v90 {
+  margin-top: 0.2rem !important;
+}
+
+@media (min-width: 861px) {
+  .emergency-dashboard-main--v90.emergency-dashboard-main--v89 {
+    grid-template-columns: minmax(360px, 0.82fr) minmax(0, 2.05fr) !important;
+    height: clamp(760px, calc(100vh - 130px), 980px) !important;
+    min-height: 760px !important;
+  }
+
+  .emergency-map-app--v93 .emergency-map-card--v90 {
+    height: clamp(680px, calc(100vh - 220px), 900px) !important;
+    min-height: 680px !important;
+  }
+}
+
+@media (max-width: 860px) {
+  .emergency-map-app--v93 .parking-dashboard__results {
+    display: none !important;
+  }
+
+  .emergency-map-app--v93 .emergency-detail-card--mobile:not([hidden]) {
+    display: block !important;
+    margin: 0.75rem 0.85rem 1rem !important;
+    padding: 0.9rem !important;
+    border-radius: 16px !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .emergency-map-app--v93 .parking-mobile-results .emergency-hospital-card--compact {
+    min-height: 94px !important;
+  }
+
+  .emergency-map-app--v93 .emergency-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .emergency-map-app--v93 .emergency-actions--compact {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}

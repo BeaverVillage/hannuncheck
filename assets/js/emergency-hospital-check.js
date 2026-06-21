@@ -10,7 +10,7 @@
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
   });
   const buildKakaoSearchUrl = toolkit.buildKakaoSearchUrl || ((item) => `https://map.kakao.com/link/search/${encodeURIComponent(`${item.name} ${item.address}`)}`);
-  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v92-emergency-list-coordinate-mobile-fix';
+  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v93-emergency-marker-detail-main-copy-fix';
 
   const MODE_META = {
     emergency: { label: '응급실', searchLabel: '응급실 확인하기', listLabel: '응급실 비교 목록', mapSuffix: '응급실', detailTitle: '선택한 응급실' },
@@ -50,6 +50,7 @@
     listTitle: document.querySelector('#emergency-list-title'),
     listSummary: document.querySelector('#emergency-list-summary'),
     detail: document.querySelector('#emergency-detail-card'),
+    mobileDetail: document.querySelector('#emergency-mobile-detail-card'),
     warningList: document.querySelector('#emergency-warning-list'),
     quickButtons: Array.from(document.querySelectorAll('.emergency-quick-row button, .emergency-result-sort-tabs--v88 button, [data-emergency-map-sort], [data-emergency-mobile-sort]')),
     mapToolbarSearch: document.querySelector('#emergency-map-toolbar-search'),
@@ -106,6 +107,8 @@
   const numberOrMax = (value) => Number.isFinite(Number(value)) ? Number(value) : 999999999;
   const numberOrNeg = (value) => Number.isFinite(Number(value)) ? Number(value) : -1;
   const buildTelLink = (phone) => phone ? `tel:${String(phone).replace(/[^0-9+]/g, '')}` : '';
+  const hasUsableDistance = (value) => Number.isFinite(Number(value)) && Number(value) > 0;
+  const formatDistanceSafe = (value) => (hasUsableDistance(value) ? formatDistance(Number(value)) : '');
   const formatBeds = (value) => Number.isFinite(Number(value)) ? `${Number(value).toLocaleString('ko-KR')}개` : '전화 확인';
   const countGood = (items) => (Array.isArray(items) ? items.filter((item) => item.tone === 'good').length : 0);
 
@@ -360,14 +363,14 @@
       const messageCount = items.filter((item) => Array.isArray(item.messages) && item.messages.length).length;
       elements.summaryCount.innerHTML = `<span>조회 후보</span><strong>${count.toLocaleString('ko-KR')}곳</strong><small>${escapeHtml(getRegionLabel())} · 응급실 상태 확인</small>`;
       elements.summaryBeds.innerHTML = `<span>가용 병상 표시</span><strong>${withBeds.toLocaleString('ko-KR')}곳</strong><small>공공데이터 기준 · 전화 확인 필요</small>`;
-      elements.summaryPhone.innerHTML = `<span>전화 가능 후보</span><strong>${phoneCount.toLocaleString('ko-KR')}곳</strong><small>${nearest ? `가까운 후보 ${formatDistance(nearest.distanceM)}` : '전화 확인 우선'}</small>`;
+      elements.summaryPhone.innerHTML = `<span>전화 가능 후보</span><strong>${phoneCount.toLocaleString('ko-KR')}곳</strong><small>${nearest && hasUsableDistance(nearest.distanceM) ? `가까운 후보 ${formatDistanceSafe(nearest.distanceM)}` : '전화 확인 우선'}</small>`;
       if (elements.summaryStatus) elements.summaryStatus.innerHTML = `<span>중증·상태 정보</span><strong>${criticalCount.toLocaleString('ko-KR')}곳</strong><small>${messageCount ? `상태 메시지 ${messageCount}곳` : '병상 외 상태 정보 참고'}</small>`;
       return;
     }
     const nightCount = items.filter((item) => item.isNightCandidate).length;
     elements.summaryCount.innerHTML = `<span>조회 후보</span><strong>${count.toLocaleString('ko-KR')}곳</strong><small>${escapeHtml(getRegionLabel())} · ${escapeHtml(meta().label)} 확인</small>`;
     elements.summaryBeds.innerHTML = `<span>야간 운영 참고</span><strong>${nightCount.toLocaleString('ko-KR')}곳</strong><small>운영시간 기준 · 접수 마감 전화 확인</small>`;
-    elements.summaryPhone.innerHTML = `<span>전화 가능 후보</span><strong>${phoneCount.toLocaleString('ko-KR')}곳</strong><small>${nearest ? `가까운 후보 ${formatDistance(nearest.distanceM)}` : '전화 확인 우선'}</small>`;
+    elements.summaryPhone.innerHTML = `<span>전화 가능 후보</span><strong>${phoneCount.toLocaleString('ko-KR')}곳</strong><small>${nearest && hasUsableDistance(nearest.distanceM) ? `가까운 후보 ${formatDistanceSafe(nearest.distanceM)}` : '전화 확인 우선'}</small>`;
     if (elements.summaryStatus) elements.summaryStatus.innerHTML = `<span>운영시간 표시</span><strong>${items.filter((item) => item.operationTime).length.toLocaleString('ko-KR')}곳</strong><small>공공데이터 기준 운영시간 참고</small>`;
   };
 
@@ -449,9 +452,11 @@
       const phone = item.emergencyTel || item.mainTel || '';
       const kakaoAction = getKakaoAction(item);
       const isEmergency = isEmergencyItem(item);
-      const primaryInfo = isEmergency
-        ? `${formatBeds(item.emergencyBeds)} · ${formatDistance(item.distanceM)}`
-        : `${item.operationTime || '운영시간 전화 확인'} · ${formatDistance(item.distanceM)}`;
+      const distanceText = formatDistanceSafe(item.distanceM);
+      const primaryParts = isEmergency
+        ? [formatBeds(item.emergencyBeds), distanceText]
+        : [item.operationTime || '운영시간 전화 확인', distanceText];
+      const primaryInfo = primaryParts.filter(Boolean).join(' · ');
       const phoneText = phone ? '전화 있음' : '전화 확인 필요';
       const locationText = hasMapCoordinates(item) ? '지도 표시' : '지도 위치 확인 필요';
       const statusText = isEmergency
@@ -465,7 +470,7 @@
             <strong class="emergency-card-name">${escapeHtml(item.name || meta().label)}</strong>
             <span class="emergency-status ${escapeHtml(item.statusTone || 'neutral')}">${escapeHtml(item.statusLabel || '전화 확인 필요')}</span>
           </div>
-          <p class="emergency-card-summary">${escapeHtml(primaryInfo)} · ${escapeHtml(phoneText)}</p>
+          <p class="emergency-card-summary">${escapeHtml([primaryInfo, phoneText].filter(Boolean).join(' · '))}</p>
           <div class="emergency-status-chip-row emergency-status-chip-row--compact">
             <span class="emergency-mini-chip ${mapTone}">${escapeHtml(locationText)}</span>
             <span class="emergency-mini-chip neutral">${escapeHtml(statusText)}</span>
@@ -511,13 +516,20 @@
     if (!item) {
       elements.detail.hidden = true;
       elements.detail.innerHTML = '';
+      if (elements.mobileDetail) {
+        elements.mobileDetail.hidden = true;
+        elements.mobileDetail.innerHTML = '';
+      }
       return;
     }
     elements.detail.hidden = false;
+    if (elements.mobileDetail) elements.mobileDetail.hidden = false;
     const phone = item.emergencyTel || item.mainTel || '';
     const kakaoAction = getKakaoAction(item);
     const kakaoUrl = kakaoAction.url;
     const kakaoLabel = kakaoAction.label;
+    const distanceText = formatDistanceSafe(item.distanceM) || '거리 정보 없음';
+    const mapText = hasMapCoordinates(item) ? '지도 표시 가능' : '지도 위치 확인 필요';
     if (!isEmergencyItem(item)) {
       elements.detail.innerHTML = `<h3>${escapeHtml(item.name || meta().label)}</h3>
         <p class="emergency-detail-address">${escapeHtml(item.address || '주소 정보 없음')}</p>
@@ -525,6 +537,8 @@
           <div><span>운영시간</span><strong>${escapeHtml(item.operationTime || '전화 확인')}</strong></div>
           <div><span>기관 유형</span><strong>${escapeHtml(item.hospitalType || meta().label)}</strong></div>
           <div><span>전화</span><strong>${escapeHtml(phone || '전화 확인')}</strong></div>
+          <div><span>거리</span><strong>${escapeHtml(distanceText)}</strong></div>
+          <div><span>지도</span><strong>${escapeHtml(mapText)}</strong></div>
         </div>
         <div class="emergency-status-group"><h4>야간 방문 전 확인</h4><p class="fine-print">운영시간은 공공데이터 기준 참고 정보입니다. 접수 마감, 처방·조제 가능 여부, 휴게시간은 기관 전화로 다시 확인해 주세요.</p></div>
         <p class="fine-print">${escapeHtml(item.updatedAt ? `갱신 정보: ${item.updatedAt}` : '갱신 시점 정보가 없으면 기관에 직접 확인해 주세요.')}</p>
@@ -532,6 +546,7 @@
           ${phone ? `<a class="primary-link" href="${buildTelLink(phone)}">전화하기</a>` : ''}
           <a class="secondary-link" href="${kakaoUrl}" target="_blank" rel="noopener">${escapeHtml(kakaoLabel)}</a>
         </div>`;
+      if (elements.mobileDetail) elements.mobileDetail.innerHTML = elements.detail.innerHTML;
       return;
     }
     elements.detail.innerHTML = `<h3>${escapeHtml(item.name || '응급의료기관')}</h3>
@@ -540,6 +555,8 @@
         <div><span>가용 병상</span><strong>${formatBeds(item.emergencyBeds)}</strong></div>
         <div><span>중증질환 참고</span><strong>${escapeHtml(formatCriticalSummary(item))}</strong></div>
         <div><span>전화</span><strong>${escapeHtml(phone || '전화 확인')}</strong></div>
+        <div><span>거리</span><strong>${escapeHtml(distanceText)}</strong></div>
+        <div><span>지도</span><strong>${escapeHtml(mapText)}</strong></div>
       </div>
       ${renderStatusGroup('중증질환 수용가능정보', item.criticalCare, '중증질환 수용가능정보가 없으면 119 또는 병원 전화로 확인해 주세요.')}
       ${renderStatusGroup('장비·시설 상태', item.facilityStatus, '장비·시설 상태 정보가 없으면 전화 확인이 필요합니다.')}
@@ -549,6 +566,7 @@
         ${phone ? `<a class="primary-link" href="${buildTelLink(phone)}">전화하기</a>` : ''}
         <a class="secondary-link" href="${kakaoUrl}" target="_blank" rel="noopener">${escapeHtml(kakaoLabel)}</a>
       </div>`;
+    if (elements.mobileDetail) elements.mobileDetail.innerHTML = elements.detail.innerHTML;
   };
 
   const render = () => {

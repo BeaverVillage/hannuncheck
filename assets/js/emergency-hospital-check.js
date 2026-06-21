@@ -10,7 +10,7 @@
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
   });
   const buildKakaoSearchUrl = toolkit.buildKakaoSearchUrl || ((item) => `https://map.kakao.com/link/search/${encodeURIComponent(`${item.name} ${item.address}`)}`);
-  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v91-emergency-pc-mobile-bugfix';
+  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v92-emergency-list-coordinate-mobile-fix';
 
   const MODE_META = {
     emergency: { label: '응급실', searchLabel: '응급실 확인하기', listLabel: '응급실 비교 목록', mapSuffix: '응급실', detailTitle: '선택한 응급실' },
@@ -175,10 +175,18 @@
     if (state.items.length) render();
   };
 
+  const hasMapCoordinates = (item) => {
+    const lat = Number(item?.lat);
+    const lng = Number(item?.lng);
+    return Number.isFinite(lat) && Number.isFinite(lng) && lat >= 32 && lat <= 39.8 && lng >= 123 && lng <= 132.5;
+  };
+
+  const mappableItems = (items = []) => items.filter(hasMapCoordinates);
+
   const getMapCenter = (items = state.items) => {
     const selected = items.find((item) => item.id === state.selectedId);
-    const candidate = selected || items.find((item) => Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lng)));
-    if (candidate && Number.isFinite(Number(candidate.lat)) && Number.isFinite(Number(candidate.lng))) {
+    const candidate = hasMapCoordinates(selected) ? selected : items.find(hasMapCoordinates);
+    if (candidate && hasMapCoordinates(candidate)) {
       return { lat: Number(candidate.lat), lng: Number(candidate.lng) };
     }
     if (state.geo && Number.isFinite(Number(state.geo.lat)) && Number.isFinite(Number(state.geo.lng))) return state.geo;
@@ -273,15 +281,27 @@
     if (!state.kakaoReady || !state.map || !window.kakao?.maps) return false;
     clearKakaoOverlays();
     const center = getMapCenter(items);
-    const bounds = new window.kakao.maps.LatLngBounds();
-    const hasItems = Array.isArray(items) && items.length;
-    if (!hasItems) {
+    const validItems = mappableItems(items).slice(0, 40);
+
+    if (typeof state.map.relayout === 'function') {
+      state.map.relayout();
+    }
+
+    if (!items.length) {
       state.map.setCenter(new window.kakao.maps.LatLng(center.lat, center.lng));
       state.map.setLevel(state.careMode === 'emergency' ? 7 : 6);
       return true;
     }
-    items.slice(0, 24).forEach((item, index) => {
-      if (!Number.isFinite(Number(item.lat)) || !Number.isFinite(Number(item.lng))) return;
+
+    if (!validItems.length) {
+      state.map.setCenter(new window.kakao.maps.LatLng(center.lat, center.lng));
+      state.map.setLevel(state.careMode === 'emergency' ? 7 : 6);
+      setMapFallbackMessage('지도 위치 확인 필요', '좌표가 제공되지 않은 기관은 목록과 상세 정보에서 확인해 주세요.');
+      return true;
+    }
+
+    const bounds = new window.kakao.maps.LatLngBounds();
+    validItems.forEach((item, index) => {
       const position = new window.kakao.maps.LatLng(Number(item.lat), Number(item.lng));
       bounds.extend(position);
       const overlay = new window.kakao.maps.CustomOverlay({
@@ -293,16 +313,18 @@
       overlay.setMap(state.map);
       state.kakaoOverlays.push(overlay);
     });
-    if (state.kakaoOverlays.length > 1) state.map.setBounds(bounds, 42, 42, 42, 42);
-    else if (state.kakaoOverlays.length === 1) {
-      const target = items.find((item) => Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lng))) || { lat: center.lat, lng: center.lng };
-      state.map.setCenter(new window.kakao.maps.LatLng(Number(target.lat), Number(target.lng)));
-      state.map.setLevel(4);
+
+    if (state.kakaoOverlays.length > 1) {
+      state.map.setBounds(bounds, 56, 56, 56, 56);
     } else {
-      state.map.setCenter(new window.kakao.maps.LatLng(center.lat, center.lng));
-      state.map.setLevel(state.careMode === 'emergency' ? 7 : 6);
+      const target = validItems[0];
+      state.map.setCenter(new window.kakao.maps.LatLng(Number(target.lat), Number(target.lng)));
+      state.map.setLevel(5);
     }
-    setTimeout(() => window.kakao?.maps?.event?.trigger?.(state.map, 'resize'), 0);
+    setTimeout(() => {
+      if (typeof state.map?.relayout === 'function') state.map.relayout();
+      window.kakao?.maps?.event?.trigger?.(state.map, 'resize');
+    }, 80);
     return true;
   };
 
@@ -350,7 +372,7 @@
   };
 
   const makeMapPosition = (item, index, total) => {
-    if (Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lng)) && state.geo) {
+    if (hasMapCoordinates(item) && state.geo) {
       const dx = (Number(item.lng) - state.geo.lng) * 1200;
       const dy = (state.geo.lat - Number(item.lat)) * 1400;
       return { x: Math.min(88, Math.max(12, 50 + dx)), y: Math.min(86, Math.max(14, 50 + dy)) };
@@ -368,9 +390,12 @@
     if (elements.mapTitle) elements.mapTitle.textContent = `${state.summary.criteria || getRegionLabel()} ${meta().mapSuffix}`;
     const isIdle = state.dataMode === 'idle';
     if (elements.mapNotice) {
-      const notice = state.careMode === 'emergency'
-        ? '중증·장비 상태도 참고용입니다. 방문 전 전화 확인이 필요합니다.'
-        : '운영시간은 참고용입니다. 야간 접수와 조제 가능 여부는 전화 확인이 필요합니다.';
+      const noCoordCount = items.length - mappableItems(items).length;
+      const notice = noCoordCount > 0
+        ? `좌표 없는 ${noCoordCount}곳은 목록에서만 확인해 주세요.`
+        : (state.careMode === 'emergency'
+          ? '중증·장비 상태도 참고용입니다. 방문 전 전화 확인이 필요합니다.'
+          : '운영시간은 참고용입니다. 야간 접수와 조제 가능 여부는 전화 확인이 필요합니다.');
       elements.mapNotice.innerHTML = isIdle
         ? `<strong>조회 전</strong><span>확인 버튼을 누르면 실제 지도와 목록에 공공데이터 기준 후보를 표시합니다.</span>`
         : `<strong>공공데이터 기준</strong><span>${notice}</span>`;
@@ -411,36 +436,50 @@
     elements.listSummary.textContent = items.length ? `조회 결과 ${items.length}곳` : '조회 전';
     if (elements.listTitle) elements.listTitle.textContent = meta().listLabel;
     if (!items.length) {
-      elements.list.innerHTML = state.dataMode === 'idle' ? `<div class="hc-empty-state"><strong>조회 전입니다</strong><p>지도 위 검색창과 조건 버튼을 선택한 뒤 검색을 눌러 주세요.</p></div>` : `<div class="hc-empty-state"><strong>${escapeHtml(meta().label)} 정보를 찾지 못했습니다</strong><p>지역을 바꾸거나 긴급 상황이면 119 또는 기관 전화로 확인해 주세요.</p></div>`;
+      elements.list.innerHTML = state.dataMode === 'idle'
+        ? `<div class="hc-empty-state"><strong>조회 전입니다</strong><p>지도 위 검색창과 조건 버튼을 선택한 뒤 검색을 눌러 주세요.</p></div>`
+        : `<div class="hc-empty-state"><strong>${escapeHtml(meta().label)} 정보를 찾지 못했습니다</strong><p>지역을 바꾸거나 긴급 상황이면 119 또는 기관 전화로 확인해 주세요.</p></div>`;
       if (elements.mobileResults) elements.mobileResults.innerHTML = elements.list.innerHTML;
       if (elements.mobileSheetTitle) elements.mobileSheetTitle.textContent = meta().listLabel;
       if (elements.mobileSheetSubtitle) elements.mobileSheetSubtitle.textContent = state.dataMode === 'idle' ? '검색하면 가까운 후보를 표시합니다.' : '조건에 맞는 후보가 없습니다.';
       return;
     }
-    elements.list.innerHTML = items.map((item, index) => {
+
+    const compactCard = (item, index) => {
       const phone = item.emergencyTel || item.mainTel || '';
       const kakaoAction = getKakaoAction(item);
-      const kakaoUrl = kakaoAction.url;
-      const kakaoLabel = kakaoAction.label;
       const isEmergency = isEmergencyItem(item);
-      const metaGrid = isEmergency
-        ? `<div><dt>가용 병상</dt><dd>${formatBeds(item.emergencyBeds)}</dd></div><div><dt>거리</dt><dd>${formatDistance(item.distanceM)}</dd></div><div><dt>전화</dt><dd>${escapeHtml(phone || '전화 확인')}</dd></div>`
-        : `<div><dt>운영시간</dt><dd>${escapeHtml(item.operationTime || '전화 확인')}</dd></div><div><dt>거리</dt><dd>${formatDistance(item.distanceM)}</dd></div><div><dt>전화</dt><dd>${escapeHtml(phone || '전화 확인')}</dd></div>`;
-      return `<article class="parking-result-card emergency-hospital-card emergency-hospital-card--ev ${state.selectedId === item.id ? 'selected' : ''}" data-hospital-id="${escapeHtml(item.id)}">
+      const primaryInfo = isEmergency
+        ? `${formatBeds(item.emergencyBeds)} · ${formatDistance(item.distanceM)}`
+        : `${item.operationTime || '운영시간 전화 확인'} · ${formatDistance(item.distanceM)}`;
+      const phoneText = phone ? '전화 있음' : '전화 확인 필요';
+      const locationText = hasMapCoordinates(item) ? '지도 표시' : '지도 위치 확인 필요';
+      const statusText = isEmergency
+        ? (Number(item.criticalAvailableCount) > 0 ? '중증 정보 참고' : '중증 정보 확인')
+        : (item.isNightCandidate ? '야간 운영 참고' : '운영 확인 필요');
+      const mapTone = hasMapCoordinates(item) ? 'good' : 'caution';
+      return `<article class="parking-result-card emergency-hospital-card emergency-hospital-card--ev emergency-hospital-card--compact ${state.selectedId === item.id ? 'selected' : ''}" data-hospital-id="${escapeHtml(item.id)}">
         <div class="emergency-rank"><span>${index + 1}</span></div>
         <div class="emergency-main">
-          <div class="parking-card-head emergency-title-row"><div><strong>${escapeHtml(item.name || meta().label)}</strong></div><span class="emergency-status ${escapeHtml(item.statusTone || 'neutral')}">${escapeHtml(item.statusLabel || '전화 확인 필요')}</span></div>
-          <p>${escapeHtml(item.address || '주소 정보 없음')}</p>
-          <dl class="emergency-meta-grid">${metaGrid}</dl>
-          ${renderStatusChips(item)}
+          <div class="parking-card-head emergency-title-row">
+            <strong class="emergency-card-name">${escapeHtml(item.name || meta().label)}</strong>
+            <span class="emergency-status ${escapeHtml(item.statusTone || 'neutral')}">${escapeHtml(item.statusLabel || '전화 확인 필요')}</span>
+          </div>
+          <p class="emergency-card-summary">${escapeHtml(primaryInfo)} · ${escapeHtml(phoneText)}</p>
+          <div class="emergency-status-chip-row emergency-status-chip-row--compact">
+            <span class="emergency-mini-chip ${mapTone}">${escapeHtml(locationText)}</span>
+            <span class="emergency-mini-chip neutral">${escapeHtml(statusText)}</span>
+          </div>
         </div>
-        <div class="parking-card-actions emergency-actions">
-          ${phone ? `<a class="primary-mini-link" href="${buildTelLink(phone)}">전화하기</a>` : '<span class="secondary-mini-link disabled">전화 확인</span>'}
-          <a class="secondary-mini-link" href="${kakaoUrl}" target="_blank" rel="noopener">${escapeHtml(kakaoLabel)}</a>
-          <button type="button" class="secondary-mini-link as-button" data-detail-id="${escapeHtml(item.id)}">상세 보기</button>
+        <div class="parking-card-actions emergency-actions emergency-actions--compact">
+          ${phone ? `<a class="primary-mini-link" href="${buildTelLink(phone)}">전화</a>` : '<span class="secondary-mini-link disabled">전화 확인</span>'}
+          <a class="secondary-mini-link" href="${kakaoAction.url}" target="_blank" rel="noopener">${escapeHtml(kakaoAction.label)}</a>
+          <button type="button" class="secondary-mini-link as-button" data-detail-id="${escapeHtml(item.id)}">상세</button>
         </div>
       </article>`;
-    }).join('');
+    };
+
+    elements.list.innerHTML = items.map(compactCard).join('');
     if (elements.mobileResults) elements.mobileResults.innerHTML = elements.list.innerHTML;
     if (elements.mobileSheetTitle) elements.mobileSheetTitle.textContent = meta().listLabel;
     if (elements.mobileSheetSubtitle) elements.mobileSheetSubtitle.textContent = items.length ? `${items.length.toLocaleString('ko-KR')}곳 · 방문 전 전화 확인` : '검색하면 가까운 후보를 표시합니다.';
@@ -560,7 +599,7 @@
       department: elements.department?.value || '',
       sort: elements.sort?.value || (state.careMode === 'emergency' ? 'distance' : 'night'),
       mode: state.careMode,
-      _v: 'v91',
+      _v: 'v92',
     });
     if (state.geo) {
       params.set('lat', String(state.geo.lat));

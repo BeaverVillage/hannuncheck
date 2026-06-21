@@ -10,7 +10,7 @@ import {
   toNumber,
 } from './_lib/check-core.js';
 
-const SERVER_VERSION = 'v91-emergency-pc-mobile-bugfix';
+const SERVER_VERSION = 'v92-emergency-list-coordinate-mobile-fix';
 const NMC_SOURCE = 'NMC EMERGENCY MEDICAL DATA';
 const NMC_HOSPITAL_SOURCE = 'NMC HOSPITAL CLINIC DATA';
 const NMC_PHARMACY_SOURCE = 'NMC PHARMACY DATA';
@@ -141,6 +141,10 @@ export async function onRequestGet({ request, env }) {
 
     if (statusResult.seriousItems?.length) {
       warnings.push('중증질환 수용가능정보는 공공데이터 제공 시점 기준입니다. 실제 수용 가능 여부는 병원 전화나 119 안내로 확인해야 합니다.');
+    }
+    const noCoordinateCount = items.filter((item) => !item.hasCoordinates).length;
+    if (noCoordinateCount) {
+      warnings.push(`지도 좌표가 제공되지 않은 ${noCoordinateCount.toLocaleString('ko-KR')}곳은 목록과 상세 정보에서 확인해 주세요.`);
     }
 
     if (!useLocation && sort === 'distance') {
@@ -342,8 +346,12 @@ async function fetchNmcFrom(endpoint, params, requestId, bases) {
 }
 
 function normalizeNightCareItem(row, rank = 0, kind = 'hospital', qt = getTodayQt()) {
-  const lat = firstNumber(row, ['wgs84Lat', 'WGS84_LAT', 'lat', 'latitude', 'dutyLat']);
-  const lng = firstNumber(row, ['wgs84Lon', 'WGS84_LON', 'lon', 'lng', 'longitude', 'dutyLon']);
+  const coords = sanitizeCoordinates(
+    firstNumber(row, ['wgs84Lat', 'WGS84_LAT', 'lat', 'latitude', 'dutyLat', 'dutyMapLat', 'mapLat']),
+    firstNumber(row, ['wgs84Lon', 'WGS84_LON', 'lon', 'lng', 'longitude', 'dutyLon', 'dutyMapLon', 'mapLon'])
+  );
+  const lat = coords.lat;
+  const lng = coords.lng;
   const name = firstText(row, ['dutyName', 'DUTY_NAME', 'dutyNm', 'hospName', 'yadmNm']);
   const address = firstText(row, ['dutyAddr', 'DUTY_ADDR', 'addr', 'address']);
   const mainTel = normalizePhone(firstText(row, ['dutyTel1', 'DUTY_TEL1', 'telno', 'mainTel', 'tel1']));
@@ -366,6 +374,7 @@ function normalizeNightCareItem(row, rank = 0, kind = 'hospital', qt = getTodayQ
     region: inferRegion(address),
     lat,
     lng,
+    hasCoordinates: Number.isFinite(lat) && Number.isFinite(lng),
     distanceM: null,
     emergencyBeds: null,
     totalBeds: null,
@@ -657,8 +666,12 @@ function extractItems(data) {
 }
 
 function normalizeEmergencyItem(row, rank = 0, sourceMode = '', origin = null) {
-  const lat = firstNumber(row, ['wgs84Lat', 'WGS84_LAT', 'lat', 'latitude', 'dutyLat']);
-  const lng = firstNumber(row, ['wgs84Lon', 'WGS84_LON', 'lon', 'lng', 'longitude', 'dutyLon']);
+  const coords = sanitizeCoordinates(
+    firstNumber(row, ['wgs84Lat', 'WGS84_LAT', 'lat', 'latitude', 'dutyLat', 'dutyMapLat', 'mapLat']),
+    firstNumber(row, ['wgs84Lon', 'WGS84_LON', 'lon', 'lng', 'longitude', 'dutyLon', 'dutyMapLon', 'mapLon'])
+  );
+  const lat = coords.lat;
+  const lng = coords.lng;
   const emergencyBeds = firstNumber(row, ['hvec', 'HVEC', 'emergencyBeds']);
   const totalBeds = firstNumber(row, ['hvgc', 'HVGC', 'inpatientBeds']);
   const distanceRaw = firstNumber(row, ['distance', 'DISTANCE', 'rnumDistance']);
@@ -678,6 +691,7 @@ function normalizeEmergencyItem(row, rank = 0, sourceMode = '', origin = null) {
     region: inferRegion(address),
     lat,
     lng,
+    hasCoordinates: Number.isFinite(lat) && Number.isFinite(lng),
     distanceM: Number.isFinite(distanceM) ? distanceM : null,
     emergencyBeds: Number.isFinite(emergencyBeds) ? emergencyBeds : null,
     totalBeds: Number.isFinite(totalBeds) ? totalBeds : null,
@@ -861,6 +875,20 @@ function getCaseValue(row, key) {
   const wanted = String(key).toLowerCase();
   const actual = Object.keys(row).find((candidate) => candidate.toLowerCase() === wanted);
   return actual ? row[actual] : undefined;
+}
+
+
+function sanitizeCoordinates(lat, lng) {
+  let safeLat = Number(lat);
+  let safeLng = Number(lng);
+  // Some providers or sample rows can arrive swapped. Accept only plausible Korea WGS84 coordinates.
+  if (isKoreaLatLng(safeLat, safeLng)) return { lat: safeLat, lng: safeLng, hasCoordinates: true };
+  if (isKoreaLatLng(safeLng, safeLat)) return { lat: safeLng, lng: safeLat, hasCoordinates: true };
+  return { lat: NaN, lng: NaN, hasCoordinates: false };
+}
+
+function isKoreaLatLng(lat, lng) {
+  return Number.isFinite(lat) && Number.isFinite(lng) && lat >= 32 && lat <= 39.8 && lng >= 123 && lng <= 132.5;
 }
 
 function firstText(row, keys) {

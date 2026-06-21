@@ -2685,3 +2685,232 @@
     bottom: auto !important;
   }
 }
+
+/* v92 emergency list, coordinate and mobile stabilization */
+.emergency-map-app--v90 .emergency-result-list,
+.emergency-map-app--ev-format .emergency-result-list {
+  align-content: start !important;
+}
+
+.emergency-map-app--v90 .emergency-result-list .emergency-hospital-card--compact,
+.emergency-map-app--ev-format .emergency-result-list .emergency-hospital-card--compact,
+.emergency-map-app--v90 .parking-mobile-results .emergency-hospital-card--compact,
+.emergency-map-app--ev-format .parking-mobile-results .emergency-hospital-card--compact {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  gap: 10px !important;
+  align-items: start !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0.82rem !important;
+  border-radius: 16px !important;
+  box-sizing: border-box !important;
+}
+
+.emergency-map-app--v90 .emergency-hospital-card--compact .emergency-main,
+.emergency-map-app--ev-format .emergency-hospital-card--compact .emergency-main {
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+.emergency-map-app--v90 .emergency-hospital-card--compact .emergency-rank,
+.emergency-map-app--ev-format .emergency-hospital-card--compact .emergency-rank {
+  grid-row: 1 / span 2 !important;
+}
+
+.emergency-map-app--v90 .emergency-hospital-card--compact .emergency-rank span,
+.emergency-map-app--ev-format .emergency-hospital-card--compact .emergency-rank span {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  font-size: 0.78rem !important;
+}
+
+.emergency-map-app--v90 .emergency-hospital-card--compact .parking-card-head,
+.emergency-map-app--ev-format .emergency-hospital-card--compact .parking-card-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  gap: 8px !important;
+}
+
+.emergency-map-app--v90 .emergency-card-name,
+.emergency-map-app--ev-format .emergency-card-name {
+  display: block !important;
+  min-width: 0 !important;
+  color: #0f172a !important;
+  font-size: 0.95rem !important;
+  line-height: 1.38 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.emergency-map-app--v90 .emergency-hospital-card--compact .emergency-status,
+.emergency-map-app--ev-format .emergency-hospital-card--compact .emergency-status {
+  max-width: 104px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: 0.74rem !important;
+  padding: 0.22rem 0.45rem !important;
+}
+
+.emergency-map-app--v90 .emergency-card-summary,
+.emergency-map-app--ev-format .emergency-card-summary {
+  margin: 0.35rem 0 0 !important;
+  color: #475569 !important;
+  font-size: 0.84rem !important;
+  line-height: 1.45 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+}
+
+.emergency-map-app--v90 .emergency-status-chip-row--compact,
+.emergency-map-app--ev-format .emergency-status-chip-row--compact {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+  margin-top: 0.45rem !important;
+  overflow: visible !important;
+}
+
+.emergency-map-app--v90 .emergency-status-chip-row--compact .emergency-mini-chip,
+.emergency-map-app--ev-format .emergency-status-chip-row--compact .emergency-mini-chip {
+  max-width: 100% !important;
+  font-size: 0.72rem !important;
+  line-height: 1.35 !important;
+  padding: 0.2rem 0.42rem !important;
+}
+
+.emergency-map-app--v90 .emergency-actions--compact,
+.emergency-map-app--ev-format .emergency-actions--compact {
+  grid-column: 2 !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  margin-top: 0.55rem !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+.emergency-map-app--v90 .emergency-actions--compact a,
+.emergency-map-app--v90 .emergency-actions--compact button,
+.emergency-map-app--v90 .emergency-actions--compact span,
+.emergency-map-app--ev-format .emergency-actions--compact a,
+.emergency-map-app--ev-format .emergency-actions--compact button,
+.emergency-map-app--ev-format .emergency-actions--compact span {
+  justify-content: center !important;
+  min-width: 0 !important;
+  min-height: 32px !important;
+  padding: 0.38rem 0.4rem !important;
+  font-size: 0.76rem !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.emergency-map-app--v90 .emergency-map-notice,
+.emergency-map-app--ev-format .emergency-map-notice {
+  z-index: 70 !important;
+  pointer-events: none !important;
+}
+
+.emergency-map-app--v90 .emergency-kakao-marker,
+.emergency-map-app--ev-format .emergency-kakao-marker {
+  transform: translate(-50%, -100%) !important;
+  min-width: 46px !important;
+  max-width: 92px !important;
+}
+
+@media (min-width: 861px) {
+  .emergency-dashboard-main--v90 .parking-dashboard__results {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .emergency-dashboard-main--v90 .parking-dashboard__results .parking-result-list {
+    padding-right: 8px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+}
+
+@media (max-width: 860px) {
+  .emergency-map-app--v90 .parking-map-toolbar,
+  .emergency-map-app--ev-format .parking-map-toolbar {
+    max-height: none !important;
+  }
+
+  .emergency-map-app--v90 .emergency-map-card--v90,
+  .emergency-map-app--ev-format .emergency-map-card--v90 {
+    height: min(74dvh, 620px) !important;
+    min-height: 430px !important;
+    max-height: 680px !important;
+  }
+
+  .emergency-map-app--v90 .emergency-map-notice,
+  .emergency-map-app--ev-format .emergency-map-notice {
+    top: 150px !important;
+    left: 10px !important;
+    width: min(270px, calc(100% - 20px)) !important;
+    max-width: calc(100% - 20px) !important;
+    padding: 0.55rem 0.65rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  .emergency-map-app--v90 .parking-mobile-results .emergency-hospital-card--compact,
+  .emergency-map-app--ev-format .parking-mobile-results .emergency-hospital-card--compact {
+    grid-template-columns: 30px minmax(0, 1fr) !important;
+    padding: 0.72rem !important;
+  }
+
+  .emergency-map-app--v90 .parking-mobile-results .emergency-card-name,
+  .emergency-map-app--ev-format .parking-mobile-results .emergency-card-name {
+    white-space: normal !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+  }
+
+  .emergency-map-app--v90 .parking-mobile-results .emergency-actions--compact,
+  .emergency-map-app--ev-format .parking-mobile-results .emergency-actions--compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .emergency-map-app--v90 .parking-bottom-sheet.is-open,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-open,
+  .emergency-map-app--v90 .parking-bottom-sheet.is-expanded,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-expanded {
+    overflow-x: hidden !important;
+  }
+
+  .emergency-map-app--v90 .parking-mobile-results,
+  .emergency-map-app--ev-format .parking-mobile-results {
+    overflow-x: hidden !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .emergency-map-app--v90 .emergency-map-notice,
+  .emergency-map-app--ev-format .emergency-map-notice {
+    top: 184px !important;
+  }
+
+  .emergency-map-app--v90 .emergency-actions--compact,
+  .emergency-map-app--ev-format .emergency-actions--compact {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .emergency-map-app--v90 .emergency-actions--compact a:nth-child(2),
+  .emergency-map-app--ev-format .emergency-actions--compact a:nth-child(2) {
+    grid-column: auto !important;
+  }
+}

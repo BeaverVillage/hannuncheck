@@ -16,7 +16,7 @@
 - 거래 전 체크리스트
 - 컴퓨터 사양 확인
 
-## v91-emergency-pc-mobile-bugfix
+## v90-emergency-ev-ui-clone
 
 이번 버전은 운영 UI 최종 점검본입니다. 메인, sitemap, 데이터 출처, 환경변수 예시, 응급실 지도형 UI, 외출 위험 오류 문구, 의료기관 카카오맵 로컬 캐시 연결 상태를 다시 확인했습니다.
 
@@ -62,7 +62,7 @@ HIRA_API_KEY=
 
 ## 배포 확인
 
-배포 후 `/api/config`의 `serverVersion`이 `v91-emergency-pc-mobile-bugfix`로 보이면 이번 최종 점검본이 반영된 것입니다.
+배포 후 `/api/config`의 `serverVersion`이 `v90-emergency-ev-ui-clone`로 보이면 이번 최종 점검본이 반영된 것입니다.
 
 ## 의료기관 카카오맵 캐시 생성
 
@@ -83,7 +83,7 @@ node scripts/enrich-medical-kakao-places.js --mode=all --region=대전 --limit=3
 del .env.local
 ```
 
-## v91-emergency-pc-mobile-bugfix
+## v90-emergency-ev-ui-clone
 
 - 응급실·야간 병원·약국 확인 페이지를 전기차 충전소 지도 계열의 상단 조건 카드 + 지도 중심 + 결과 목록 구조로 다시 정리했습니다.
 - 왼쪽에 고립되어 보이던 조회 전/선택 카드 구조를 제거하고, 선택 상세 카드는 실제 항목 선택 후에만 결과 흐름 아래 표시되도록 변경했습니다.

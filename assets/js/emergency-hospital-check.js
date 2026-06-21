@@ -10,7 +10,7 @@
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
   });
   const buildKakaoSearchUrl = toolkit.buildKakaoSearchUrl || ((item) => `https://map.kakao.com/link/search/${encodeURIComponent(`${item.name} ${item.address}`)}`);
-  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v87-emergency-ev-format-fix';
+  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v88-emergency-ev-map-layout-fix';
 
   const MODE_META = {
     emergency: { label: '응급실', searchLabel: '응급실 확인하기', listLabel: '응급실 비교 목록', mapSuffix: '응급실', detailTitle: '선택한 응급실' },
@@ -41,7 +41,7 @@
     listSummary: document.querySelector('#emergency-list-summary'),
     detail: document.querySelector('#emergency-detail-card'),
     warningList: document.querySelector('#emergency-warning-list'),
-    quickButtons: Array.from(document.querySelectorAll('.emergency-quick-row button')),
+    quickButtons: Array.from(document.querySelectorAll('.emergency-quick-row button, .emergency-result-sort-tabs--v88 button')),
   };
 
   const state = {
@@ -243,9 +243,11 @@
   const renderDetail = (item) => {
     if (!elements.detail) return;
     if (!item) {
-      elements.detail.innerHTML = `<h3>${escapeHtml(meta().detailTitle)}</h3><p>목록에서 항목을 선택하면 전화번호, 운영시간, 상태 정보, 카카오맵 버튼이 표시됩니다.</p>`;
+      elements.detail.hidden = true;
+      elements.detail.innerHTML = '';
       return;
     }
+    elements.detail.hidden = false;
     const phone = item.emergencyTel || item.mainTel || '';
     const kakaoAction = getKakaoAction(item);
     const kakaoUrl = kakaoAction.url;
@@ -324,7 +326,7 @@
       department: elements.department?.value || '',
       sort: elements.sort?.value || (state.careMode === 'emergency' ? 'distance' : 'night'),
       mode: state.careMode,
-      _v: 'v87',
+      _v: 'v88',
     });
     if (state.geo) {
       params.set('lat', String(state.geo.lat));

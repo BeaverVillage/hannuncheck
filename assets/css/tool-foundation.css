@@ -1509,3 +1509,336 @@
     min-height: 340px !important;
   }
 }
+
+/* v88 emergency page: rebuild with EV charger/parking map layout rules */
+.emergency-map-app--v88,
+.emergency-map-app--v88 * {
+  box-sizing: border-box;
+}
+
+.emergency-map-app--v88 .parking-dashboard {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto auto auto !important;
+  gap: 18px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  align-items: stretch !important;
+}
+
+.emergency-map-app--v88 .parking-dashboard__controls,
+.emergency-map-app--v88 .parking-dashboard__main,
+.emergency-map-app--v88 .parking-dashboard__results,
+.emergency-map-app--v88 .parking-dashboard__map,
+.emergency-map-app--v88 .parking-map-card,
+.emergency-map-app--v88 .parking-result-list,
+.emergency-map-app--v88 .emergency-detail-card--v88 {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.emergency-map-app--v88 .parking-dashboard__controls .parking-control-column {
+  width: 100% !important;
+  display: block !important;
+}
+
+.emergency-map-app--v88 .parking-input-panel {
+  display: grid !important;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(360px, 1.35fr) minmax(280px, 1fr) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.emergency-map-app--v88 .parking-control-card {
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 1rem !important;
+  border-radius: 18px !important;
+}
+
+.emergency-short-note {
+  margin: 0 !important;
+  line-height: 1.55;
+}
+
+.emergency-mode-tabs--v88,
+.emergency-filter-grid--v88,
+.emergency-option-grid--v88,
+.emergency-quick-row--v88,
+.emergency-action-row--v88 {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.emergency-mode-tabs--v88 {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+.emergency-map-app--v88 .emergency-mode-tabs--v88 button,
+.emergency-map-app--v88 .emergency-quick-row--v88 button {
+  min-width: 0 !important;
+  width: 100% !important;
+  white-space: normal !important;
+}
+
+.emergency-filter-grid--v88 {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.emergency-option-grid--v88 {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+
+.emergency-quick-row--v88 {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+.emergency-action-row--v88 {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.72fr) !important;
+  gap: 9px !important;
+}
+
+.emergency-action-row--v88 .wide-button {
+  width: 100% !important;
+  min-height: 44px;
+}
+
+.emergency-dashboard-main--v88 {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 390px) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+  height: clamp(560px, calc(100vh - 170px), 760px) !important;
+  min-height: 560px !important;
+}
+
+.emergency-dashboard-main--v88 .parking-dashboard__map,
+.emergency-dashboard-main--v88 .parking-dashboard__results {
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.emergency-map-column--v88 {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  gap: 10px !important;
+}
+
+.emergency-map-card--v88 {
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 16px !important;
+  border-radius: 22px !important;
+}
+
+.emergency-map-card--v88 .emergency-map {
+  height: 100% !important;
+  min-height: 0 !important;
+  border-radius: 20px !important;
+}
+
+.emergency-map-app--v88 .emergency-map-notice {
+  left: 16px !important;
+  right: auto !important;
+  top: 16px !important;
+  width: min(300px, calc(100% - 32px)) !important;
+  padding: 11px 12px !important;
+  border-radius: 14px !important;
+  line-height: 1.45;
+}
+
+.emergency-map-app--v88 .emergency-map-notice span {
+  font-size: 0.82rem !important;
+}
+
+.emergency-results-panel--v88 {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) !important;
+  gap: 0.72rem !important;
+  padding: 16px !important;
+  border-radius: 22px !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.emergency-summary-grid--v88 {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.42rem !important;
+  padding: 0 !important;
+}
+
+.emergency-summary-grid--v88 .emergency-summary-card,
+.parking-data-badges .emergency-summary-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.28rem !important;
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 0.33rem 0.52rem !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+
+.emergency-summary-grid--v88 .emergency-summary-card span,
+.emergency-summary-grid--v88 .emergency-summary-card small {
+  font-size: 0.72rem !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+}
+
+.emergency-summary-grid--v88 .emergency-summary-card strong {
+  font-size: 0.86rem !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  color: #1e3a5f !important;
+}
+
+.emergency-result-sort-tabs--v88 {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.emergency-result-sort-tabs--v88 button.is-hidden {
+  display: none !important;
+}
+
+.emergency-result-list--v88 {
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  padding-right: 6px !important;
+}
+
+.emergency-result-list--v88 .hc-empty-state {
+  min-height: 0 !important;
+  padding: 1rem !important;
+  border-radius: 16px !important;
+}
+
+.emergency-result-list--v88 .emergency-hospital-card {
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  padding: 0.95rem !important;
+  border-radius: 18px !important;
+}
+
+.emergency-result-list--v88 .emergency-actions {
+  grid-column: 2 !important;
+}
+
+.emergency-warning-list--v88 {
+  margin: 0 !important;
+  padding: 0.82rem 0.9rem !important;
+  border-radius: 16px !important;
+  font-size: 0.82rem;
+}
+
+.emergency-detail-card--v88 {
+  margin: 0 !important;
+  padding: 1rem !important;
+  border: 1px solid #dbeafe !important;
+  border-radius: 20px !important;
+  background: #fff !important;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.07) !important;
+}
+
+.emergency-detail-card--v88[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 1180px) {
+  .emergency-map-app--v88 .parking-input-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .emergency-map-app--v88 .emergency-control-card--options {
+    grid-column: 1 / -1;
+  }
+  .emergency-action-row--v88 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) !important;
+  }
+}
+
+@media (max-width: 920px) {
+  .emergency-dashboard-main--v88 {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  .emergency-map-column--v88 {
+    order: 1;
+  }
+  .emergency-results-panel--v88 {
+    order: 2;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  .emergency-map-card--v88 {
+    height: 370px !important;
+    min-height: 370px !important;
+  }
+  .emergency-result-list--v88 {
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .emergency-map-app--v88 .parking-input-panel,
+  .emergency-filter-grid--v88,
+  .emergency-option-grid--v88,
+  .emergency-quick-row--v88,
+  .emergency-action-row--v88,
+  .emergency-mode-tabs--v88 {
+    grid-template-columns: 1fr !important;
+  }
+  .emergency-map-app--v88 .parking-control-card,
+  .emergency-results-panel--v88,
+  .emergency-map-card--v88,
+  .emergency-detail-card--v88 {
+    border-radius: 16px !important;
+    padding: 0.9rem !important;
+  }
+  .emergency-map-card--v88 {
+    height: 340px !important;
+    min-height: 340px !important;
+  }
+  .emergency-result-list--v88 .emergency-hospital-card {
+    grid-template-columns: 1fr !important;
+  }
+  .emergency-result-list--v88 .emergency-actions {
+    grid-column: auto !important;
+  }
+  .emergency-summary-grid--v88 .emergency-summary-card {
+    flex: 1 1 calc(50% - 0.5rem) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .emergency-map-card--v88 {
+    height: 315px !important;
+    min-height: 315px !important;
+  }
+  .emergency-summary-grid--v88 .emergency-summary-card {
+    flex: 1 1 100% !important;
+  }
+}

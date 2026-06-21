@@ -3,7 +3,7 @@ import { featureEnvStatus, getEnv, jsonResponse } from './_lib/check-core.js';
 export async function onRequestGet({ env }) {
   const kakaoMapJsKey = getEnv(env, ['KAKAO_MAP_JS_KEY', 'KAKAO_JS_KEY']);
   return jsonResponse({
-    serverVersion: 'v89-emergency-kakao-map-rebuild',
+    serverVersion: 'v90-emergency-ev-ui-clone',
     kakaoMapJsKey,
     hasKakaoMapJsKey: Boolean(kakaoMapJsKey),
     hasKakaoRestApiKey: Boolean(getEnv(env, ['KAKAO_REST_API_KEY'])),

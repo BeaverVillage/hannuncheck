@@ -10,7 +10,7 @@
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
   });
   const buildKakaoSearchUrl = toolkit.buildKakaoSearchUrl || ((item) => `https://map.kakao.com/link/search/${encodeURIComponent(`${item.name} ${item.address}`)}`);
-  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v89-emergency-kakao-map-rebuild';
+  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v90-emergency-ev-ui-clone';
 
   const MODE_META = {
     emergency: { label: '응급실', searchLabel: '응급실 확인하기', listLabel: '응급실 비교 목록', mapSuffix: '응급실', detailTitle: '선택한 응급실' },
@@ -51,7 +51,31 @@
     listSummary: document.querySelector('#emergency-list-summary'),
     detail: document.querySelector('#emergency-detail-card'),
     warningList: document.querySelector('#emergency-warning-list'),
-    quickButtons: Array.from(document.querySelectorAll('.emergency-quick-row button, .emergency-result-sort-tabs--v88 button')),
+    quickButtons: Array.from(document.querySelectorAll('.emergency-quick-row button, .emergency-result-sort-tabs--v88 button, [data-emergency-map-sort], [data-emergency-mobile-sort]')),
+    mapToolbarSearch: document.querySelector('#emergency-map-toolbar-search'),
+    mapKeyword: document.querySelector('#emergency-map-keyword'),
+    mapModeToggle: document.querySelector('#emergency-map-mode-toggle'),
+    mapModePanel: document.querySelector('#emergency-map-mode-panel'),
+    mapModeButtons: Array.from(document.querySelectorAll('[data-emergency-map-mode]')),
+    mapRegionToggle: document.querySelector('#emergency-map-region-toggle'),
+    mapRegionPanel: document.querySelector('#emergency-map-region-panel'),
+    mapRegion: document.querySelector('#emergency-map-region'),
+    mapDistrict: document.querySelector('#emergency-map-district'),
+    mapRegionApply: document.querySelector('#emergency-map-region-apply'),
+    mapSortToggle: document.querySelector('#emergency-map-sort-toggle'),
+    mapSortPanel: document.querySelector('#emergency-map-sort-panel'),
+    mapSortButtons: Array.from(document.querySelectorAll('[data-emergency-map-sort]')),
+    mapLocation: document.querySelector('#emergency-map-location'),
+    mobileListToggle: document.querySelector('#emergency-mobile-list-toggle'),
+    mobileSheet: document.querySelector('#emergency-mobile-bottom-sheet'),
+    mobileResults: document.querySelector('#emergency-mobile-results'),
+    mobileSheetTitle: document.querySelector('#emergency-mobile-sheet-title'),
+    mobileSheetSubtitle: document.querySelector('#emergency-mobile-sheet-subtitle'),
+    mobileSheetMapButton: document.querySelector('#emergency-mobile-sheet-map-button'),
+    mobileSortButton: document.querySelector('#emergency-mobile-sort-button'),
+    mobileModeButton: document.querySelector('#emergency-mobile-mode-button'),
+    mobileRegionButton: document.querySelector('#emergency-mobile-region-button'),
+    mobileSheetSort: document.querySelector('#emergency-mobile-sheet-sort'),
   };
 
   const state = {
@@ -89,6 +113,46 @@
     if (!elements.status) return;
     elements.status.textContent = message;
     elements.status.dataset.tone = tone;
+    const formStatus = document.querySelector('#emergency-form-status');
+    if (formStatus) formStatus.textContent = message;
+  };
+
+  const closeToolbarPopovers = () => {
+    [elements.mapModePanel, elements.mapRegionPanel, elements.mapSortPanel, elements.mobileSheetSort].forEach((panel) => { if (panel) panel.hidden = true; });
+    [elements.mapModeToggle, elements.mapRegionToggle, elements.mapSortToggle, elements.mobileSortButton].forEach((button) => { if (button) button.setAttribute('aria-expanded', 'false'); });
+  };
+
+  const toggleToolbarPanel = (toggle, panel) => {
+    if (!toggle || !panel) return;
+    const willOpen = panel.hidden;
+    closeToolbarPopovers();
+    panel.hidden = !willOpen;
+    toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  };
+
+  const sortLabel = (value) => ({ distance: '가까운 순', beds: '병상 우선', phone: '전화 우선', critical: '중증 정보', night: '야간 운영' }[value] || '가까운 순');
+
+  const syncToolbarInputs = () => {
+    if (elements.mapKeyword && elements.keyword && elements.mapKeyword !== document.activeElement) elements.mapKeyword.value = elements.keyword.value || '';
+    if (elements.mapRegion && elements.region) elements.mapRegion.value = elements.region.value || '대전';
+    if (elements.mapDistrict && elements.district && elements.mapDistrict !== document.activeElement) elements.mapDistrict.value = elements.district.value || '';
+    if (elements.mapModeToggle) elements.mapModeToggle.textContent = meta().label;
+    if (elements.mapRegionToggle) elements.mapRegionToggle.textContent = elements.district?.value ? `${getRegionLabel()} ${elements.district.value}` : getRegionLabel();
+    const currentSort = elements.sort?.value || 'distance';
+    if (elements.mapSortToggle) elements.mapSortToggle.textContent = sortLabel(currentSort);
+    if (elements.mobileSortButton) elements.mobileSortButton.textContent = sortLabel(currentSort);
+    if (elements.mobileModeButton) elements.mobileModeButton.textContent = meta().label;
+    if (elements.mobileRegionButton) elements.mobileRegionButton.textContent = elements.district?.value ? `${getRegionLabel()} ${elements.district.value}` : getRegionLabel();
+    elements.mapModeButtons?.forEach((button) => button.classList.toggle('active', button.dataset.emergencyMapMode === state.careMode));
+    elements.mapSortButtons?.forEach((button) => button.classList.toggle('active', button.dataset.emergencyMapSort === currentSort));
+    document.querySelectorAll('[data-emergency-mobile-sort]').forEach((button) => button.classList.toggle('active', button.dataset.emergencyMobileSort === currentSort));
+  };
+
+  const syncFromToolbar = () => {
+    if (elements.mapKeyword && elements.keyword) elements.keyword.value = elements.mapKeyword.value || '';
+    if (elements.mapRegion && elements.region) elements.region.value = elements.mapRegion.value || elements.region.value;
+    if (elements.mapDistrict && elements.district) elements.district.value = elements.mapDistrict.value || '';
+    syncToolbarInputs();
   };
 
   const isEmergencyItem = (item) => (item?.kind || state.careMode) === 'emergency';
@@ -347,7 +411,10 @@
     elements.listSummary.textContent = items.length ? `조회 결과 ${items.length}곳` : '조회 전';
     if (elements.listTitle) elements.listTitle.textContent = meta().listLabel;
     if (!items.length) {
-      elements.list.innerHTML = state.dataMode === 'idle' ? `<div class="hc-empty-state"><strong>조회 전입니다</strong><p>지역과 보기 기준을 선택한 뒤 ${escapeHtml(meta().searchLabel)}를 눌러 주세요.</p></div>` : `<div class="hc-empty-state"><strong>${escapeHtml(meta().label)} 정보를 찾지 못했습니다</strong><p>지역을 바꾸거나 긴급 상황이면 119 또는 기관 전화로 확인해 주세요.</p></div>`;
+      elements.list.innerHTML = state.dataMode === 'idle' ? `<div class="hc-empty-state"><strong>조회 전입니다</strong><p>지도 위 검색창과 조건 버튼을 선택한 뒤 검색을 눌러 주세요.</p></div>` : `<div class="hc-empty-state"><strong>${escapeHtml(meta().label)} 정보를 찾지 못했습니다</strong><p>지역을 바꾸거나 긴급 상황이면 119 또는 기관 전화로 확인해 주세요.</p></div>`;
+      if (elements.mobileResults) elements.mobileResults.innerHTML = elements.list.innerHTML;
+      if (elements.mobileSheetTitle) elements.mobileSheetTitle.textContent = meta().listLabel;
+      if (elements.mobileSheetSubtitle) elements.mobileSheetSubtitle.textContent = state.dataMode === 'idle' ? '검색하면 가까운 후보를 표시합니다.' : '조건에 맞는 후보가 없습니다.';
       return;
     }
     elements.list.innerHTML = items.map((item, index) => {
@@ -374,6 +441,9 @@
         </div>
       </article>`;
     }).join('');
+    if (elements.mobileResults) elements.mobileResults.innerHTML = elements.list.innerHTML;
+    if (elements.mobileSheetTitle) elements.mobileSheetTitle.textContent = meta().listLabel;
+    if (elements.mobileSheetSubtitle) elements.mobileSheetSubtitle.textContent = items.length ? `${items.length.toLocaleString('ko-KR')}곳 · 방문 전 전화 확인` : '검색하면 가까운 후보를 표시합니다.';
   };
 
   const renderWarnings = () => {
@@ -458,10 +528,11 @@
       elements.department.closest('.form-row')?.classList.toggle('is-hidden', state.careMode === 'pharmacy' || state.careMode === 'emergency');
     }
     elements.quickButtons.forEach((button) => {
-      const sort = button.dataset.emergencySort;
+      const sort = button.dataset.emergencySort || button.dataset.emergencyMapSort || button.dataset.emergencyMobileSort;
       button.classList.toggle('is-hidden', (state.careMode === 'emergency' && sort === 'night') || (state.careMode !== 'emergency' && sort === 'critical') || (state.careMode !== 'emergency' && sort === 'beds'));
       button.classList.toggle('active', sort === (elements.sort?.value || 'distance'));
     });
+    syncToolbarInputs();
   };
 
   const resetToIdle = () => {
@@ -483,7 +554,7 @@
       department: elements.department?.value || '',
       sort: elements.sort?.value || (state.careMode === 'emergency' ? 'distance' : 'night'),
       mode: state.careMode,
-      _v: 'v89',
+      _v: 'v90',
     });
     if (state.geo) {
       params.set('lat', String(state.geo.lat));
@@ -517,6 +588,97 @@
     }
   };
 
+
+  elements.mapModeToggle?.addEventListener('click', () => toggleToolbarPanel(elements.mapModeToggle, elements.mapModePanel));
+  elements.mapRegionToggle?.addEventListener('click', () => toggleToolbarPanel(elements.mapRegionToggle, elements.mapRegionPanel));
+  elements.mapSortToggle?.addEventListener('click', () => toggleToolbarPanel(elements.mapSortToggle, elements.mapSortPanel));
+  elements.mobileSortButton?.addEventListener('click', () => toggleToolbarPanel(elements.mobileSortButton, elements.mobileSheetSort));
+
+  elements.mapToolbarSearch?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    syncFromToolbar();
+    searchHospitals();
+  });
+
+  elements.mapRegionApply?.addEventListener('click', () => {
+    syncFromToolbar();
+    closeToolbarPopovers();
+    resetToIdle();
+  });
+
+  elements.mapRegion?.addEventListener('change', () => { syncFromToolbar(); });
+  elements.mapDistrict?.addEventListener('input', () => { if (elements.district) elements.district.value = elements.mapDistrict.value || ''; syncToolbarInputs(); });
+  elements.mapKeyword?.addEventListener('input', () => { if (elements.keyword) elements.keyword.value = elements.mapKeyword.value || ''; });
+
+  elements.mapModeButtons?.forEach((button) => {
+    button.addEventListener('click', () => {
+      const next = button.dataset.emergencyMapMode;
+      if (!MODE_META[next]) return;
+      state.careMode = next;
+      if (state.careMode !== 'emergency' && ['beds', 'critical'].includes(elements.sort?.value)) elements.sort.value = 'night';
+      if (state.careMode === 'emergency' && elements.sort?.value === 'night') elements.sort.value = 'distance';
+      closeToolbarPopovers();
+      resetToIdle();
+    });
+  });
+
+  elements.mapSortButtons?.forEach((button) => {
+    button.addEventListener('click', () => {
+      const sort = button.dataset.emergencyMapSort;
+      if (sort && elements.sort) elements.sort.value = sort;
+      closeToolbarPopovers();
+      syncModeUi();
+      if (state.items.length) {
+        state.items = sortItems(state.items, elements.sort.value || 'distance');
+        state.selectedId = state.items[0]?.id || state.selectedId;
+        render();
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-emergency-mobile-sort]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const sort = button.dataset.emergencyMobileSort;
+      if (sort && elements.sort) elements.sort.value = sort;
+      closeToolbarPopovers();
+      syncModeUi();
+      if (state.items.length) {
+        state.items = sortItems(state.items, elements.sort.value || 'distance');
+        state.selectedId = state.items[0]?.id || state.selectedId;
+        render();
+      }
+    });
+  });
+
+  elements.mapLocation?.addEventListener('click', () => elements.location?.click());
+
+  elements.mobileListToggle?.addEventListener('click', () => {
+    const open = !elements.mobileSheet?.classList.contains('is-open');
+    elements.mobileSheet?.classList.toggle('is-open', open);
+    elements.mobileSheet?.classList.toggle('is-expanded', open);
+    elements.mobileSheet?.classList.toggle('is-collapsed', !open);
+    elements.mobileListToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    elements.mobileListToggle.textContent = open ? '목록 접기' : '목록 펼치기';
+  });
+
+  elements.mobileSheetMapButton?.addEventListener('click', () => {
+    elements.mobileSheet?.classList.remove('is-open', 'is-expanded');
+    elements.mobileSheet?.classList.add('is-collapsed');
+    if (elements.mobileListToggle) {
+      elements.mobileListToggle.setAttribute('aria-expanded', 'false');
+      elements.mobileListToggle.textContent = '목록 펼치기';
+    }
+  });
+
+  [elements.list, elements.mobileResults].forEach((listEl) => listEl?.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const card = target?.closest('[data-hospital-id]');
+    const id = target?.getAttribute('data-detail-id') || card?.getAttribute('data-hospital-id');
+    if (!id) return;
+    state.selectedId = id;
+    render();
+  }));
+
   elements.form?.addEventListener('submit', (event) => {
     event.preventDefault();
     searchHospitals();
@@ -549,20 +711,11 @@
 
   elements.quickButtons.forEach((button) => {
     button.addEventListener('click', () => {
-      const sort = button.dataset.emergencySort;
+      const sort = button.dataset.emergencySort || button.dataset.emergencyMapSort || button.dataset.emergencyMobileSort;
       if (sort && elements.sort) elements.sort.value = sort;
       syncModeUi();
       
     });
-  });
-
-  elements.list?.addEventListener('click', (event) => {
-    const target = event.target instanceof Element ? event.target : null;
-    const card = target?.closest('[data-hospital-id]');
-    const id = target?.getAttribute('data-detail-id') || card?.getAttribute('data-hospital-id');
-    if (!id) return;
-    state.selectedId = id;
-    render();
   });
 
   elements.markers?.addEventListener('click', (event) => {
@@ -574,7 +727,9 @@
   });
 
   ['change', 'input'].forEach((eventName) => {
-    elements.region?.addEventListener(eventName, () => {  });
+    elements.region?.addEventListener(eventName, () => { syncToolbarInputs(); });
+    elements.district?.addEventListener(eventName, () => { syncToolbarInputs(); });
+    elements.keyword?.addEventListener(eventName, () => { syncToolbarInputs(); });
     elements.sort?.addEventListener(eventName, () => { syncModeUi();  });
   });
 

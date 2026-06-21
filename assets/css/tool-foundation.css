@@ -2404,3 +2404,284 @@
     top: 148px !important;
   }
 }
+
+
+/* v91 emergency page: PC/mobile bugfix after EV UI clone */
+.emergency-map-app--v90 .parking-map-toolbar,
+.emergency-map-app--ev-format .parking-map-toolbar {
+  bottom: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  align-content: start !important;
+}
+
+.emergency-map-app--v90 .emergency-map-notice,
+.emergency-map-app--ev-format .emergency-map-notice {
+  transform: none !important;
+  right: auto !important;
+  box-sizing: border-box !important;
+}
+
+.emergency-map-app--v90 .parking-result-list .hc-empty-state,
+.emergency-map-app--ev-format .parking-result-list .hc-empty-state {
+  display: block !important;
+  min-height: auto !important;
+  width: 100% !important;
+  padding: 1rem !important;
+  border: 1px solid #dbeafe !important;
+  border-radius: 16px !important;
+  background: #f8fbff !important;
+  color: #334155 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+}
+
+.emergency-map-app--v90 .parking-result-list .hc-empty-state strong,
+.emergency-map-app--ev-format .parking-result-list .hc-empty-state strong {
+  display: block !important;
+  margin-bottom: 0.35rem !important;
+  color: #0f172a !important;
+  font-size: 0.98rem !important;
+  line-height: 1.45 !important;
+}
+
+.emergency-map-app--v90 .parking-result-list .hc-empty-state p,
+.emergency-map-app--ev-format .parking-result-list .hc-empty-state p {
+  margin: 0 !important;
+  color: #64748b !important;
+  font-size: 0.9rem !important;
+  line-height: 1.55 !important;
+}
+
+@media (min-width: 861px) {
+  .emergency-map-app--v90 .parking-dashboard__results,
+  .emergency-map-app--ev-format .parking-dashboard__results {
+    min-height: 0 !important;
+  }
+
+  .emergency-map-app--v90 .emergency-map-card--v90,
+  .emergency-map-app--ev-format .emergency-map-card--v90 {
+    min-height: 720px !important;
+  }
+}
+
+@media (max-width: 860px) {
+  .emergency-map-app--v90 .parking-map-toolbar,
+  .emergency-map-app--ev-format .parking-map-toolbar {
+    bottom: auto !important;
+    height: auto !important;
+    max-height: 178px !important;
+    overflow: visible !important;
+  }
+
+  .emergency-map-app--v90 .parking-map-toolbar__actions,
+  .emergency-map-app--ev-format .parking-map-toolbar__actions {
+    position: static !important;
+    transform: none !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+
+  .emergency-map-app--v90 .parking-map-popover-panel,
+  .emergency-map-app--ev-format .parking-map-popover-panel {
+    max-width: min(330px, calc(100vw - 24px)) !important;
+  }
+
+  .emergency-map-app--v90 .emergency-map-notice,
+  .emergency-map-app--ev-format .emergency-map-notice {
+    top: 112px !important;
+    left: 12px !important;
+    right: auto !important;
+    width: min(300px, calc(100% - 24px)) !important;
+    max-width: calc(100% - 24px) !important;
+    transform: none !important;
+  }
+
+  .emergency-map-app--v90 .parking-bottom-sheet,
+  .emergency-map-app--ev-format .parking-bottom-sheet {
+    --parking-sheet-height: min(90dvh, 780px) !important;
+    --parking-sheet-y: calc(var(--parking-sheet-height) - 54px);
+    height: var(--parking-sheet-height) !important;
+    max-height: var(--parking-sheet-height) !important;
+    transform: translate3d(0, var(--parking-sheet-y), 0) !important;
+    transition: transform 180ms cubic-bezier(0.2, 0.85, 0.25, 1) !important;
+    touch-action: auto !important;
+  }
+
+  .emergency-map-app--v90 .parking-bottom-sheet.is-collapsed,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-collapsed {
+    display: block !important;
+    --parking-sheet-y: calc(var(--parking-sheet-height) - 54px);
+    pointer-events: none !important;
+  }
+
+  .emergency-map-app--v90 .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-head,
+  .emergency-map-app--v90 .parking-bottom-sheet.is-collapsed .parking-sheet-handle,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-head,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-collapsed .parking-sheet-handle {
+    pointer-events: auto !important;
+  }
+
+  .emergency-map-app--v90 .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-controls,
+  .emergency-map-app--v90 .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-sort,
+  .emergency-map-app--v90 .parking-bottom-sheet.is-collapsed .parking-mobile-results,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-controls,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-sort,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-collapsed .parking-mobile-results {
+    display: none !important;
+  }
+
+  .emergency-map-app--v90 .parking-bottom-sheet.is-open,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-open {
+    display: block !important;
+    --parking-sheet-y: min(45dvh, 360px);
+    pointer-events: auto !important;
+  }
+
+  .emergency-map-app--v90 .parking-bottom-sheet.is-expanded,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-expanded {
+    display: block !important;
+    --parking-sheet-y: calc(env(safe-area-inset-top, 0px) + 14px);
+    pointer-events: auto !important;
+  }
+
+  .emergency-map-app--v90 .parking-mobile-list-toggle,
+  .emergency-map-app--ev-format .parking-mobile-list-toggle {
+    z-index: 92 !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
+    max-width: 124px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .emergency-map-app--v90 .parking-map-toolbar__actions,
+  .emergency-map-app--ev-format .parking-map-toolbar__actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .emergency-map-app--v90 .emergency-map-notice,
+  .emergency-map-app--ev-format .emergency-map-notice {
+    top: 148px !important;
+  }
+}
+
+
+/* v91 mobile hardening: keep toolbar buttons visible and prevent result sheet from covering the page */
+@media (max-width: 860px) {
+  .emergency-map-app--v90 .parking-map-toolbar__actions,
+  .emergency-map-app--ev-format .parking-map-toolbar__actions {
+    justify-self: stretch !important;
+    align-self: start !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .emergency-map-app--v90 .parking-map-control-popover,
+  .emergency-map-app--ev-format .parking-map-control-popover {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .emergency-map-app--v90 .parking-bottom-sheet,
+  .emergency-map-app--ev-format .parking-bottom-sheet {
+    --parking-sheet-height: 58px !important;
+    --parking-sheet-y: 0px !important;
+    height: 58px !important;
+    max-height: 58px !important;
+    min-height: 58px !important;
+    overflow: hidden !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+
+  .emergency-map-app--v90 .parking-bottom-sheet.is-collapsed,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-collapsed {
+    height: 58px !important;
+    max-height: 58px !important;
+    min-height: 58px !important;
+    overflow: hidden !important;
+    transform: none !important;
+  }
+
+  .emergency-map-app--v90 .parking-bottom-sheet.is-open,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-open {
+    height: min(68dvh, 620px) !important;
+    max-height: min(68dvh, 620px) !important;
+    min-height: min(68dvh, 620px) !important;
+    overflow: auto !important;
+    transform: none !important;
+  }
+
+  .emergency-map-app--v90 .parking-bottom-sheet.is-expanded,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-expanded {
+    height: min(88dvh, 760px) !important;
+    max-height: min(88dvh, 760px) !important;
+    min-height: min(88dvh, 760px) !important;
+    overflow: auto !important;
+    transform: none !important;
+  }
+
+  .emergency-map-app--v90 .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-controls,
+  .emergency-map-app--v90 .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-sort,
+  .emergency-map-app--v90 .parking-bottom-sheet.is-collapsed .parking-mobile-results,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-controls,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-collapsed .parking-mobile-sheet-sort,
+  .emergency-map-app--ev-format .parking-bottom-sheet.is-collapsed .parking-mobile-results {
+    display: none !important;
+  }
+
+  .emergency-map-app--v90 .parking-mobile-list-toggle,
+  .emergency-map-app--ev-format .parking-mobile-list-toggle {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 68px) !important;
+  }
+}
+
+/* v91 mobile toolbar stacking fix */
+@media (max-width: 860px) {
+  .emergency-map-app--v90 .parking-map-toolbar,
+  .emergency-map-app--ev-format .parking-map-toolbar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+  }
+
+  .emergency-map-app--v90 .parking-map-toolbar__search,
+  .emergency-map-app--v90 .parking-map-toolbar__actions,
+  .emergency-map-app--ev-format .parking-map-toolbar__search,
+  .emergency-map-app--ev-format .parking-map-toolbar__actions {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .emergency-map-app--v90 .parking-map-toolbar__actions,
+  .emergency-map-app--ev-format .parking-map-toolbar__actions {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .emergency-map-app--v90 .parking-map-toolbar__actions,
+  .emergency-map-app--ev-format .parking-map-toolbar__actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* v91 mobile toolbar search must participate in normal flow */
+@media (max-width: 860px) {
+  .emergency-map-app--v90 .parking-map-toolbar__search,
+  .emergency-map-app--ev-format .parking-map-toolbar__search {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+  }
+}

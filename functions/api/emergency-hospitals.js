@@ -10,7 +10,7 @@ import {
   toNumber,
 } from './_lib/check-core.js';
 
-const SERVER_VERSION = 'v90-emergency-ev-ui-clone';
+const SERVER_VERSION = 'v91-emergency-pc-mobile-bugfix';
 const NMC_SOURCE = 'NMC EMERGENCY MEDICAL DATA';
 const NMC_HOSPITAL_SOURCE = 'NMC HOSPITAL CLINIC DATA';
 const NMC_PHARMACY_SOURCE = 'NMC PHARMACY DATA';

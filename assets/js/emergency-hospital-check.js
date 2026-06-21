@@ -10,7 +10,7 @@
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
   });
   const buildKakaoSearchUrl = toolkit.buildKakaoSearchUrl || ((item) => `https://map.kakao.com/link/search/${encodeURIComponent(`${item.name} ${item.address}`)}`);
-  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v90-emergency-ev-ui-clone';
+  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v91-emergency-pc-mobile-bugfix';
 
   const MODE_META = {
     emergency: { label: '응급실', searchLabel: '응급실 확인하기', listLabel: '응급실 비교 목록', mapSuffix: '응급실', detailTitle: '선택한 응급실' },
@@ -544,6 +544,12 @@
     syncModeUi();
     setStatus(`조건을 선택한 뒤 ${meta().searchLabel}를 눌러 주세요.`, 'info');
     render();
+    elements.mobileSheet?.classList.remove('is-open', 'is-expanded');
+    elements.mobileSheet?.classList.add('is-collapsed');
+    if (elements.mobileListToggle) {
+      elements.mobileListToggle.setAttribute('aria-expanded', 'false');
+      elements.mobileListToggle.textContent = '목록 보기';
+    }
   };
 
   const buildApiUrl = () => {
@@ -554,7 +560,7 @@
       department: elements.department?.value || '',
       sort: elements.sort?.value || (state.careMode === 'emergency' ? 'distance' : 'night'),
       mode: state.careMode,
-      _v: 'v90',
+      _v: 'v91',
     });
     if (state.geo) {
       params.set('lat', String(state.geo.lat));
@@ -658,7 +664,7 @@
     elements.mobileSheet?.classList.toggle('is-expanded', open);
     elements.mobileSheet?.classList.toggle('is-collapsed', !open);
     elements.mobileListToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    elements.mobileListToggle.textContent = open ? '목록 접기' : '목록 펼치기';
+    elements.mobileListToggle.textContent = open ? '목록 접기' : '목록 보기';
   });
 
   elements.mobileSheetMapButton?.addEventListener('click', () => {
@@ -666,7 +672,7 @@
     elements.mobileSheet?.classList.add('is-collapsed');
     if (elements.mobileListToggle) {
       elements.mobileListToggle.setAttribute('aria-expanded', 'false');
-      elements.mobileListToggle.textContent = '목록 펼치기';
+      elements.mobileListToggle.textContent = '목록 보기';
     }
   });
 

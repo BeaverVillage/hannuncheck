@@ -21,12 +21,12 @@
 <script data-schema="faqpage" type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"응급 상황이면 이 페이지를 먼저 봐야 하나요?","acceptedAnswer":{"@type":"Answer","text":"아닙니다. 생명이나 안전이 위급한 상황이면 119에 먼저 연락해야 합니다. 이 페이지는 공공데이터 기준 참고 정보를 정리하는 도구입니다."}},{"@type":"Question","name":"가용 병상 정보는 확정 정보인가요?","acceptedAnswer":{"@type":"Answer","text":"아닙니다. 제공기관 데이터 기준 참고 정보이며 실제 수용 가능 여부는 병원 상황에 따라 달라질 수 있습니다. 방문 전 반드시 병원에 전화로 확인해야 합니다."}},{"@type":"Question","name":"현재 위치 기준 조회가 가능한가요?","acceptedAnswer":{"@type":"Answer","text":"브라우저 위치 권한을 허용하면 현재 위치 기준 응급의료기관 정보를 조회할 수 있습니다. 위치 권한을 허용하지 않으면 지역 기준으로 조회합니다."}},{"@type":"Question","name":"야간 병원과 약국도 확인할 수 있나요?","acceptedAnswer":{"@type":"Answer","text":"응급실, 야간 병원, 야간 약국 탭으로 구분해 확인할 수 있습니다. 운영시간은 공공데이터 기준 참고 정보이므로 방문 전 전화 확인이 필요합니다."}}]}</script>
 <link href="/assets/css/base.css" rel="stylesheet"/>
 <link href="/assets/css/layout.css?v=20260620-v55-grocery-skeleton" rel="stylesheet"/>
-<link href="/assets/css/components.css?v=20260621-v90-emergency-ev-ui-clone" rel="stylesheet"/>
-<link href="/assets/css/parking-calc-base.css?v=20260621-v90-emergency-ev-ui-clone" rel="stylesheet"/>
-<link href="/assets/css/parking-calc-layout.css?v=20260621-v90-emergency-ev-ui-clone" rel="stylesheet"/>
-<link href="/assets/css/parking-calc-components.css?v=20260621-v90-emergency-ev-ui-clone" rel="stylesheet"/>
-<link href="/assets/css/tool-foundation.css?v=20260621-v90-emergency-ev-ui-clone" rel="stylesheet"/>
-<script src="/assets/config/public-config.js?v=20260621-v90-emergency-ev-ui-clone"></script>
+<link href="/assets/css/components.css?v=20260621-v91-emergency-pc-mobile-bugfix" rel="stylesheet"/>
+<link href="/assets/css/parking-calc-base.css?v=20260621-v91-emergency-pc-mobile-bugfix" rel="stylesheet"/>
+<link href="/assets/css/parking-calc-layout.css?v=20260621-v91-emergency-pc-mobile-bugfix" rel="stylesheet"/>
+<link href="/assets/css/parking-calc-components.css?v=20260621-v91-emergency-pc-mobile-bugfix" rel="stylesheet"/>
+<link href="/assets/css/tool-foundation.css?v=20260621-v91-emergency-pc-mobile-bugfix" rel="stylesheet"/>
+<script src="/assets/config/public-config.js?v=20260621-v91-emergency-pc-mobile-bugfix"></script>
 <!-- Google AdSense -->
 <script async="" crossorigin="anonymous" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6340743169950430"></script>
 </meta></head>
@@ -126,9 +126,9 @@
 <div aria-hidden="true" class="parking-map-markers emergency-map-markers" id="emergency-map-markers"></div>
 </div>
 <button class="parking-map-research-button" id="emergency-map-research-button" type="button" hidden>현재 지도에서 다시 찾기</button>
-<button class="parking-mobile-list-toggle" id="emergency-mobile-list-toggle" type="button" aria-expanded="false">목록 펼치기</button>
+<button class="parking-mobile-list-toggle" id="emergency-mobile-list-toggle" type="button" aria-expanded="false">목록 보기</button>
 </section>
-<section aria-label="모바일 응급실·야간 병원 결과" class="parking-bottom-sheet emergency-mobile-bottom-sheet" id="emergency-mobile-bottom-sheet">
+<section aria-label="모바일 응급실·야간 병원 결과" class="parking-bottom-sheet emergency-mobile-bottom-sheet is-collapsed" id="emergency-mobile-bottom-sheet">
   <div class="parking-mobile-sheet-head"><div class="parking-mobile-sheet-summary"><strong id="emergency-mobile-sheet-title">응급실 비교 목록</strong><span id="emergency-mobile-sheet-subtitle">검색하면 가까운 후보를 표시합니다.</span></div><div class="parking-sheet-handle" aria-hidden="true"></div><button type="button" class="subtle-button tiny" id="emergency-mobile-sheet-map-button">지도 보기</button></div>
   <div class="parking-mobile-sheet-controls" aria-label="모바일 빠른 설정"><button type="button" id="emergency-mobile-mode-button">응급실</button><button type="button" id="emergency-mobile-region-button">대전</button><button type="button" id="emergency-mobile-sort-button">가까운 순</button></div>
   <div class="parking-mobile-sheet-sort" id="emergency-mobile-sheet-sort" hidden><button class="active" data-emergency-mobile-sort="distance" type="button">가까운 순</button><button data-emergency-mobile-sort="beds" type="button">병상 우선</button><button data-emergency-mobile-sort="phone" type="button">전화 우선</button><button data-emergency-mobile-sort="critical" type="button">중증 정보</button><button data-emergency-mobile-sort="night" type="button">야간 운영</button></div>
@@ -147,8 +147,8 @@
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-note"><strong>한눈체크</strong><p>생활 속에서 확인이 필요한 정보를 한눈에 정리하고, 결과의 의미와 한계를 함께 설명하는 생활 확인 도구입니다.</p></div><nav aria-label="푸터 메뉴"><a href="/about.html">소개</a><a href="/privacy.html">개인정보처리방침</a><a href="/disclaimer.html">면책 안내</a><a href="/data-sources.html">데이터 출처</a><a href="/contact.html">문의·정정 요청</a></nav></div></footer>
 <script src="/assets/js/app.js"></script>
-<script defer="" src="/assets/js/check-toolkit.js?v=20260621-v90-emergency-ev-ui-clone"></script>
-<script defer="" src="/assets/js/kakao-place-link.js?v=20260621-v90-emergency-ev-ui-clone"></script>
-<script defer="" src="/assets/js/emergency-hospital-check.js?v=20260621-v90-emergency-ev-ui-clone"></script>
+<script defer="" src="/assets/js/check-toolkit.js?v=20260621-v91-emergency-pc-mobile-bugfix"></script>
+<script defer="" src="/assets/js/kakao-place-link.js?v=20260621-v91-emergency-pc-mobile-bugfix"></script>
+<script defer="" src="/assets/js/emergency-hospital-check.js?v=20260621-v91-emergency-pc-mobile-bugfix"></script>
 </body>
 </html>

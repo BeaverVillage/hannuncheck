@@ -10,8 +10,8 @@
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
   });
   const buildKakaoSearchUrl = toolkit.buildKakaoSearchUrl || ((item) => `https://map.kakao.com/link/search/${encodeURIComponent(`${item.name} ${item.address}`)}`);
-  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v97-emergency-map-rebuild-adsense-seo-ready';
-  const EMERGENCY_NATIONAL_CACHE_URL = '/assets/data/medical/emergency-national-cache.json?v=20260621-v97-emergency-map-rebuild-adsense-seo-ready';
+  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v98-emergency-place-search-mobile-sheet-fix';
+  const EMERGENCY_NATIONAL_CACHE_URL = '/assets/data/medical/emergency-national-cache.json?v=20260621-v98-emergency-place-search-mobile-sheet-fix';
 
   const MODE_META = {
     emergency: { label: '응급실', searchLabel: '응급실 확인하기', listLabel: '응급실 비교 목록', mapSuffix: '응급실', detailTitle: '선택한 응급실' },
@@ -88,6 +88,7 @@
     loading: false,
     geo: null,
     items: [],
+    places: [],
     summary: {},
     warnings: [],
     selectedId: '',
@@ -226,6 +227,179 @@
     const dLng = toRad(lng2 - lng1);
     const x = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
     return Math.round(R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x)));
+  };
+
+
+  const inferSido = (address = '') => normalizeRegionForCache(String(address || '').trim().split(/\s+/)[0] || '').raw || '';
+  const inferDistrict = (address = '') => String(address || '').trim().split(/\s+/)[1] || '';
+
+  const normalizePlaceCandidate = (item = {}) => {
+    const address = item.address || item.address_name || item.roadAddress || item.road_address_name || '';
+    const roadAddress = item.roadAddress || item.road_address_name || '';
+    return {
+      id: item.id || `${item.x || item.lng || ''},${item.y || item.lat || ''}`,
+      name: item.name || item.place_name || item.address_name || address || '검색 결과',
+      address,
+      roadAddress,
+      category: item.category || item.category_name || '',
+      phone: item.phone || '',
+      lat: Number(item.lat ?? item.y),
+      lng: Number(item.lng ?? item.x),
+      region1: item.region1 || inferSido(address || roadAddress),
+      region2: item.region2 || inferDistrict(address || roadAddress),
+      region3: item.region3 || '',
+    };
+  };
+
+  const searchPlacesWithKakaoSdk = (query) => new Promise((resolve) => {
+    if (!window.kakao?.maps?.services) return resolve([]);
+    const results = [];
+    const done = () => resolve(results.slice(0, 10));
+    try {
+      const places = new window.kakao.maps.services.Places();
+      places.keywordSearch(query, (data, status) => {
+        if (status === window.kakao.maps.services.Status.OK && Array.isArray(data)) {
+          results.push(...data.map(normalizePlaceCandidate));
+          return done();
+        }
+        const geocoder = new window.kakao.maps.services.Geocoder();
+        geocoder.addressSearch(query, (addrData, addrStatus) => {
+          if (addrStatus === window.kakao.maps.services.Status.OK && Array.isArray(addrData)) {
+            results.push(...addrData.map(normalizePlaceCandidate));
+          }
+          done();
+        });
+      });
+    } catch (_) {
+      resolve([]);
+    }
+  });
+
+  const searchPlaces = async (query) => {
+    const q = normalizeTextForCache(query);
+    const merged = [];
+    const seen = new Set();
+    const addPlaces = (places) => {
+      (Array.isArray(places) ? places : []).forEach((raw) => {
+        const place = normalizePlaceCandidate(raw);
+        if (!Number.isFinite(place.lat) || !Number.isFinite(place.lng)) return;
+        const key = String(place.id || `${place.name}:${place.lat.toFixed(6)},${place.lng.toFixed(6)}`);
+        if (seen.has(key)) return;
+        seen.add(key);
+        merged.push(place);
+      });
+    };
+    try {
+      const keywordData = await fetchJson(`/api/kakao-local?query=${encodeURIComponent(q)}`, { timeoutMs: 6500, cache: 'no-store' });
+      addPlaces(keywordData?.documents);
+    } catch (_) {}
+    if (!merged.length) {
+      try {
+        const addressData = await fetchJson(`/api/kakao-local?address=${encodeURIComponent(q)}`, { timeoutMs: 6500, cache: 'no-store' });
+        addPlaces(addressData?.documents);
+      } catch (_) {}
+    }
+    if (!merged.length) addPlaces(await searchPlacesWithKakaoSdk(q));
+    return merged.slice(0, 10);
+  };
+
+  const ensurePlacePopup = () => {
+    let popup = document.querySelector('#emergency-place-popup');
+    if (popup) return popup;
+    popup = document.createElement('div');
+    popup.id = 'emergency-place-popup';
+    popup.className = 'parking-place-popup emergency-place-popup';
+    popup.hidden = true;
+    popup.setAttribute('role', 'dialog');
+    popup.setAttribute('aria-modal', 'true');
+    popup.setAttribute('aria-labelledby', 'emergency-place-popup-title');
+    popup.innerHTML = `
+      <div class="parking-place-popup__panel" role="document">
+        <div class="parking-place-popup__head"><div><strong id="emergency-place-popup-title">장소 선택</strong><span>응급실을 찾을 기준 장소를 선택하세요.</span></div><button type="button" class="parking-place-popup__close" aria-label="장소 선택창 닫기" data-emergency-place-close>×</button></div>
+        <div class="parking-place-popup__list" data-emergency-place-list></div>
+      </div>`;
+    document.body.appendChild(popup);
+    popup.addEventListener('click', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target === popup || target?.closest('[data-emergency-place-close]')) closePlacePopup();
+      const button = target?.closest('[data-emergency-place-index]');
+      if (button) {
+        const place = state.places[Number(button.getAttribute('data-emergency-place-index'))];
+        if (place) selectPlace(place, true);
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !popup.hidden) closePlacePopup();
+    });
+    return popup;
+  };
+
+  const openPlacePopup = (emptyMessage = '') => {
+    const popup = ensurePlacePopup();
+    const list = popup.querySelector('[data-emergency-place-list]');
+    if (!list) return;
+    if (!state.places.length) {
+      list.innerHTML = `<div class="parking-place-popup__empty">${escapeHtml(emptyMessage || '검색 결과가 없습니다.')}</div>`;
+    } else {
+      list.innerHTML = state.places.slice(0, 8).map((place, index) => `
+        <button type="button" class="parking-place-popup__item" data-emergency-place-index="${index}">
+          <strong>${escapeHtml(place.name || '검색 결과')}</strong>
+          <span>${escapeHtml(place.address || place.roadAddress || '')}</span>
+        </button>`).join('');
+    }
+    popup.hidden = false;
+    document.body.classList.add('parking-place-popup-open');
+  };
+
+  const closePlacePopup = () => {
+    const popup = document.querySelector('#emergency-place-popup');
+    if (popup) popup.hidden = true;
+    document.body.classList.remove('parking-place-popup-open');
+  };
+
+  const selectPlace = (place, runSearch = true) => {
+    const lat = Number(place.lat);
+    const lng = Number(place.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    state.geo = { lat, lng };
+    state.referencePoint = { lat, lng, type: 'search', label: '검색 위치', name: place.name || '선택한 장소', query: place.name || '' };
+    state.keywordMode = 'place';
+    state.mapHasFitResults = false;
+    state.mapResultSignature = '';
+    state.selectionMove = false;
+    setRegionFromPlace(place);
+    if (elements.keyword) elements.keyword.value = place.name || '';
+    if (elements.mapKeyword) elements.mapKeyword.value = place.name || '';
+    if (elements.sort) elements.sort.value = 'distance';
+    syncToolbarInputs();
+    closePlacePopup();
+    setStatus(`${place.name || '선택한 장소'} 기준으로 가까운 응급실을 확인합니다.`, 'success');
+    if (runSearch) searchHospitals();
+  };
+
+  const searchDestination = async (query) => {
+    const q = normalizeTextForCache(query);
+    if (!q) {
+      state.keywordMode = 'facility';
+      state.referencePoint = state.referencePoint?.type === 'search' ? null : state.referencePoint;
+      searchHospitals();
+      return;
+    }
+    setStatus('장소 검색 결과를 확인하는 중입니다.', 'info');
+    try {
+      state.places = await searchPlaces(q);
+      if (!state.places.length) {
+        setStatus('장소 검색 결과를 찾지 못했습니다. 다른 장소명을 입력해 주세요.', 'warning');
+        openPlacePopup('검색 결과를 찾지 못했습니다.');
+        return;
+      }
+      setStatus(`${state.places.length}개 장소 후보를 찾았습니다. 기준 장소를 선택해 주세요.`, 'success');
+      openPlacePopup();
+    } catch (error) {
+      setStatus(error?.message || '장소 검색 중 오류가 발생했습니다.', 'error');
+      state.places = [];
+      openPlacePopup('장소 검색 중 오류가 발생했습니다.');
+    }
   };
 
   const normalizeEmergencyCacheEntry = (entry = {}) => {
@@ -699,7 +873,8 @@
       return;
     }
 
-    const compactCard = (item, index) => {
+    const compactCard = (item, index, options = {}) => {
+      const isMobileCard = Boolean(options.mobile);
       const phone = item.emergencyTel || item.mainTel || '';
       const kakaoAction = getKakaoAction(item);
       const isEmergency = isEmergencyItem(item);
@@ -730,13 +905,13 @@
         <div class="parking-card-actions emergency-actions emergency-actions--compact">
           ${phone ? `<a class="primary-mini-link" href="${buildTelLink(phone)}">전화</a>` : '<span class="secondary-mini-link disabled">전화 확인</span>'}
           <a class="secondary-mini-link" href="${kakaoAction.url}" target="_blank" rel="noopener">${escapeHtml(kakaoAction.label)}</a>
-          <button type="button" class="secondary-mini-link as-button" data-detail-id="${escapeHtml(item.id)}">상세</button>
+          ${isMobileCard ? `<button type="button" class="secondary-mini-link as-button" data-detail-id="${escapeHtml(item.id)}">상세</button>` : ''}
         </div>
       </article>`;
     };
 
-    elements.list.innerHTML = items.map(compactCard).join('');
-    if (elements.mobileResults) elements.mobileResults.innerHTML = elements.list.innerHTML;
+    elements.list.innerHTML = items.map((item, index) => compactCard(item, index, { mobile: false })).join('');
+    if (elements.mobileResults) elements.mobileResults.innerHTML = items.map((item, index) => compactCard(item, index, { mobile: true })).join('');
     if (elements.mobileSheetTitle) elements.mobileSheetTitle.textContent = meta().listLabel;
     if (elements.mobileSheetSubtitle) elements.mobileSheetSubtitle.textContent = items.length ? `${items.length.toLocaleString('ko-KR')}곳 · 방문 전 전화 확인` : '검색하면 가까운 후보를 표시합니다.';
   };
@@ -789,7 +964,7 @@
       <div class="map-selected-actions">
         ${phone ? `<a class="primary-link" href="${buildTelLink(phone)}">전화하기</a>` : '<span class="primary-link disabled">전화 확인</span>'}
         <a class="secondary-link" href="${kakaoAction.url}" target="_blank" rel="noopener">${escapeHtml(kakaoAction.label)}</a>
-        <button class="secondary-link as-button mobile-detail-action" type="button" data-open-detail-id="${escapeHtml(item.id)}">상세보기</button>
+        ${isMobileView() ? `<button class="secondary-link as-button mobile-detail-action" type="button" data-open-detail-id="${escapeHtml(item.id)}">상세보기</button>` : ''}
       </div>
       <p class="fine-print" style="margin:0.56rem 0 0">${escapeHtml(distanceText)} · ${escapeHtml(mapText)} · 방문 전 전화 확인이 필요합니다.</p>`;
   };
@@ -913,7 +1088,7 @@
       department: elements.department?.value || '',
       sort: elements.sort?.value || (state.careMode === 'emergency' ? 'distance' : 'night'),
       mode: state.careMode,
-      _v: 'v97',
+      _v: 'v98',
     });
     if (state.geo) {
       params.set('lat', String(state.geo.lat));
@@ -966,7 +1141,7 @@
     setStatus(`${meta().label} 정보를 불러오는 중입니다. 응급 상황이면 119에 먼저 연락하세요.`, 'info');
     if (state.careMode === 'emergency') {
       await ensureEmergencyNationalCache();
-      await resolveSearchReferenceIfNeeded();
+      // 장소명 검색은 후보 선택 팝업에서만 처리합니다.
     }
     const localFallback = filterEmergencyCache();
     if (localFallback.length) {
@@ -1086,7 +1261,9 @@
       lastTime = performance.now();
       velocity = 0;
       sheet.classList.add('is-dragging');
-      event.currentTarget?.setPointerCapture?.(pointerId);
+      if (pointerId != null && event.currentTarget?.setPointerCapture) {
+        try { event.currentTarget.setPointerCapture(pointerId); } catch (_) {}
+      }
       window.addEventListener('pointermove', move, { passive: false });
       window.addEventListener('pointerup', end, { passive: false });
       window.addEventListener('pointercancel', end, { passive: false });
@@ -1122,7 +1299,11 @@
     targets.forEach((target) => {
       if (window.PointerEvent) target.addEventListener('pointerdown', start, { passive: false });
       target.addEventListener('touchstart', start, { passive: false });
+      target.addEventListener('click', () => { if (!dragging && sheet.classList.contains('is-collapsed')) setEmergencyMobileSheetState('half'); });
     });
+    window.addEventListener('resize', () => { if (!dragging) setEmergencyMobileSheetState(state.mobileSheetMode || 'collapsed'); });
+    window.addEventListener('orientationchange', () => window.setTimeout(() => setEmergencyMobileSheetState(state.mobileSheetMode || 'collapsed'), 220));
+    setEmergencyMobileSheetState('collapsed');
   };
 
   const openMobileActionSheet = (title, options, currentValue, onSelect) => {
@@ -1181,7 +1362,7 @@
   elements.mapToolbarSearch?.addEventListener('submit', (event) => {
     event.preventDefault();
     syncFromToolbar();
-    searchHospitals();
+    searchDestination(elements.keyword?.value || elements.mapKeyword?.value || '');
   });
 
   elements.mapRegionApply?.addEventListener('click', () => {
@@ -1246,17 +1427,28 @@
 
   [elements.list, elements.mobileResults].forEach((listEl) => listEl?.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target : null;
-    const card = target?.closest('[data-hospital-id]');
-    const detailId = target?.getAttribute('data-detail-id') || target?.getAttribute('data-open-detail-id');
-    const id = detailId || card?.getAttribute('data-hospital-id');
+    if (!target) return;
+    const detailButton = target.closest('[data-detail-id], [data-open-detail-id]');
+    const detailId = detailButton?.getAttribute('data-detail-id') || detailButton?.getAttribute('data-open-detail-id');
+    if (detailId) {
+      event.preventDefault();
+      openSelectedDetail(detailId);
+      return;
+    }
+    if (target.closest('a')) return;
+    const card = target.closest('[data-hospital-id]');
+    const id = card?.getAttribute('data-hospital-id');
     if (!id) return;
-    if (detailId) openSelectedDetail(id);
-    else { state.selectedId = id; state.detailOpen = false; state.selectionMove = true; render(); if (isMobileView()) setEmergencyMobileSheetState('half'); }
+    state.selectedId = id;
+    state.detailOpen = false;
+    state.selectionMove = true;
+    render();
+    if (isMobileView()) setEmergencyMobileSheetState('half');
   }));
 
   elements.form?.addEventListener('submit', (event) => {
     event.preventDefault();
-    searchHospitals();
+    searchDestination(elements.keyword?.value || elements.mapKeyword?.value || '');
   });
 
   elements.modeTabs.forEach((button) => {
@@ -1321,6 +1513,7 @@
       state.detailOpen = false;
       state.selectionMove = false;
       render();
+      if (isMobileView()) setEmergencyMobileSheetState('collapsed');
       return;
     }
     const button = target?.closest('[data-open-detail-id]');

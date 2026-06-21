@@ -20,7 +20,7 @@
 <script data-schema="home-2" type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":"한눈체크 주요 기능","itemListElement":[{"@type":"ListItem","position":1,"name":"전기차 충전소 지도","url":"https://hannuncheck.com/tools/ev-charger-map.html"},{"@type":"ListItem","position":2,"name":"주차비 확인 지도","url":"https://hannuncheck.com/tools/parking-fee-check.html"},{"@type":"ListItem","position":3,"name":"외출 위험 종합 체크","url":"https://hannuncheck.com/tools/outdoor-air.html"},{"@type":"ListItem","position":4,"name":"응급실·야간 병원·약국 확인","url":"https://hannuncheck.com/tools/emergency-hospital-check.html"},{"@type":"ListItem","position":5,"name":"장보기 물가 확인","url":"https://hannuncheck.com/tools/grocery-price-check.html"},{"@type":"ListItem","position":6,"name":"컴퓨터 사양 확인","url":"https://hannuncheck.com/tools/pc-spec.html"},{"@type":"ListItem","position":7,"name":"사업자등록 상태 조회","url":"https://hannuncheck.com/tools/business-status.html"},{"@type":"ListItem","position":8,"name":"쇼핑몰 정보 비교","url":"https://hannuncheck.com/tools/store-compare.html"},{"@type":"ListItem","position":9,"name":"사업자 진위확인","url":"https://hannuncheck.com/tools/business-validate.html"},{"@type":"ListItem","position":10,"name":"통신판매업 신고 조회","url":"https://hannuncheck.com/tools/mail-order.html"},{"@type":"ListItem","position":11,"name":"거래 전 체크리스트","url":"https://hannuncheck.com/tools/pre-payment-checklist.html"}]}</script>
 <link href="/assets/css/base.css" rel="stylesheet"/>
 <link href="/assets/css/layout.css?v=20260620-v55-grocery-skeleton" rel="stylesheet"/>
-<link href="/assets/css/components.css?v=20260620-v55-grocery-skeleton" rel="stylesheet"/>
+<link href="/assets/css/components.css?v=20260621-v96-emergency-ev-map-parity-home-compact" rel="stylesheet"/>
 <!-- Google AdSense -->
 <script async="" crossorigin="anonymous" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6340743169950430"></script>
 </meta></head>
@@ -100,69 +100,23 @@
 </section>
 <section class="content-band" id="features">
 <div class="container">
-<div class="section-intro">
-<p class="eyebrow">Choose what to check</p>
-<h2>무엇을 확인할까요?</h2>
-<p>차량, 외출, 응급, 물가, 거래 정보를 공공데이터와 제공기관 자료를 기준으로 빠르게 확인합니다.</p>
+<div class="section-intro compact-feature-intro">
+<p class="eyebrow">Choose a tool</p>
+<h2>필요한 기능을 선택하세요</h2>
+<p>자주 쓰는 생활 확인 기능을 한 화면에서 빠르게 고를 수 있게 정리했습니다.</p>
 </div>
-<div class="feature-category-stack">
-<section aria-labelledby="vehicle-tools-title" class="feature-category-section">
-<div class="feature-category-head">
-<span>차량 생활 확인</span>
-<h3 id="vehicle-tools-title">이동 전 충전소와 주차 정보를 확인합니다</h3>
-<p>목적지 주변 충전소, 주차장, 예상 주차비를 지도 중심으로 확인합니다.</p>
-</div>
-<div class="tool-card-grid category-grid vehicle-grid">
-<a class="big-tool-card" href="/tools/ev-charger-map.html"><span class="feature-icon">01</span><h3>전기차 충전소 지도</h3><p>근처 충전소 위치와 운영 상태, 충전 타입을 지도에서 확인합니다.</p><strong>지도 확인하기 →</strong></a>
-<a class="big-tool-card" href="/tools/parking-fee-check.html"><span class="feature-icon">02</span><h3>주차비 확인 지도</h3><p>목적지 주변 주차장과 예상 주차비를 비교합니다.</p><strong>주차비 확인하기 →</strong></a>
-
-</div>
-</section>
-<section aria-labelledby="safety-tools-title" class="feature-category-section">
-<div class="feature-category-head">
-<span>생활 안전 확인</span>
-<h3 id="safety-tools-title">외출 전 환경 정보와 응급 참고 정보를 확인합니다</h3>
-<p>대기질·날씨·자외선, 응급실·야간 병원·약국 정보를 참고용으로 확인합니다.</p>
-</div>
-<div class="tool-card-grid category-grid safety-grid">
-<a class="big-tool-card" href="/tools/outdoor-air.html"><span class="feature-icon">03</span><h3>외출 위험 종합 체크</h3><p>미세먼지, 날씨, 자외선 정보를 종합해 외출 전 참고 기준을 확인합니다.</p><strong>외출 전 확인하기 →</strong></a>
-<a class="big-tool-card" href="/tools/emergency-hospital-check.html"><span class="feature-icon">04</span><h3>응급실·야간 병원 확인</h3><p>응급실, 야간 병원, 약국 정보를 지도와 전화 확인 중심으로 확인합니다.</p><strong>응급 정보 확인하기 →</strong></a>
-</div>
-</section>
-<section aria-labelledby="price-tools-title" class="feature-category-section">
-<div class="feature-category-head">
-<span>생활 물가 확인</span>
-<h3 id="price-tools-title">장보기 전 참고 가격을 확인합니다</h3>
-<p>농산물과 생필품 가격 정보를 기준으로 장보기 전 참고 가격을 확인합니다.</p>
-</div>
-<div class="tool-card-grid category-grid one-card-grid">
-<a class="big-tool-card" href="/tools/grocery-price-check.html"><span class="feature-icon">05</span><h3>장보기 물가 확인</h3><p>농산물·생필품 가격 정보를 기준으로 장보기 전 참고 가격을 확인합니다.</p><strong>물가 확인하기 →</strong></a>
-</div>
-</section>
-<section aria-labelledby="trade-tools-title" class="feature-category-section">
-<div class="feature-category-head">
-<span>사업자·거래 확인</span>
-<h3 id="trade-tools-title">거래 전 사업자 정보와 쇼핑몰 정보를 확인합니다</h3>
-<p>사업자 상태, 진위확인, 통신판매업 신고정보, 쇼핑몰 하단 정보를 참고용으로 점검합니다.</p>
-</div>
-<div class="tool-card-grid category-grid trade-grid">
-<a class="big-tool-card" href="/tools/business-status.html"><span class="feature-icon">06</span><h3>사업자등록 상태 조회</h3><p>사업자등록번호 10자리로 계속사업자, 휴업자, 폐업자 여부와 과세유형을 확인합니다.</p><strong>상태 조회하기 →</strong></a>
-<a class="big-tool-card" href="/tools/business-validate.html"><span class="feature-icon">07</span><h3>사업자 진위확인</h3><p>사업자번호, 대표자명, 개업일자를 입력해 국세청 등록정보와의 일치 여부를 확인합니다.</p><strong>진위확인하기 →</strong></a>
-<a class="big-tool-card" href="/tools/mail-order.html"><span class="feature-icon">08</span><h3>통신판매업 신고 조회</h3><p>온라인 쇼핑몰의 통신판매업 신고 정보가 확인되는지 조회합니다.</p><strong>신고 정보 조회하기 →</strong></a>
-<a class="big-tool-card" href="/tools/store-compare.html"><span class="feature-icon">09</span><h3>쇼핑몰 정보 비교</h3><p>쇼핑몰 하단에 표시된 상호명, 대표자명, 신고번호, 도메인을 공식 정보와 비교합니다.</p><strong>정보 비교하기 →</strong></a>
-<a class="big-tool-card" href="/tools/pre-payment-checklist.html"><span class="feature-icon">10</span><h3>거래 전 체크리스트</h3><p>입금 전 확인해야 할 사업자 정보, 결제수단, 환불정책, 고객센터 항목을 정리합니다.</p><strong>체크리스트 보기 →</strong></a>
-</div>
-</section>
-<section aria-labelledby="device-tools-title" class="feature-category-section">
-<div class="feature-category-head">
-<span>기기 확인</span>
-<h3 id="device-tools-title">브라우저에서 확인 가능한 기기 정보를 정리합니다</h3>
-<p>브라우저 보안 정책상 제한되는 항목은 직접 입력으로 보완합니다.</p>
-</div>
-<div class="tool-card-grid category-grid one-card-grid">
-<a class="big-tool-card" href="/tools/pc-spec.html"><span class="feature-icon">11</span><h3>컴퓨터 사양 확인</h3><p>운영체제, CPU 논리 코어, 메모리 추정, GPU/WebGL, 화면 해상도와 CPU 간단 테스트를 확인합니다.</p><strong>사양 확인하기 →</strong></a>
-</div>
-</section>
+<div class="compact-tool-grid">
+<a class="tool-card compact-feature-card" href="/tools/ev-charger-map.html"><span class="tool-icon">01</span><span><strong>전기차 충전소 지도</strong><small>근처 충전소 위치와 운영 상태 확인</small></span><em>지도 확인</em></a>
+<a class="tool-card compact-feature-card" href="/tools/parking-fee-check.html"><span class="tool-icon">02</span><span><strong>주차비 확인 지도</strong><small>목적지 주변 주차장과 예상 주차비 비교</small></span><em>주차 확인</em></a>
+<a class="tool-card compact-feature-card" href="/tools/outdoor-air.html"><span class="tool-icon">03</span><span><strong>외출 위험 종합 체크</strong><small>미세먼지·날씨·자외선 종합 확인</small></span><em>외출 확인</em></a>
+<a class="tool-card compact-feature-card" href="/tools/emergency-hospital-check.html"><span class="tool-icon">04</span><span><strong>응급실·야간 병원·약국 확인</strong><small>응급실, 야간 병원, 약국 정보를 지도와 전화 중심으로 확인</small></span><em>응급 확인</em></a>
+<a class="tool-card compact-feature-card" href="/tools/grocery-price-check.html"><span class="tool-icon">05</span><span><strong>장보기 물가 확인</strong><small>농산물·생필품 참고 가격 확인</small></span><em>물가 확인</em></a>
+<a class="tool-card compact-feature-card" href="/tools/business-status.html"><span class="tool-icon">06</span><span><strong>사업자등록 상태 조회</strong><small>계속·휴업·폐업 여부와 과세유형 확인</small></span><em>상태 조회</em></a>
+<a class="tool-card compact-feature-card" href="/tools/business-validate.html"><span class="tool-icon">07</span><span><strong>사업자 진위확인</strong><small>사업자번호, 대표자명, 개업일자 일치 여부 확인</small></span><em>진위 확인</em></a>
+<a class="tool-card compact-feature-card" href="/tools/mail-order.html"><span class="tool-icon">08</span><span><strong>통신판매업 신고 조회</strong><small>온라인 판매자 공개 신고정보 확인</small></span><em>신고 조회</em></a>
+<a class="tool-card compact-feature-card" href="/tools/store-compare.html"><span class="tool-icon">09</span><span><strong>쇼핑몰 정보 비교</strong><small>사이트 표시 정보와 공식 정보 비교</small></span><em>정보 비교</em></a>
+<a class="tool-card compact-feature-card" href="/tools/pre-payment-checklist.html"><span class="tool-icon">10</span><span><strong>거래 전 체크리스트</strong><small>입금 전 확인할 항목 정리</small></span><em>체크</em></a>
+<a class="tool-card compact-feature-card" href="/tools/pc-spec.html"><span class="tool-icon">11</span><span><strong>컴퓨터 사양 확인</strong><small>브라우저에서 확인 가능한 기기 정보 정리</small></span><em>사양 확인</em></a>
 </div>
 </div>
 </section>
@@ -303,5 +257,6 @@
 </nav>
 </div>
 </footer>
+<script src="/assets/js/app.js?v=20260621-v96-emergency-ev-map-parity-home-compact" defer></script>
 </body>
 </html>

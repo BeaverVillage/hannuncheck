@@ -39,6 +39,12 @@ const MANUAL_COORDINATE_FIXES = [
     lng: 126.807925280972,
     reason: '원본 CSV 경도 오류 보정',
   },
+  {
+    matchAddressIncludes: '서산시 대산읍 화곡리 1891',
+    lat: 37.0044351477144,
+    lng: 126.452296151466,
+    reason: '원본 CSV 좌표 오류 보정(서산 대산읍 화곡리 1891)',
+  },
 ];
 
 const REGION_MAP = {

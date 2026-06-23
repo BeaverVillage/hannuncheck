@@ -54,13 +54,13 @@ scripts/verify-life-map-runtime-contract-windows.cmd
 생활지도 3종 페이지의 CSS/JS 쿼리를 다음 값으로 통합했다.
 
 ```text
-20260623-v119-life-maps-triple-stability
+20260623-v121-life-map-mobile-filter-sort
 ```
 
 JS 런타임 버전도 다음 값으로 통일했다.
 
 ```text
-v119-life-maps-triple-stability
+v121-life-map-mobile-filter-sort
 ```
 
 공중화장실 지도 캐시 버전은 실제 캐시 데이터가 바뀌었으므로 다음 값으로 갱신했다.

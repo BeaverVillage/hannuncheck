@@ -14,7 +14,7 @@
 
 - 정적 JSON: `cache: 'default'`
 - API 설정: `cache: 'no-store'`
-- 캐시 무효화: `?v=20260623-v119-life-maps-triple-stability` 버전 쿼리 사용
+- 캐시 무효화: `?v=20260623-v121-life-map-mobile-filter-sort` 버전 쿼리 사용
 
 ### 2. `_headers` 배포 캐시 정책 추가
 

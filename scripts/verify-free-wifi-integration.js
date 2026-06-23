@@ -15,7 +15,7 @@ if (!indexHtml.includes('/tools/free-wifi-map.html')) fail('index.html missing f
 if (!indexHtml.includes('무료 와이파이 찾기')) fail('index.html missing free wifi label');
 if (!sitemap.includes('https://hannuncheck.com/tools/free-wifi-map.html')) fail('sitemap.xml missing free wifi url');
 if (!dataSources.includes('무료와이파이정보')) fail('data-sources.html missing free wifi source');
-if (!toolHtml.includes('20260623-v119-life-maps-triple-stability')) fail('free wifi page cache version query missing');
+if (!toolHtml.includes('20260623-v124-life-maps-final-ui-qa')) fail('free wifi page cache version query missing');
 if (!toolHtml.includes('/assets/js/free-wifi-map.js')) fail('free wifi page missing js');
 
 const match = indexHtml.match(/<script data-schema="home-2" type="application\/ld\+json">(.*?)<\/script>/);

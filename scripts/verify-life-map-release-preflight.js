@@ -15,8 +15,8 @@ const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
 const stat = (rel) => fs.statSync(path.join(root, rel));
 const assert = (condition, message) => condition ? ok.push(message) : errors.push(message);
 
-const VERSION = '20260623-v119-life-maps-triple-stability';
-const RUNTIME = 'v119-life-maps-triple-stability';
+const VERSION = '20260623-v124-life-maps-final-ui-qa';
+const RUNTIME = 'v124-life-maps-final-ui-qa';
 const tools = [
   { name: '낚시터', html: 'tools/fishing-spot-map.html', js: 'assets/js/fishing-spot-map.js', dataRoot: 'assets/data/life/fishing-spots' },
   { name: '무료 와이파이', html: 'tools/free-wifi-map.html', js: 'assets/js/free-wifi-map.js', dataRoot: 'assets/data/life/free-wifi' },
@@ -39,8 +39,8 @@ for (const tool of tools) {
   if (!exists(tool.html) || !exists(tool.js) || !exists(`${tool.dataRoot}/index.json`)) continue;
   const html = read(tool.html);
   const js = read(tool.js);
-  assert(html.includes(VERSION), `${tool.name}: html cache-busting query is v119`);
-  assert(js.includes(`const VERSION = '${RUNTIME}'`), `${tool.name}: runtime version is v119`);
+  assert(html.includes(VERSION), `${tool.name}: html cache-busting query is v124-life-maps-final-ui-qa`);
+  assert(js.includes(`const VERSION = '${RUNTIME}'`), `${tool.name}: runtime version is v124-life-maps-final-ui-qa`);
   assert(js.includes("fetch(url, { cache: options.cache || 'default' })"), `${tool.name}: static JSON fetch uses browser cache by default`);
   assert(js.includes("fetchJson('/api/config', { cache: 'no-store' })"), `${tool.name}: API config fetch remains no-store`);
   assert(!js.includes("fetch(url, { cache: 'no-store' })"), `${tool.name}: no global no-store on static JSON fetch`);

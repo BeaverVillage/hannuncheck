@@ -38,7 +38,7 @@ const index = JSON.parse(read('assets/data/life/free-wifi/index.json'));
 
 [
   "const CACHE_BASE = '/assets/data/life/free-wifi'",
-  "const VERSION = 'v119-life-maps-triple-stability'",
+  "const VERSION = 'v124-life-maps-final-ui-qa'",
   'const MAX_LIST = 50',
   'const MAX_MARKERS = 300',
   'const MAX_DISTRICT_CACHE = 12',
@@ -51,7 +51,7 @@ const index = JSON.parse(read('assets/data/life/free-wifi/index.json'));
   'populateDistrictOptions',
   "loadDistrict('seoul')",
   'data-wifi-select',
-  'SSID 확인 필요'
+  '와이파이 이름 확인 필요'
 ].forEach((needle) => {
   if (!js.includes(needle)) fail(`missing js safeguard: ${needle}`);
 });

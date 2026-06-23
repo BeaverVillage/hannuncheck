@@ -306,3 +306,444 @@
 .toilet-map-app .life-card-actions-inline a.primary,
 .toilet-map-app .life-selected-card a.primary { color: #fff; background: #0891b2; border-color: #0891b2; }
 .toilet-map-app .life-chip-row span { color: #155e75; background: #cffafe; }
+
+/* 한눈체크 생활지도 13차: PC 레이아웃·기본 인터랙션 안정화 */
+.life-map-app .parking-dashboard {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+.life-map-dashboard.parking-dashboard {
+  grid-template-columns: 1fr;
+}
+.life-dashboard-main {
+  display: grid;
+  grid-template-columns: minmax(340px, 390px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
+}
+.life-results-panel,
+.life-map-column {
+  min-width: 0;
+  height: clamp(640px, 78vh, 780px);
+}
+.life-map-card {
+  min-height: 640px;
+  height: 100%;
+  overflow: hidden;
+}
+.life-map {
+  min-height: 640px;
+  height: 100%;
+}
+.life-results-panel {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.life-results-panel .parking-result-list,
+.life-result-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
+.life-results-panel .parking-result-card {
+  cursor: pointer;
+  align-items: start;
+  grid-template-columns: 42px minmax(0, 1fr);
+  padding: 12px;
+  gap: 10px;
+  background: #fff;
+}
+.life-results-panel .parking-result-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+.life-results-panel .parking-result-rank {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+}
+.life-results-panel .parking-result-title {
+  gap: 8px;
+  align-items: flex-start;
+}
+.life-results-panel .parking-result-title h3 {
+  font-size: 0.98rem;
+  line-height: 1.35;
+}
+.life-results-panel .parking-result-address {
+  margin-top: 3px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.life-results-panel .parking-result-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.life-results-panel .parking-result-metrics span {
+  min-height: 0;
+  padding: 7px 8px;
+  border-radius: 11px;
+  background: #f8fafc;
+  border: 1px solid #e5eef7;
+}
+.life-results-panel .parking-result-metrics strong {
+  font-size: 0.8rem;
+  line-height: 1.28;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.life-results-panel .parking-result-metrics small {
+  font-size: 0.68rem;
+}
+.life-results-panel .parking-card-badges {
+  margin-top: 8px;
+  gap: 5px;
+}
+.life-results-panel .parking-card-badges span {
+  font-size: 0.68rem;
+  padding: 4px 7px;
+}
+.life-results-panel .life-card-actions-inline {
+  margin-top: 9px;
+}
+.life-results-panel .fine-print {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.life-distance-pill {
+  display: inline-grid;
+  gap: 1px;
+  justify-items: center;
+  min-width: 56px;
+  line-height: 1.1;
+}
+.life-distance-pill small {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 800;
+  opacity: 0.78;
+}
+.life-selected-card {
+  width: min(460px, calc(100% - 32px));
+  max-height: calc(100% - 42px);
+  overflow: auto;
+  backdrop-filter: blur(8px);
+}
+.life-selected-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.life-selected-card-head > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.life-selected-close {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  font-size: 1.1rem !important;
+  line-height: 1 !important;
+}
+.life-selected-card .life-card-actions {
+  position: sticky;
+  bottom: -16px;
+  padding-top: 8px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.75), rgba(255,255,255,0.96) 42%);
+}
+.life-map-toolbar {
+  max-width: calc(100% - 28px);
+}
+.life-map-toolbar select {
+  max-width: 220px;
+}
+.life-map-toolbar form input {
+  min-width: 190px;
+}
+.life-selected-card .life-detail-grid span,
+.life-detail-grid span {
+  overflow-wrap: anywhere;
+}
+@media (min-width: 1280px) {
+  .life-dashboard-main {
+    grid-template-columns: minmax(360px, 410px) minmax(0, 1fr);
+  }
+  .life-results-panel,
+  .life-map-column {
+    height: clamp(680px, 80vh, 820px);
+  }
+  .life-map-card,
+  .life-map {
+    min-height: 680px;
+  }
+}
+@media (max-width: 1080px) {
+  .life-dashboard-main {
+    grid-template-columns: 1fr;
+  }
+  .life-results-panel,
+  .life-map-column {
+    height: auto;
+  }
+  .life-map-card,
+  .life-map {
+    min-height: 70vh;
+  }
+}
+@media (max-width: 860px) {
+  .life-map-card,
+  .life-map { min-height: 72vh; }
+  .life-map-toolbar {
+    left: 12px;
+    right: 12px;
+    top: 12px;
+    max-width: none;
+  }
+  .life-map-toolbar select,
+  .life-map-toolbar form input { max-width: none; }
+  .life-selected-card {
+    left: 12px;
+    right: 12px;
+    bottom: 92px;
+    width: auto;
+    max-width: none;
+    max-height: 54vh;
+  }
+  .life-selected-card .life-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .life-results-panel .parking-result-card {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+}
+
+/* 14차: 추천순·모바일 필터 액션시트·드래그 바텀시트 안정화 */
+.life-filter-toggle-button { display: none !important; }
+.life-selected-card { max-height: calc(100% - 48px); overflow-y: auto; }
+.life-mobile-filter-head { display: none; }
+.life-filter-open { overflow: hidden; }
+.life-map-app .parking-result-sort-tabs button[data-fishing-sort="recommend"],
+.life-map-app .parking-result-sort-tabs button[data-wifi-sort="recommend"],
+.life-map-app .parking-result-sort-tabs button[data-toilet-sort="recommend"] { font-weight: 950; }
+@media (max-width: 860px) {
+  .life-map-app .parking-dashboard__controls {
+    display: none;
+  }
+  .life-map-app.is-filter-open .parking-dashboard__controls {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    max-height: 82vh;
+    overflow-y: auto;
+    padding: 14px 14px max(18px, env(safe-area-inset-bottom));
+    border-radius: 26px 26px 0 0;
+    background: rgba(255,255,255,0.99);
+    border: 1px solid #dbeafe;
+    box-shadow: 0 -20px 48px rgba(15, 23, 42, 0.24);
+  }
+  .life-map-app.is-filter-open::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(15, 23, 42, 0.34);
+  }
+  .life-map-app.is-filter-open .parking-dashboard__controls .parking-left-panel,
+  .life-map-app.is-filter-open .parking-dashboard__controls .parking-control-column,
+  .life-map-app.is-filter-open .parking-dashboard__controls .tool-panel {
+    width: 100%;
+    max-width: none;
+    box-shadow: none;
+    border: 0;
+    padding: 0;
+    background: transparent;
+  }
+  .life-mobile-filter-head {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 8px 4px 12px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .life-mobile-filter-head > div:first-child { display: grid; gap: 3px; }
+  .life-mobile-filter-head strong { color: #0f172a; font-size: 1.05rem; }
+  .life-mobile-filter-head span { color: #64748b; font-size: 0.82rem; }
+  .life-mobile-filter-head .parking-sheet-handle {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: center;
+    width: 46px;
+    height: 5px;
+    border-radius: 999px;
+    background: #cbd5e1;
+    order: -1;
+  }
+  .life-mobile-filter-head button {
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    padding: 9px 12px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 900;
+  }
+  .life-filter-toggle-button { display: inline-flex !important; }
+  .life-map-toolbar { max-height: none; }
+  .life-map-toolbar input,
+  .life-map-toolbar select,
+  .life-map-toolbar button { min-height: 46px; }
+  .life-mobile-bottom-sheet.is-expanded {
+    max-height: 82vh;
+  }
+  .life-mobile-bottom-sheet .parking-sheet-handle {
+    width: 46px;
+    height: 5px;
+    border-radius: 999px;
+    background: #cbd5e1;
+  }
+  .life-selected-card {
+    max-height: 56vh;
+    overflow-y: auto;
+  }
+  .life-map-card { min-height: 76vh; }
+}
+
+/* 17차: PC·모바일 최종 UI QA 안정화 */
+.life-tool-shell {
+  --life-left-width: clamp(340px, 26vw, 410px);
+}
+.life-dashboard-main {
+  grid-template-columns: var(--life-left-width) minmax(0, 1fr) !important;
+}
+.life-map-column,
+.life-map-card,
+.life-map {
+  min-width: 0;
+}
+.life-map-card {
+  position: relative;
+  isolation: isolate;
+}
+.life-map-toolbar {
+  align-items: stretch;
+}
+.life-map-toolbar form input,
+.life-map-toolbar select,
+.life-map-toolbar button {
+  min-height: 42px;
+}
+.life-results-panel .parking-result-list,
+.life-mobile-bottom-sheet .parking-mobile-results {
+  overscroll-behavior: contain;
+}
+.life-results-panel .parking-result-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 170px;
+}
+.life-results-panel .life-card-actions-inline a,
+.life-results-panel .life-card-actions-inline button {
+  min-height: 36px;
+}
+.life-selected-card {
+  scrollbar-width: thin;
+}
+.life-selected-card-head h3 {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.life-selected-close:hover,
+.life-selected-close:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+}
+.life-mobile-bottom-sheet {
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
+.life-mobile-bottom-sheet .parking-mobile-results {
+  max-height: calc(58vh - 86px);
+  overflow: auto;
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+}
+.life-mobile-bottom-sheet.is-expanded .parking-mobile-results {
+  max-height: calc(82vh - 86px);
+}
+.life-map-app.is-filter-open .parking-dashboard__controls {
+  overscroll-behavior: contain;
+}
+.life-map-app.is-filter-open .parking-dashboard__controls .parking-filter-row label {
+  min-height: 40px;
+  align-items: center;
+}
+.life-qa-note {
+  color: #475569;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+@media (min-width: 1180px) {
+  .life-map-toolbar {
+    max-width: min(760px, calc(100% - 28px));
+  }
+}
+@media (max-width: 1080px) {
+  .life-dashboard-main {
+    grid-template-columns: 1fr !important;
+  }
+}
+@media (max-width: 860px) {
+  .life-map-toolbar {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: stretch;
+  }
+  .life-map-toolbar form {
+    grid-column: 1 / -1;
+  }
+  .life-map-toolbar select {
+    min-width: 0;
+  }
+  .life-mobile-bottom-sheet {
+    transition: max-height .18s ease, transform .18s ease;
+  }
+  .life-selected-card {
+    bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+}
+@media (max-width: 520px) {
+  .life-map-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+  .life-map-toolbar form,
+  .life-map-toolbar .life-filter-toggle-button {
+    grid-column: 1 / -1;
+  }
+  .life-map-toolbar button,
+  .life-map-toolbar select {
+    width: 100%;
+  }
+  .life-card-actions,
+  .life-card-actions-inline {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .life-card-actions a,
+  .life-card-actions button,
+  .life-card-actions-inline a,
+  .life-card-actions-inline button {
+    width: 100%;
+  }
+}

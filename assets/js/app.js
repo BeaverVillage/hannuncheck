@@ -8,7 +8,15 @@
       ]
     },
     {
-      label: '생활 안전 확인',
+      label: '생활 지도',
+      tools: [
+        ['공중화장실 찾기', '/tools/public-toilet-map.html', '전국 공중화장실 위치, 개방시간, 편의시설 확인'],
+        ['무료 와이파이 찾기', '/tools/free-wifi-map.html', '전국 무료 와이파이 위치, 와이파이 이름과 시설구분 확인'],
+        ['낚시터 찾기', '/tools/fishing-spot-map.html', '전국 낚시터 위치, 어종, 요금, 전화번호 확인'],
+      ]
+    },
+    {
+      label: '생활 안전·의료 확인',
       tools: [
         ['외출 위험 종합 체크', '/tools/outdoor-air.html', '대기질·날씨·자외선과 활동별 외출 위험도 확인'],
         ['응급실·야간 병원 확인', '/tools/emergency-hospital-check.html', '응급실·야간 병원·약국 전화 확인 참고']

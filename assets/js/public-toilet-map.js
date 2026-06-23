@@ -3,7 +3,7 @@
   if (!root) return;
 
   const CACHE_BASE = '/assets/data/life/public-toilets';
-  const VERSION = 'v119-life-maps-triple-stability';
+  const VERSION = 'v124-life-maps-final-ui-qa';
   const MAX_LIST = 50;
   const MAX_MARKERS = 300;
   const MAX_DISTRICT_CACHE = 12;
@@ -43,6 +43,7 @@
     cctv: root.querySelector('#toilet-cctv'),
     useLocation: root.querySelector('#toilet-use-location'),
     mapLocation: root.querySelector('#toilet-map-location'),
+    filterToggle: root.querySelector('[data-life-filter-toggle]'),
     status: root.querySelector('#toilet-status'),
     formStatus: root.querySelector('#toilet-form-status'),
     listTitle: root.querySelector('#toilet-list-title'),
@@ -113,6 +114,7 @@
   const hasBaby = (item) => item?.__hasBaby === true || detailsOf(item).hasBabyChanging === true;
   const hasBell = (item) => item?.__hasBell === true || detailsOf(item).hasEmergencyBell === true;
   const hasCctv = (item) => item?.__hasCctv === true || detailsOf(item).hasCctv === true;
+  const hasPhone = (item) => hasText(item?.phone);
   const hasSafety = (item) => hasBell(item) || hasCctv(item);
 
   const prepareRuntimeItem = (item = {}) => {
@@ -186,10 +188,29 @@
     return `https://map.kakao.com/link/search/${encodeURIComponent(query)}`;
   };
 
+
+  const getKakaoSearchUrl = (item) => {
+    const query = [item?.name, item?.address].filter(hasText).join(' ') || '공중화장실';
+    return `https://map.kakao.com/link/search/${encodeURIComponent(query)}`;
+  };
+
   const formatDistance = (distanceM) => {
     const value = number(distanceM);
     if (!value || value < 1) return '';
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
+  };
+
+  const distanceSourceLabel = () => {
+    if (state.referencePoint) return '검색 위치 기준';
+    if (state.geo) return '현재 위치 기준';
+    return `${locationLabel()} 중심 기준`;
+  };
+
+  const renderDistanceBadge = (distanceM) => {
+    const distance = formatDistance(distanceM);
+    if (!distance) return '';
+    const source = distanceSourceLabel();
+    return `<span class="ev-status-pill good life-distance-pill" title="${escapeHtml(source)}">${escapeHtml(distance)}<small>${escapeHtml(source.replace(' 기준', ''))}</small></span>`;
   };
 
   const distanceM = (a, b) => {
@@ -228,8 +249,25 @@
     return true;
   };
 
+  const distanceScore = (distance) => {
+    if (!Number.isFinite(distance)) return 0;
+    if (distance <= 300) return 40;
+    if (distance <= 800) return 32;
+    if (distance <= 1500) return 22;
+    if (distance <= 3000) return 12;
+    return 5;
+  };
+
+  const toiletRecommendScore = (item) => distanceScore(item.distanceM)
+    + (hasOpenAlways(item) ? 25 : 0)
+    + (hasDisabled(item) ? 10 : 0)
+    + (hasBaby(item) ? 10 : 0)
+    + (hasBell(item) ? 8 : 0)
+    + (hasCctv(item) ? 5 : 0)
+    + (hasPhone(item) ? 4 : 0);
+
   const sortItems = (items) => {
-    const sort = elements.sort?.value || 'distance';
+    const sort = elements.sort?.value || 'recommend';
     const byName = (a, b) => normalize(a.name).localeCompare(normalize(b.name), 'ko-KR');
     const byDistance = (a, b) => (Number.isFinite(a.distanceM) ? a.distanceM : 999999999) - (Number.isFinite(b.distanceM) ? b.distanceM : 999999999);
     const openScore = (item) => hasOpenAlways(item) ? 2 : (detailsOf(item).openType === '정시개방' ? 1 : 0);
@@ -242,7 +280,8 @@
       if (sort === 'disabled') return disabledScore(b) - disabledScore(a) || byDistance(a, b) || byName(a, b);
       if (sort === 'baby') return babyScore(b) - babyScore(a) || byDistance(a, b) || byName(a, b);
       if (sort === 'safety') return safetyScore(b) - safetyScore(a) || byDistance(a, b) || byName(a, b);
-      return byDistance(a, b) || openScore(b) - openScore(a) || byName(a, b);
+      if (sort === 'distance') return byDistance(a, b) || openScore(b) - openScore(a) || byName(a, b);
+      return toiletRecommendScore(b) - toiletRecommendScore(a) || byDistance(a, b) || byName(a, b);
     });
   };
 
@@ -381,7 +420,7 @@
   };
 
   const syncSortButtons = () => {
-    const sort = elements.sort?.value || 'distance';
+    const sort = elements.sort?.value || 'recommend';
     elements.sortButtons.forEach((button) => button.classList.toggle('active', button.dataset.toiletSort === sort));
   };
 
@@ -429,7 +468,22 @@
     }
     target.innerHTML = items.map((item, index) => renderCard(item, index, options)).join('');
     target.querySelectorAll('[data-toilet-select]').forEach((button) => {
-      button.addEventListener('click', () => selectItem(button.dataset.toiletSelect, { move: true, mobile: options.mobile }));
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        selectItem(button.dataset.toiletSelect, { move: true, mobile: options.mobile });
+      });
+    });
+    target.querySelectorAll('[data-life-card-select]').forEach((card) => {
+      const selectFromCard = () => selectItem(card.dataset.lifeCardSelect, { move: true, mobile: options.mobile });
+      card.addEventListener('click', (event) => {
+        if (event.target.closest('a, button, input, select, label')) return;
+        selectFromCard();
+      });
+      card.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        selectFromCard();
+      });
     });
   };
 
@@ -444,16 +498,16 @@
 
   const renderCard = (item, index, options = {}) => {
     const details = item.details || {};
-    const distance = formatDistance(item.distanceM);
+    const distanceBadge = renderDistanceBadge(item.distanceM);
     const selected = state.selectedId === item.id;
     const tel = buildTelLink(item.phone);
     const mapUrl = getKakaoMapUrl(item);
     const openType = details.openType || '운영시간 확인 필요';
     const openDetail = details.openDetail || '운영시간 상세 확인 필요';
-    return `<article class="parking-result-card ${selected ? 'selected' : ''}">
+    return `<article class="parking-result-card ${selected ? 'selected' : ''}" data-life-card-select="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="${escapeHtml(item.name)} 지도에서 선택">
       <button class="parking-result-rank" type="button" data-toilet-select="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)} 선택">${index + 1}</button>
       <div class="parking-result-main">
-        <div class="parking-result-title"><h3>${escapeHtml(item.name)}</h3>${distance ? `<span class="ev-status-pill good">${escapeHtml(distance)}</span>` : ''}</div>
+        <div class="parking-result-title"><h3>${escapeHtml(item.name)}</h3>${distanceBadge}</div>
         <p class="parking-result-address">${escapeHtml(item.address || '주소 확인 필요')}</p>
         <div class="parking-result-metrics">
           <span><strong>${escapeHtml(openType)}</strong><small>개방 구분</small></span>
@@ -462,8 +516,8 @@
           <span><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong><small>관리 전화</small></span>
         </div>
         <div class="parking-card-badges">${(item.badges || []).slice(0, 6).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
-        ${options.mobile ? '' : `<div class="life-card-actions-inline"><button type="button" data-toilet-select="${escapeHtml(item.id)}">지도에서 보기</button><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">지도 확인</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>`}
-        ${options.mobile ? `<div class="life-card-actions-inline"><button type="button" data-toilet-select="${escapeHtml(item.id)}">선택</button><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">지도 확인</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>` : ''}
+        ${options.mobile ? '' : `<div class="life-card-actions-inline"><button type="button" data-toilet-select="${escapeHtml(item.id)}">지도에서 선택</button><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>`}
+        ${options.mobile ? `<div class="life-card-actions-inline"><button type="button" data-toilet-select="${escapeHtml(item.id)}">선택</button><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>` : ''}
         <p class="fine-print">${escapeHtml(openDetail)}</p>
       </div>
     </article>`;
@@ -490,8 +544,8 @@
     const tel = buildTelLink(item.phone);
     const mapUrl = getKakaoMapUrl(item);
     card.hidden = false;
-    card.innerHTML = `<h3>${escapeHtml(item.name)}</h3>
-      <p>${escapeHtml(item.address || '주소 확인 필요')}</p>
+    card.innerHTML = `<div class="life-selected-card-head"><div><h3>${escapeHtml(item.name)}</h3>
+      <p>${escapeHtml(item.address || '주소 확인 필요')}</p></div><button class="life-selected-close" type="button" data-toilet-close aria-label="선택 카드 닫기">×</button></div>
       <div class="life-chip-row">${(item.badges || []).slice(0, 6).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
       <div class="life-detail-grid">
         <span><strong>${escapeHtml(details.openType || '운영시간 확인 필요')}</strong>개방 구분</span>
@@ -502,11 +556,13 @@
         <span><strong>${escapeHtml(hasCctv(item) ? '있음' : '확인 필요')}</strong>CCTV</span>
       </div>
       <p>${escapeHtml(details.manager || '관리기관 확인 필요')}</p>
-      <div class="life-card-actions"><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 확인</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}<button type="button" data-toilet-close>닫기</button></div>
+      <div class="life-card-actions"><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}<button type="button" data-toilet-close>닫기</button></div>
       <p class="fine-print">실제 개방 여부, 시설 이용 가능 여부, 관리 상태는 현장 상황과 다를 수 있습니다.</p>`;
-    card.querySelector('[data-toilet-close]')?.addEventListener('click', () => {
-      state.selectedId = '';
-      render();
+    card.querySelectorAll('[data-toilet-close]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.selectedId = '';
+        render();
+      });
     });
   };
 
@@ -714,10 +770,89 @@
     }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 });
   };
 
+
+  const resetAdvancedFilters = () => {
+    if (elements.category) elements.category.value = '';
+    if (elements.openType) elements.openType.value = '';
+    if (elements.sort) elements.sort.value = 'recommend';
+    [elements.openAlways, elements.disabled, elements.baby, elements.bell, elements.cctv].forEach((element) => {
+      if (element) element.checked = false;
+    });
+    state.selectedId = '';
+    applyFilters({ resetSelection: true });
+  };
+
+  const closeMobileFilterSheet = () => {
+    root.classList.remove('is-filter-open');
+    document.body.classList.remove('life-filter-open');
+    elements.filterToggle?.setAttribute('aria-expanded', 'false');
+  };
+
+  const openMobileFilterSheet = () => {
+    ensureMobileFilterHeader();
+    root.classList.add('is-filter-open');
+    document.body.classList.add('life-filter-open');
+    elements.filterToggle?.setAttribute('aria-expanded', 'true');
+  };
+
+  const ensureMobileFilterHeader = () => {
+    const panel = root.querySelector('.parking-dashboard__controls');
+    if (!panel || panel.querySelector('[data-life-filter-head]')) return;
+    const header = document.createElement('div');
+    header.className = 'life-mobile-filter-head';
+    header.dataset.lifeFilterHead = 'true';
+    header.innerHTML = '<div><strong>상세 필터</strong><span>조건을 고른 뒤 적용하세요.</span></div><div class="parking-sheet-handle" aria-hidden="true"></div><button type="button" data-life-filter-reset>초기화</button><button type="button" data-life-filter-close aria-label="필터 닫기">닫기</button>';
+    panel.prepend(header);
+    header.querySelector('[data-life-filter-close]')?.addEventListener('click', closeMobileFilterSheet);
+    header.querySelector('[data-life-filter-reset]')?.addEventListener('click', resetAdvancedFilters);
+    attachDragToSheet(panel, closeMobileFilterSheet, 'is-filter-expanded');
+  };
+
+  const attachDragToSheet = (sheet, onClose, expandedClass) => {
+    if (!sheet || sheet.dataset.lifeDragBound === 'true') return;
+    sheet.dataset.lifeDragBound = 'true';
+    let startY = 0;
+    let active = false;
+    const start = (event) => {
+      if (!event.target.closest('.parking-sheet-handle, .parking-mobile-sheet-head, .life-mobile-filter-head')) return;
+      active = true;
+      startY = event.clientY || event.touches?.[0]?.clientY || 0;
+    };
+    const end = (event) => {
+      if (!active) return;
+      const endY = event.clientY || event.changedTouches?.[0]?.clientY || startY;
+      const delta = endY - startY;
+      if (delta > 60) onClose?.();
+      if (delta < -60 && expandedClass) sheet.classList.add(expandedClass);
+      if (delta > 20 && expandedClass) sheet.classList.remove(expandedClass);
+      active = false;
+    };
+    sheet.addEventListener('pointerdown', start);
+    sheet.addEventListener('pointerup', end);
+    sheet.addEventListener('touchstart', start, { passive: true });
+    sheet.addEventListener('touchend', end, { passive: true });
+  };
+
+  const initMobileInteractions = () => {
+    elements.filterToggle?.setAttribute('aria-expanded', 'false');
+    elements.filterToggle?.addEventListener('click', () => {
+      if (root.classList.contains('is-filter-open')) closeMobileFilterSheet();
+      else openMobileFilterSheet();
+    });
+    attachDragToSheet(elements.mobileSheet, () => {
+      state.mobileOpen = false;
+      syncMobileSheet();
+    }, 'is-expanded');
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeMobileFilterSheet();
+    });
+  };
+
   const bindEvents = () => {
     elements.form?.addEventListener('submit', (event) => {
       event.preventDefault();
       applyFilters({ resetSelection: true });
+      closeMobileFilterSheet();
     });
     elements.region?.addEventListener('change', () => loadDistrict(elements.region.value));
     elements.mapRegion?.addEventListener('change', () => loadDistrict(elements.mapRegion.value));
@@ -742,7 +877,7 @@
     }, 260));
     elements.sortButtons.forEach((button) => {
       button.addEventListener('click', () => {
-        if (elements.sort) elements.sort.value = button.dataset.toiletSort || 'distance';
+        if (elements.sort) elements.sort.value = button.dataset.toiletSort || 'recommend';
         applyFilters();
       });
     });
@@ -756,6 +891,7 @@
       state.mobileOpen = false;
       syncMobileSheet();
     });
+    initMobileInteractions();
   };
 
   const debounce = (fn, delay) => {

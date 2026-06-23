@@ -7,7 +7,7 @@
   const CACHE_BASE = '/assets/data/life/fishing-spots';
   const MAX_LIST = 80;
   const MAX_MARKERS = 220;
-  const VERSION = 'v119-life-maps-triple-stability';
+  const VERSION = 'v124-life-maps-final-ui-qa';
   const REGION_CENTERS = {
     seoul: { lat: 37.5665, lng: 126.9780, label: '서울' },
     busan: { lat: 35.1796, lng: 129.0756, label: '부산' },
@@ -42,6 +42,7 @@
     hasConvenience: root.querySelector('#fishing-has-convenience'),
     useLocation: root.querySelector('#fishing-use-location'),
     mapLocation: root.querySelector('#fishing-map-location'),
+    filterToggle: root.querySelector('[data-life-filter-toggle]'),
     status: root.querySelector('#fishing-status'),
     formStatus: root.querySelector('#fishing-form-status'),
     listTitle: root.querySelector('#fishing-list-title'),
@@ -130,10 +131,29 @@
     return `https://map.kakao.com/link/search/${encodeURIComponent(query)}`;
   };
 
+
+  const getKakaoSearchUrl = (item) => {
+    const query = [item?.name, item?.address].filter(hasText).join(' ') || '낚시터';
+    return `https://map.kakao.com/link/search/${encodeURIComponent(query)}`;
+  };
+
   const formatDistance = (distanceM) => {
     const value = number(distanceM);
     if (!value || value < 1) return '';
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
+  };
+
+  const distanceSourceLabel = () => {
+    if (state.referencePoint) return '검색 위치 기준';
+    if (state.geo) return '현재 위치 기준';
+    return `${regionLabel()} 중심 기준`;
+  };
+
+  const renderDistanceBadge = (distanceM) => {
+    const distance = formatDistance(distanceM);
+    if (!distance) return '';
+    const source = distanceSourceLabel();
+    return `<span class="ev-status-pill good life-distance-pill" title="${escapeHtml(source)}">${escapeHtml(distance)}<small>${escapeHtml(source.replace(' 기준', ''))}</small></span>`;
   };
 
   const distanceM = (a, b) => {
@@ -175,8 +195,29 @@
     return true;
   };
 
+  const distanceScore = (distance) => {
+    if (!Number.isFinite(distance)) return 0;
+    if (distance <= 5000) return 30;
+    if (distance <= 10000) return 22;
+    if (distance <= 20000) return 14;
+    if (distance <= 50000) return 6;
+    return 2;
+  };
+
+  const fishingRecommendScore = (item) => {
+    const details = item.details || {};
+    return distanceScore(item.distanceM)
+      + (hasText(item.phone) ? 20 : 0)
+      + (hasText(details.fee) ? 16 : 0)
+      + ((details.fishTypes || []).length ? 14 : 0)
+      + (hasText(details.safetyFacilities) ? 10 : 0)
+      + (hasText(details.convenienceFacilities) ? 10 : 0)
+      + (String(details.type || details.waterFacilityType || '').includes('실내') ? 4 : 0)
+      + (item.coordinateFixed ? 4 : 0);
+  };
+
   const sortItems = (items) => {
-    const sort = elements.sort?.value || 'distance';
+    const sort = elements.sort?.value || 'recommend';
     const byName = (a, b) => normalize(a.name).localeCompare(normalize(b.name), 'ko-KR');
     const byDistance = (a, b) => (Number.isFinite(a.distanceM) ? a.distanceM : 999999999) - (Number.isFinite(b.distanceM) ? b.distanceM : 999999999);
     const hasFee = (item) => hasText(item.details?.fee) ? 1 : 0;
@@ -187,7 +228,8 @@
       if (sort === 'fee') return hasFee(b) - hasFee(a) || byDistance(a, b) || byName(a, b);
       if (sort === 'phone') return hasPhone(b) - hasPhone(a) || byDistance(a, b) || byName(a, b);
       if (sort === 'facility') return hasFacility(b) - hasFacility(a) || byDistance(a, b) || byName(a, b);
-      return byDistance(a, b) || byName(a, b);
+      if (sort === 'distance') return byDistance(a, b) || fishingRecommendScore(b) - fishingRecommendScore(a) || byName(a, b);
+      return fishingRecommendScore(b) - fishingRecommendScore(a) || byDistance(a, b) || byName(a, b);
     });
   };
 
@@ -283,7 +325,7 @@
   };
 
   const syncSortButtons = () => {
-    const sort = elements.sort?.value || 'distance';
+    const sort = elements.sort?.value || 'recommend';
     elements.sortButtons.forEach((button) => button.classList.toggle('active', button.dataset.fishingSort === sort));
   };
 
@@ -311,7 +353,7 @@
     updateSummaryCard(elements.phoneCard, '전화 가능', `${phoneCount.toLocaleString('ko-KR')}곳`, '방문 전 확인');
     updateSummaryCard(elements.feeCard, '요금 정보', `${feeCount.toLocaleString('ko-KR')}곳`, '참고용');
     if (!state.loading) {
-      const suffix = state.referencePoint || state.geo ? '현재 위치/기준 위치 기준 거리도 함께 표시합니다.' : '지역 중심 기준으로 가까운 순을 참고합니다.';
+      const suffix = `${distanceSourceLabel()} 직선거리를 함께 표시합니다.`;
       setStatus(total ? `${region} 낚시터 ${total.toLocaleString('ko-KR')}곳을 표시합니다. ${suffix}` : '조건에 맞는 낚시터가 없습니다.', total ? 'info' : 'warning');
     }
   };
@@ -329,24 +371,40 @@
     }
     target.innerHTML = items.map((item, index) => renderCard(item, index, options)).join('');
     target.querySelectorAll('[data-fishing-select]').forEach((button) => {
-      button.addEventListener('click', () => selectItem(button.dataset.fishingSelect, { move: true, mobile: options.mobile }));
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        selectItem(button.dataset.fishingSelect, { move: true, mobile: options.mobile });
+      });
+    });
+    target.querySelectorAll('[data-life-card-select]').forEach((card) => {
+      const selectFromCard = () => selectItem(card.dataset.lifeCardSelect, { move: true, mobile: options.mobile });
+      card.addEventListener('click', (event) => {
+        if (event.target.closest('a, button, input, select, label')) return;
+        selectFromCard();
+      });
+      card.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        selectFromCard();
+      });
     });
   };
 
   const renderCard = (item, index, options = {}) => {
     const details = item.details || {};
-    const distance = formatDistance(item.distanceM);
+    const distanceBadge = renderDistanceBadge(item.distanceM);
     const selected = state.selectedId === item.id;
     const tel = buildTelLink(item.phone);
     const mapUrl = getKakaoMapUrl(item);
+    const searchUrl = getKakaoSearchUrl(item);
     const fish = (details.fishTypes || []).slice(0, 3).join(', ') || '어종 확인 필요';
     const fee = details.fee || '요금 확인 필요';
     const type = details.type || details.waterFacilityType || '유형 확인 필요';
     const facilities = details.convenienceFacilities || details.safetyFacilities || '시설 확인 필요';
-    return `<article class="parking-result-card ${selected ? 'selected' : ''}">
+    return `<article class="parking-result-card ${selected ? 'selected' : ''}" data-life-card-select="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="${escapeHtml(item.name)} 지도에서 선택">
       <button class="parking-result-rank" type="button" data-fishing-select="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)} 선택">${index + 1}</button>
       <div class="parking-result-main">
-        <div class="parking-result-title"><h3>${escapeHtml(item.name)}</h3>${distance ? `<span class="ev-status-pill good">${escapeHtml(distance)}</span>` : ''}</div>
+        <div class="parking-result-title"><h3>${escapeHtml(item.name)}</h3>${distanceBadge}</div>
         <p class="parking-result-address">${escapeHtml(item.address || '주소 확인 필요')}</p>
         <div class="parking-result-metrics">
           <span><strong>${escapeHtml(type)}</strong><small>유형</small></span>
@@ -355,8 +413,8 @@
           <span><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong><small>전화번호</small></span>
         </div>
         <div class="parking-card-badges">${(item.badges || []).slice(0, 6).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
-        ${options.mobile ? '' : `<div class="life-card-actions-inline"><button type="button" data-fishing-select="${escapeHtml(item.id)}">지도에서 보기</button><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">지도 확인</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>`}
-        ${options.mobile ? `<div class="life-card-actions-inline"><button type="button" data-fishing-select="${escapeHtml(item.id)}">선택</button><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">지도 확인</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>` : ''}
+        ${options.mobile ? '' : `<div class="life-card-actions-inline"><button type="button" data-fishing-select="${escapeHtml(item.id)}">지도에서 선택</button><a class="primary" href="${escapeHtml(searchUrl)}" target="_blank" rel="noopener">카카오맵 검색</a><a href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>`}
+        ${options.mobile ? `<div class="life-card-actions-inline"><button type="button" data-fishing-select="${escapeHtml(item.id)}">선택</button><a class="primary" href="${escapeHtml(searchUrl)}" target="_blank" rel="noopener">카카오맵 검색</a><a href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>` : ''}
         <p class="fine-print">${escapeHtml(facilities)}</p>
       </div>
     </article>`;
@@ -382,9 +440,10 @@
     const details = item.details || {};
     const tel = buildTelLink(item.phone);
     const mapUrl = getKakaoMapUrl(item);
+    const searchUrl = getKakaoSearchUrl(item);
     card.hidden = false;
-    card.innerHTML = `<h3>${escapeHtml(item.name)}</h3>
-      <p>${escapeHtml(item.address || '주소 확인 필요')}</p>
+    card.innerHTML = `<div class="life-selected-card-head"><div><h3>${escapeHtml(item.name)}</h3>
+      <p>${escapeHtml(item.address || '주소 확인 필요')}</p></div><button class="life-selected-close" type="button" data-fishing-close aria-label="선택 카드 닫기">×</button></div>
       <div class="life-chip-row">${(item.badges || []).slice(0, 6).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
       <div class="life-detail-grid">
         <span><strong>${escapeHtml(details.type || details.waterFacilityType || '유형 확인 필요')}</strong>유형</span>
@@ -392,11 +451,13 @@
         <span><strong>${escapeHtml(details.fee || '요금 확인 필요')}</strong>이용요금</span>
         <span><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong>전화번호</span>
       </div>
-      <div class="life-card-actions"><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 확인</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}<button type="button" data-fishing-close>닫기</button></div>
+      <div class="life-card-actions"><a class="primary" href="${escapeHtml(searchUrl)}" target="_blank" rel="noopener">카카오맵 검색</a><a href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}<button type="button" data-fishing-close>닫기</button></div>
       <p class="fine-print">운영 여부, 예약, 요금, 어종은 방문 전 전화 확인을 권장합니다.</p>`;
-    card.querySelector('[data-fishing-close]')?.addEventListener('click', () => {
-      state.selectedId = '';
-      render();
+    card.querySelectorAll('[data-fishing-close]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.selectedId = '';
+        render();
+      });
     });
   };
 
@@ -602,10 +663,89 @@
     }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 });
   };
 
+
+  const resetAdvancedFilters = () => {
+    if (elements.type) elements.type.value = '';
+    if (elements.fish) elements.fish.value = '';
+    if (elements.sort) elements.sort.value = 'recommend';
+    [elements.hasFee, elements.hasPhone, elements.hasSafety, elements.hasConvenience].forEach((element) => {
+      if (element) element.checked = false;
+    });
+    state.selectedId = '';
+    applyFilters();
+  };
+
+  const closeMobileFilterSheet = () => {
+    root.classList.remove('is-filter-open');
+    document.body.classList.remove('life-filter-open');
+    elements.filterToggle?.setAttribute('aria-expanded', 'false');
+  };
+
+  const openMobileFilterSheet = () => {
+    ensureMobileFilterHeader();
+    root.classList.add('is-filter-open');
+    document.body.classList.add('life-filter-open');
+    elements.filterToggle?.setAttribute('aria-expanded', 'true');
+  };
+
+  const ensureMobileFilterHeader = () => {
+    const panel = root.querySelector('.parking-dashboard__controls');
+    if (!panel || panel.querySelector('[data-life-filter-head]')) return;
+    const header = document.createElement('div');
+    header.className = 'life-mobile-filter-head';
+    header.dataset.lifeFilterHead = 'true';
+    header.innerHTML = '<div><strong>상세 필터</strong><span>조건을 고른 뒤 적용하세요.</span></div><div class="parking-sheet-handle" aria-hidden="true"></div><button type="button" data-life-filter-reset>초기화</button><button type="button" data-life-filter-close aria-label="필터 닫기">닫기</button>';
+    panel.prepend(header);
+    header.querySelector('[data-life-filter-close]')?.addEventListener('click', closeMobileFilterSheet);
+    header.querySelector('[data-life-filter-reset]')?.addEventListener('click', resetAdvancedFilters);
+    attachDragToSheet(panel, closeMobileFilterSheet, 'is-filter-expanded');
+  };
+
+  const attachDragToSheet = (sheet, onClose, expandedClass) => {
+    if (!sheet || sheet.dataset.lifeDragBound === 'true') return;
+    sheet.dataset.lifeDragBound = 'true';
+    let startY = 0;
+    let active = false;
+    const start = (event) => {
+      if (!event.target.closest('.parking-sheet-handle, .parking-mobile-sheet-head, .life-mobile-filter-head')) return;
+      active = true;
+      startY = event.clientY || event.touches?.[0]?.clientY || 0;
+    };
+    const end = (event) => {
+      if (!active) return;
+      const endY = event.clientY || event.changedTouches?.[0]?.clientY || startY;
+      const delta = endY - startY;
+      if (delta > 60) onClose?.();
+      if (delta < -60 && expandedClass) sheet.classList.add(expandedClass);
+      if (delta > 20 && expandedClass) sheet.classList.remove(expandedClass);
+      active = false;
+    };
+    sheet.addEventListener('pointerdown', start);
+    sheet.addEventListener('pointerup', end);
+    sheet.addEventListener('touchstart', start, { passive: true });
+    sheet.addEventListener('touchend', end, { passive: true });
+  };
+
+  const initMobileInteractions = () => {
+    elements.filterToggle?.setAttribute('aria-expanded', 'false');
+    elements.filterToggle?.addEventListener('click', () => {
+      if (root.classList.contains('is-filter-open')) closeMobileFilterSheet();
+      else openMobileFilterSheet();
+    });
+    attachDragToSheet(elements.mobileSheet, () => {
+      state.mobileOpen = false;
+      syncMobileSheet();
+    }, 'is-expanded');
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeMobileFilterSheet();
+    });
+  };
+
   const bindEvents = () => {
     elements.form?.addEventListener('submit', (event) => {
       event.preventDefault();
       applyFilters();
+      closeMobileFilterSheet();
     });
     elements.region?.addEventListener('change', () => {
       if (elements.district) elements.district.value = '';
@@ -634,7 +774,7 @@
     }, 220));
     elements.sortButtons.forEach((button) => {
       button.addEventListener('click', () => {
-        if (elements.sort) elements.sort.value = button.dataset.fishingSort || 'distance';
+        if (elements.sort) elements.sort.value = button.dataset.fishingSort || 'recommend';
         applyFilters();
       });
     });
@@ -648,6 +788,7 @@
       state.mobileOpen = false;
       syncMobileSheet();
     });
+    initMobileInteractions();
   };
 
   const debounce = (fn, delay) => {

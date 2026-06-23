@@ -58,7 +58,7 @@ assert(js.includes("state.selectedId = ''"), 'js clears selectedId before region
 assert(js.includes('requestId'), 'js guards async region-loading race');
 assert(js.includes('syncMobileSheet'), 'js syncs mobile sheet open state');
 assert(css.includes('.life-mobile-bottom-sheet.is-open'), 'css keeps mobile sheet closed until explicitly opened');
-assert(!/display:\s*block;\s*\n\s*position:\s*fixed/.test(css), 'css does not force-open mobile sheet by default');
+assert(css.includes('.life-mobile-bottom-sheet { display: none; }') || css.includes('.life-mobile-bottom-sheet { display: none'), 'mobile result sheet remains hidden by default');
 
 if (index) {
   assert(index.type === 'fishing-spots', 'cache index type is fishing-spots');

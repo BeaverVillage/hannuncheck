@@ -22,8 +22,8 @@ const LIFE_TOOLS = [
     dataIndex: 'assets/data/life/fishing-spots/index.json',
     dataDir: 'assets/data/life/fishing-spots',
     needles: ['fishing-spot-map.html', '낚시터 찾기'],
-    assetVersion: '20260623-v119-life-maps-triple-stability',
-    runtimeVersion: 'v119-life-maps-triple-stability',
+    assetVersion: '20260623-v124-life-maps-final-ui-qa',
+    runtimeVersion: 'v124-life-maps-final-ui-qa',
   },
   {
     name: '무료 와이파이 찾기',
@@ -33,8 +33,8 @@ const LIFE_TOOLS = [
     dataIndex: 'assets/data/life/free-wifi/index.json',
     dataDir: 'assets/data/life/free-wifi',
     needles: ['free-wifi-map.html', '무료 와이파이 찾기'],
-    assetVersion: '20260623-v119-life-maps-triple-stability',
-    runtimeVersion: 'v119-life-maps-triple-stability',
+    assetVersion: '20260623-v124-life-maps-final-ui-qa',
+    runtimeVersion: 'v124-life-maps-final-ui-qa',
   },
   {
     name: '공중화장실 찾기',
@@ -44,8 +44,8 @@ const LIFE_TOOLS = [
     dataIndex: 'assets/data/life/public-toilets/index.json',
     dataDir: 'assets/data/life/public-toilets',
     needles: ['public-toilet-map.html', '공중화장실 찾기'],
-    assetVersion: '20260623-v119-life-maps-triple-stability',
-    runtimeVersion: 'v119-life-maps-triple-stability',
+    assetVersion: '20260623-v124-life-maps-final-ui-qa',
+    runtimeVersion: 'v124-life-maps-final-ui-qa',
   },
 ];
 
@@ -78,8 +78,8 @@ for (const tool of LIFE_TOOLS) {
   if (!html.includes(tool.url)) fail(`${tool.name}: canonical/self url missing`);
   if (!html.includes('life-map.css')) fail(`${tool.name}: shared life css missing`);
   if (!html.includes(`${tool.slug.replace(/-/g, '-')}.js`) && !html.includes(path.basename(tool.js))) fail(`${tool.name}: js include missing`);
-  if (!html.includes(tool.assetVersion)) fail(`${tool.name}: asset version query is not v119`);
-  if (!js.includes(tool.runtimeVersion)) fail(`${tool.name}: runtime cache version is not v119`);
+  if (!html.includes(tool.assetVersion)) fail(`${tool.name}: asset version query is not v124`);
+  if (!js.includes(tool.runtimeVersion)) fail(`${tool.name}: runtime cache version is not v124`);
   if (!js.includes('MAX_MARKERS')) fail(`${tool.name}: marker limit safeguard missing`);
   if (!js.includes("state.selectedId = ''")) fail(`${tool.name}: no-auto-select reset missing`);
   if (!js.includes('requestId')) fail(`${tool.name}: request race guard missing`);

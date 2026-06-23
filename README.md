@@ -1,4 +1,4 @@
-# v103 배포 메모
+# v104 배포 메모
 
 - Cloudflare Pages 단일 파일 25MiB 제한 대응을 위해 의료 대용량 캐시를 지역별로 분할했습니다.
 - 제거된 단일 대용량 파일: `night-hospital-cache.json`, `night-pharmacy-cache.json`, `kakao-place-cache.json`
@@ -8,13 +8,13 @@
 
 # 한눈체크
 
-## v103-medical-regional-cache-split
+## v104-medical-cache-slug-map-copy-init-fix
 
 - 온병원/일산차병원 카카오맵 URL 수동 패치 반영 상태를 유지했습니다.
 - Cloudflare Pages 단일 파일 제한 대응을 위해 야간 병원·야간 약국·의료기관 카카오 캐시를 지역별 파일로 분할했습니다.
 - 서울/경기처럼 큰 지역 파일은 작은 `part-xx.json` 파티션으로 나눴고, 프론트는 매니페스트를 읽어 필요한 파티션만 병합합니다.
 - 응급실 페이지에서 선택 지역의 야간 병원/약국 캐시와 카카오 캐시만 불러오도록 수정했습니다.
-- 배포 확인 버전: `v103-medical-regional-cache-split`.
+- 배포 확인 버전: `v104-medical-cache-slug-map-copy-init-fix`.
 
 
 한눈체크는 생활 속에서 확인이 필요한 정보를 한 화면에서 정리해 보여주는 정적 사이트 + Cloudflare Pages Functions 프로젝트입니다.
@@ -84,7 +84,7 @@ HIRA_API_KEY=
 
 ## 배포 확인
 
-배포 후 `/api/config`의 `serverVersion`이 `v103-medical-regional-cache-split`로 보이면 이번 작업본이 반영된 것입니다.
+배포 후 `/api/config`의 `serverVersion`이 `v104-medical-cache-slug-map-copy-init-fix`로 보이면 이번 작업본이 반영된 것입니다.
 
 
 ## 야간 병원·야간 약국 로컬 캐시 생성

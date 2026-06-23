@@ -1620,7 +1620,7 @@ function markerContent(row, label) {
   return `${rankHtml}<span>${escapeHtml(label)}</span>`;
 }
 function markerLabel(row) {
-  if (row.discountedFee == null) return "정보없음";
+  if (row.discountedFee == null) return "지도 확인";
   if (row.discountedFee === 0) return "무료";
   return `${won.format(row.discountedFee)}원`;
 }

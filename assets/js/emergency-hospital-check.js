@@ -10,10 +10,18 @@
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
   });
   const buildKakaoSearchUrl = toolkit.buildKakaoSearchUrl || ((item) => `https://map.kakao.com/link/search/${encodeURIComponent(`${item.name} ${item.address}`)}`);
-  const MEDICAL_CACHE_VERSION = '20260623-v103-medical-cache-split';
+  const MEDICAL_CACHE_VERSION = '20260623-v104-medical-cache-slug-map-copy-init-fix';
   const EMERGENCY_NATIONAL_CACHE_URL = `/assets/data/medical/emergency-national-cache.json?v=${MEDICAL_CACHE_VERSION}`;
   const MEDICAL_KAKAO_EMERGENCY_CACHE_URL = `/assets/data/medical/kakao-place/emergency.json?v=${MEDICAL_CACHE_VERSION}`;
-  const medicalRegionFile = (region) => `${encodeURIComponent((region || '서울특별시').trim())}.json`;
+  const MEDICAL_REGION_SLUGS = {
+    '서울': 'seoul', '서울특별시': 'seoul', '부산': 'busan', '부산광역시': 'busan', '대구': 'daegu', '대구광역시': 'daegu',
+    '인천': 'incheon', '인천광역시': 'incheon', '광주': 'gwangju', '광주광역시': 'gwangju', '대전': 'daejeon', '대전광역시': 'daejeon',
+    '울산': 'ulsan', '울산광역시': 'ulsan', '세종': 'sejong', '세종특별자치시': 'sejong', '경기': 'gyeonggi', '경기도': 'gyeonggi',
+    '강원': 'gangwon', '강원특별자치도': 'gangwon', '충북': 'chungbuk', '충청북도': 'chungbuk', '충남': 'chungnam', '충청남도': 'chungnam',
+    '전북': 'jeonbuk', '전북특별자치도': 'jeonbuk', '전남': 'jeonnam', '전라남도': 'jeonnam', '경북': 'gyeongbuk', '경상북도': 'gyeongbuk',
+    '경남': 'gyeongnam', '경상남도': 'gyeongnam', '제주': 'jeju', '제주특별자치도': 'jeju', '기타': 'other',
+  };
+  const medicalRegionFile = (region) => `${MEDICAL_REGION_SLUGS[String(region || '서울특별시').trim()] || 'seoul'}.json`;
   const NIGHT_HOSPITAL_CACHE_URL = (region) => `/assets/data/medical/night-hospital/${medicalRegionFile(region)}?v=${MEDICAL_CACHE_VERSION}`;
   const NIGHT_PHARMACY_CACHE_URL = (region) => `/assets/data/medical/night-pharmacy/${medicalRegionFile(region)}?v=${MEDICAL_CACHE_VERSION}`;
   const MEDICAL_KAKAO_REGION_CACHE_URL = (mode, region) => `/assets/data/medical/kakao-place/${mode}/${medicalRegionFile(region)}?v=${MEDICAL_CACHE_VERSION}`;
@@ -31,6 +39,23 @@
     전북: { lat: 35.7175, lng: 127.1530 }, 전남: { lat: 34.8679, lng: 126.9910 }, 경북: { lat: 36.4919, lng: 128.8889 },
     경남: { lat: 35.4606, lng: 128.2132 }, 제주: { lat: 33.4996, lng: 126.5312 },
   };
+  const REGION_BOUNDS = {
+    서울: { latMin: 37.40, latMax: 37.72, lngMin: 126.75, lngMax: 127.20 },
+    부산: { latMin: 35.00, latMax: 35.35, lngMin: 128.75, lngMax: 129.35 },
+    대구: { latMin: 35.75, latMax: 36.05, lngMin: 128.35, lngMax: 128.80 },
+    인천: { latMin: 37.30, latMax: 37.65, lngMin: 126.35, lngMax: 126.90 },
+  };
+
+  const validateCoordinatesForRegion = (lat, lng, regionValue = '') => {
+    const nLat = Number(lat);
+    const nLng = Number(lng);
+    if (!Number.isFinite(nLat) || !Number.isFinite(nLng) || nLat < 30 || nLat > 45 || nLng < 120 || nLng > 135) return false;
+    const short = String(regionValue || '').trim().slice(0, 2);
+    const bounds = REGION_BOUNDS[short];
+    if (!bounds) return true;
+    return nLat >= bounds.latMin && nLat <= bounds.latMax && nLng >= bounds.lngMin && nLng <= bounds.lngMax;
+  };
+
   const CRITICAL_STATUS_LABELS = [
     '뇌출혈 수술', '뇌경색 재관류', '심근경색 재관류', '복부손상 수술', '사지접합 수술',
     '응급내시경', '응급투석', '조산산모', '정신질환', '신생아', '중증화상',
@@ -466,7 +491,8 @@
     const id = normalizeTextForCache(entry.id || entry.sourceId || entry.hpid || '');
     const lat = Number(entry.lat);
     const lng = Number(entry.lng);
-    const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lng) && lat >= 30 && lat <= 45 && lng >= 120 && lng <= 135;
+    const regionHint = normalizeTextForCache(entry.sido || entry.region || '');
+    const hasCoordinates = validateCoordinatesForRegion(lat, lng, regionHint || entry.address || '');
     const item = {
       id,
       sourceId: id,
@@ -474,7 +500,7 @@
       type: 'emergency',
       name: normalizeTextForCache(entry.name || entry.dutyName || '응급의료기관'),
       address: normalizeTextForCache(entry.address || entry.dutyAddr || ''),
-      region: normalizeTextForCache(entry.sido || entry.region || ''),
+      region: regionHint,
       district: normalizeTextForCache(entry.sigungu || entry.district || ''),
       emergencyTel: normalizeTextForCache(entry.emergencyTel || entry.dutyTel3 || ''),
       mainTel: normalizeTextForCache(entry.mainTel || entry.dutyTel1 || ''),
@@ -718,7 +744,8 @@
     const id = normalizeTextForCache(entry.id || entry.sourceId || entry.hpid || `${mode}-${index + 1}`);
     const lat = Number(entry.lat);
     const lng = Number(entry.lng);
-    const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lng) && lat >= 30 && lat <= 45 && lng >= 120 && lng <= 135;
+    const regionHint = normalizeTextForCache(entry.sido || entry.region || inferSido(entry.address || ''));
+    const hasCoordinates = validateCoordinatesForRegion(lat, lng, regionHint || entry.address || '');
     const operation = readOperationForDay(entry);
     const kind = mode === 'pharmacy' ? 'pharmacy' : 'hospital';
     const item = {
@@ -728,7 +755,7 @@
       type: kind,
       name: normalizeTextForCache(entry.name || entry.dutyName || (kind === 'pharmacy' ? '야간 약국' : '야간 병원')),
       address: normalizeTextForCache(entry.address || entry.dutyAddr || ''),
-      region: normalizeTextForCache(entry.sido || entry.region || inferSido(entry.address || '')),
+      region: regionHint,
       district: normalizeTextForCache(entry.sigungu || entry.district || ''),
       emergencyTel: '',
       mainTel: normalizeTextForCache(entry.mainTel || entry.dutyTel1 || entry.telno || ''),
@@ -1213,7 +1240,7 @@
         : [item.operationTime || '운영시간 전화 확인', distanceText];
       const primaryInfo = primaryParts.filter(Boolean).join(' · ');
       const phoneText = phone ? '전화 있음' : '전화 확인 필요';
-      const locationText = hasMapCoordinates(item) ? '지도 표시' : '지도 위치 확인 필요';
+      const locationText = hasMapCoordinates(item) ? '위치 확인' : '주소 확인 필요';
       const statusText = isEmergency
         ? (getCriticalProvidedItems(item).length ? '중증 항목 제공' : '중증 항목 확인')
         : (item.isNightCandidate ? '야간 운영 참고' : '운영 확인 필요');
@@ -1277,7 +1304,7 @@
     const phone = item.emergencyTel || item.mainTel || '';
     const kakaoAction = getKakaoAction(item);
     const distanceText = formatDistanceSafe(item.distanceM) || (state.geo ? '거리 계산 중' : '거리 정보 없음');
-    const mapText = hasMapCoordinates(item) ? '지도 표시 가능' : '지도 위치 확인 필요';
+    const mapText = hasMapCoordinates(item) ? '지도에서 확인' : '주소 확인 필요';
     const bedsText = isEmergencyItem(item) ? formatBeds(item.emergencyBeds) : (item.operationTime || '운영시간 확인');
     const criticalText = isEmergencyItem(item) ? formatCriticalSummary(item) : '';
     const hasCriticalItems = isEmergencyItem(item) && getCriticalProvidedItems(item).length > 0;
@@ -1291,14 +1318,14 @@
       <div class="map-selected-metrics">
         <div><span>${isEmergencyItem(item) ? '가용 병상' : '운영시간'}</span><strong>${escapeHtml(bedsText)}</strong></div>
         <div><span>전화</span><strong>${escapeHtml(phone || '전화 확인')}</strong></div>
-        <div><span>${isEmergencyItem(item) ? '중증 항목' : '지도'}</span><strong>${escapeHtml(isEmergencyItem(item) ? statusText : mapText)}</strong>${isEmergencyItem(item) ? `<button type="button" class="metric-detail-link" data-critical-id="${escapeHtml(item.id)}" ${hasCriticalItems ? '' : 'disabled'}>항목 보기</button>` : ''}</div>
+        <div><span>${isEmergencyItem(item) ? '중증 항목' : '위치'}</span><strong>${escapeHtml(isEmergencyItem(item) ? statusText : mapText)}</strong>${isEmergencyItem(item) ? `<button type="button" class="metric-detail-link" data-critical-id="${escapeHtml(item.id)}" ${hasCriticalItems ? '' : 'disabled'}>항목 보기</button>` : ''}</div>
       </div>
       <div class="map-selected-actions">
         ${phone ? `<a class="primary-link" href="${buildTelLink(phone)}">전화하기</a>` : '<span class="primary-link disabled">전화 확인</span>'}
         <a class="secondary-link" href="${kakaoAction.url}" target="_blank" rel="noopener">${escapeHtml(kakaoAction.label)}</a>
         ${isMobileView() ? `<button class="secondary-link as-button mobile-detail-action" type="button" data-open-detail-id="${escapeHtml(item.id)}">상세보기</button>` : ''}
       </div>
-      <p class="fine-print" style="margin:0.56rem 0 0">${escapeHtml(distanceText)} · ${escapeHtml(mapText)} · 방문 전 전화 확인이 필요합니다.</p>`;
+      <p class="fine-print" style="margin:0.56rem 0 0">${escapeHtml(distanceText)} · ${escapeHtml(mapText === '지도에서 확인' ? '위치는 지도에서 확인' : '주소로 위치 확인 필요')} · 방문 전 전화 확인이 필요합니다.</p>`;
   };
 
   const renderDetail = (item) => {
@@ -1319,7 +1346,7 @@
     const kakaoUrl = kakaoAction.url;
     const kakaoLabel = kakaoAction.label;
     const distanceText = formatDistanceSafe(item.distanceM) || '거리 정보 없음';
-    const mapText = hasMapCoordinates(item) ? '지도 표시 가능' : '지도 위치 확인 필요';
+    const mapText = hasMapCoordinates(item) ? '지도에서 확인' : '주소 확인 필요';
     if (!isEmergencyItem(item)) {
       elements.detail.innerHTML = `<button class="map-selected-close detail-close" type="button" data-close-selected aria-label="상세 닫기">×</button><h3>${escapeHtml(item.name || meta().label)}</h3>
         <p class="emergency-detail-address">${escapeHtml(item.address || '주소 정보 없음')}</p>
@@ -1328,7 +1355,7 @@
           <div><span>기관 유형</span><strong>${escapeHtml(item.hospitalType || meta().label)}</strong></div>
           <div><span>전화</span><strong>${escapeHtml(phone || '전화 확인')}</strong></div>
           <div><span>거리</span><strong>${escapeHtml(distanceText)}</strong></div>
-          <div><span>지도</span><strong>${escapeHtml(mapText)}</strong></div>
+          <div><span>위치</span><strong>${escapeHtml(mapText)}</strong></div>
         </div>
         <div class="emergency-status-group"><h4>야간 방문 전 확인</h4><p class="fine-print">운영시간은 공공데이터 기준 참고 정보입니다. 접수 마감, 처방·조제 가능 여부, 휴게시간은 기관 전화로 다시 확인해 주세요.</p></div>
         <p class="fine-print">${escapeHtml(item.updatedAt ? `갱신 정보: ${item.updatedAt}` : '갱신 시점 정보가 없으면 기관에 직접 확인해 주세요.')}</p>
@@ -1346,7 +1373,7 @@
         <div><span>중증 항목</span><strong>${escapeHtml(formatCriticalSummary(item))}</strong><button type="button" class="metric-detail-link" data-critical-id="${escapeHtml(item.id)}" ${getCriticalProvidedItems(item).length ? '' : 'disabled'}>항목 보기</button></div>
         <div><span>전화</span><strong>${escapeHtml(phone || '전화 확인')}</strong></div>
         <div><span>거리</span><strong>${escapeHtml(distanceText)}</strong></div>
-        <div><span>지도</span><strong>${escapeHtml(mapText)}</strong></div>
+        <div><span>위치</span><strong>${escapeHtml(mapText)}</strong></div>
       </div>
       ${renderStatusGroup('중증 항목 제공 정보', item.criticalCare, '제공된 중증 항목이 없으면 119 또는 병원 전화로 확인해 주세요.')}
       ${renderStatusGroup('장비·시설 상태', item.facilityStatus, '장비·시설 상태 정보가 없으면 전화 확인이 필요합니다.')}
@@ -1764,7 +1791,7 @@
   elements.mobileRegionButton?.addEventListener('click', () => openMobileActionSheet('지역 선택', Object.keys(REGION_CENTERS).map((value) => ({ value, label: value })), getRegionLabel(), (value) => { if (elements.region) elements.region.value = value; if (elements.mapRegion) elements.mapRegion.value = value; if (elements.district) elements.district.value = ''; if (elements.mapDistrict) elements.mapDistrict.value = ''; state.referencePoint = null; state.geo = null; syncToolbarInputs(); searchHospitals(); }));
 
   elements.mobileFilterButton?.addEventListener('click', () => openMobileActionSheet('조건 필터', [
-    { value: 'all', label: '전체 보기' }, { value: 'beds', label: '병상 정보 있음' }, { value: 'phone', label: '전화번호 있음' }, { value: 'map', label: '지도 표시 가능' }
+    { value: 'all', label: '전체 보기' }, { value: 'beds', label: '병상 정보 있음' }, { value: 'phone', label: '전화번호 있음' }, { value: 'map', label: '위치 확인 가능' }
   ], state.resultFilter, (value) => { state.resultFilter = value || 'all'; render(); }));
 
   elements.mapToolbarSearch?.addEventListener('submit', (event) => {
@@ -1883,13 +1910,7 @@
       state.referenceMove = true;
       state.keywordMode = 'place';
       if (elements.sort) elements.sort.value = 'distance';
-      try {
-        const region = await fetchJson(`/api/kakao-local?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`, { timeoutMs: 5000, cache: 'no-store' });
-        const regionLabel = region?.region1;
-        if (regionLabel && elements.region) elements.region.value = regionLabel;
-        if (regionLabel && elements.mapRegion) elements.mapRegion.value = regionLabel;
-      } catch (_) {}
-      // 현재 위치는 거리 계산 기준점입니다. 사용자가 고른 지역 범위를 구 단위로 자동 축소하지 않습니다.
+      // 현재 위치는 거리 계산 기준점입니다. 사용자가 고른 시도 범위는 자동 변경하지 않습니다.
       if (elements.district) elements.district.value = '';
       if (elements.mapDistrict) elements.mapDistrict.value = '';
       syncToolbarInputs();
@@ -1946,7 +1967,10 @@
     elements.sort?.addEventListener(eventName, () => { syncModeUi();  });
   });
 
-  resetToIdle();
+  state.dataMode = 'cache';
+  state.summary = { criteria: '서울' };
+  state.selectedId = '';
+  syncModeUi();
   initKakaoMap();
   loadKakaoPlaceCache();
   initEmergencyMobileSheetDrag();

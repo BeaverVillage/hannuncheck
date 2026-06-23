@@ -17,12 +17,12 @@ const requiredIds = [
 ];
 requiredIds.forEach((id) => assert(html.includes(`id="${id}"`), `html has #${id}`));
 assert(html.includes('data-public-toilet-map-tool'), 'html has public toilet root marker');
-assert(html.includes('/assets/js/public-toilet-map.js?v=20260623-v124-life-maps-final-ui-qa'), 'html uses v124 public toilet js');
+assert(html.includes('/assets/js/public-toilet-map.js?v=20260623-v125-life-maps-ui-complete'), 'html uses v125 public toilet js');
 assert(html.includes('/assets/data/life/public-toilets') === false, 'html does not hardcode cache payload path');
 assert(css.includes('.toilet-map-app'), 'life-map.css has toilet styles');
 assert(css.includes('.toilet-marker'), 'life-map.css has toilet marker styles');
 assert(js.includes("const CACHE_BASE = '/assets/data/life/public-toilets'"), 'js uses public toilet cache base');
-assert(js.includes("const VERSION = 'v124-life-maps-final-ui-qa'"), 'js uses v124 runtime version');
+assert(js.includes("const VERSION = 'v125-life-maps-ui-complete'"), 'js uses v125 runtime version');
 assert(js.includes('MAX_MARKERS = 300'), 'js limits markers');
 assert(js.includes('MAX_DISTRICT_CACHE = 12'), 'js limits district cache');
 assert(js.includes('state.selectedId = \'\''), 'js clears selectedId while loading/filtering');

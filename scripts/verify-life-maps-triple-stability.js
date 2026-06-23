@@ -5,8 +5,8 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = process.cwd();
-const VERSION = '20260623-v124-life-maps-final-ui-qa';
-const RUNTIME = 'v124-life-maps-final-ui-qa';
+const VERSION = '20260623-v125-life-maps-ui-complete';
+const RUNTIME = 'v125-life-maps-ui-complete';
 const tools = [
   {
     key: 'fishing',
@@ -77,7 +77,7 @@ const checkBasicContracts = (tool) => {
   const js = read(tool.js);
   const ids = extractIds(html);
   assert(html.includes(VERSION), `${tool.name}: v124 asset query applied`);
-  assert(js.includes(`const VERSION = '${RUNTIME}'`), `${tool.name}: v124 runtime version applied`);
+  assert(js.includes(`const VERSION = '${RUNTIME}'`), `${tool.name}: v125 runtime version applied`);
   assert(html.includes(tool.root), `${tool.name}: root data attribute exists`);
   [tool.list, tool.selected, tool.mobileToggle, tool.mobileSheet].forEach((id) => assert(ids.has(id), `${tool.name}: #${id} exists`));
   assert(new RegExp(`<[^>]*id="${tool.selected}"[^>]*hidden|<[^>]*hidden[^>]*id="${tool.selected}"`).test(html), `${tool.name}: selected card hidden by default`);

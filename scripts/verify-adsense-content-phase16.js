@@ -12,7 +12,7 @@ const checks = [
   {
     file: 'tools/free-wifi-map.html',
     name: '무료 와이파이 찾기',
-    must: ['life-adsense-content-v123', '무료 와이파이 정보 해석', '와이파이 이름(SSID)', '비밀번호', '보안 주의', '공중화장실 찾기'],
+    must: ['life-adsense-content-v123', '무료 와이파이 정보 해석', '와이파이 이름', '비밀번호', '보안 주의', '공중화장실 찾기'],
     faqMin: 6,
   },
   {

@@ -192,7 +192,7 @@ function main() {
       ssid: { has: stats.hasSsid, missing: stats.noSsid },
     },
     regions: regionIndex,
-    note: '좌표가 유효한 무료 와이파이 지점만 지도용 로컬 캐시에 포함했습니다. SSID·운영 상태·접속 가능 여부는 현장 상황에 따라 달라질 수 있습니다.',
+    note: '좌표가 유효한 무료 와이파이 지점만 지도용 로컬 캐시에 포함했습니다. 와이파이 이름·운영 상태·접속 가능 여부는 현장 상황에 따라 달라질 수 있습니다.',
   };
   fs.writeFileSync(path.join(OUTPUT_DIR, 'index.json'), `${JSON.stringify(index)}\n`, 'utf8');
 
@@ -329,7 +329,7 @@ function normalizeWifiRow(row, stats) {
 
 function buildBadges({ ssid, facilityType, provider }) {
   const badges = [];
-  badges.push(ssid ? 'SSID 제공' : 'SSID 확인 필요');
+  badges.push(ssid ? '와이파이 이름 있음' : '와이파이 이름 확인 필요');
   if (facilityType) badges.push(facilityType);
   if (provider) badges.push(provider.length > 16 ? `${provider.slice(0, 16)}…` : provider);
   return badges.slice(0, 4);

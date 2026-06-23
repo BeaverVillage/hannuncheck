@@ -7,7 +7,7 @@
   const CACHE_BASE = '/assets/data/life/fishing-spots';
   const MAX_LIST = 80;
   const MAX_MARKERS = 220;
-  const VERSION = 'v124-life-maps-final-ui-qa';
+  const VERSION = 'v125-life-maps-ui-complete';
   const REGION_CENTERS = {
     seoul: { lat: 37.5665, lng: 126.9780, label: '서울' },
     busan: { lat: 35.1796, lng: 129.0756, label: '부산' },
@@ -396,7 +396,6 @@
     const selected = state.selectedId === item.id;
     const tel = buildTelLink(item.phone);
     const mapUrl = getKakaoMapUrl(item);
-    const searchUrl = getKakaoSearchUrl(item);
     const fish = (details.fishTypes || []).slice(0, 3).join(', ') || '어종 확인 필요';
     const fee = details.fee || '요금 확인 필요';
     const type = details.type || details.waterFacilityType || '유형 확인 필요';
@@ -413,15 +412,21 @@
           <span><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong><small>전화번호</small></span>
         </div>
         <div class="parking-card-badges">${(item.badges || []).slice(0, 6).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
-        ${options.mobile ? '' : `<div class="life-card-actions-inline"><button type="button" data-fishing-select="${escapeHtml(item.id)}">지도에서 선택</button><a class="primary" href="${escapeHtml(searchUrl)}" target="_blank" rel="noopener">카카오맵 검색</a><a href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>`}
-        ${options.mobile ? `<div class="life-card-actions-inline"><button type="button" data-fishing-select="${escapeHtml(item.id)}">선택</button><a class="primary" href="${escapeHtml(searchUrl)}" target="_blank" rel="noopener">카카오맵 검색</a><a href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>` : ''}
+        ${options.mobile ? '' : `<div class="life-card-actions-inline"><button type="button" data-fishing-select="${escapeHtml(item.id)}">지도에서 선택</button><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>`}
+        ${options.mobile ? `<div class="life-card-actions-inline"><button type="button" data-fishing-select="${escapeHtml(item.id)}">선택</button><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>` : ''}
         <p class="fine-print">${escapeHtml(facilities)}</p>
       </div>
     </article>`;
   };
 
   const syncMobileSheet = () => {
-    if (elements.mobileSheet) elements.mobileSheet.classList.toggle('is-open', state.mobileOpen);
+    if (elements.mobileSheet) {
+      elements.mobileSheet.classList.toggle('is-open', state.mobileOpen);
+      if (!state.mobileOpen) {
+        elements.mobileSheet.classList.remove('is-expanded');
+        elements.mobileSheet.style.removeProperty('--life-sheet-y');
+      }
+    }
     if (elements.mobileToggle) {
       elements.mobileToggle.setAttribute('aria-expanded', state.mobileOpen ? 'true' : 'false');
       elements.mobileToggle.textContent = state.mobileOpen ? '목록 닫기' : '목록 보기';
@@ -440,18 +445,17 @@
     const details = item.details || {};
     const tel = buildTelLink(item.phone);
     const mapUrl = getKakaoMapUrl(item);
-    const searchUrl = getKakaoSearchUrl(item);
     card.hidden = false;
     card.innerHTML = `<div class="life-selected-card-head"><div><h3>${escapeHtml(item.name)}</h3>
       <p>${escapeHtml(item.address || '주소 확인 필요')}</p></div><button class="life-selected-close" type="button" data-fishing-close aria-label="선택 카드 닫기">×</button></div>
       <div class="life-chip-row">${(item.badges || []).slice(0, 6).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
       <div class="life-detail-grid">
-        <span><strong>${escapeHtml(details.type || details.waterFacilityType || '유형 확인 필요')}</strong>유형</span>
-        <span><strong>${escapeHtml((details.fishTypes || []).join(', ') || '어종 확인 필요')}</strong>주요어종</span>
-        <span><strong>${escapeHtml(details.fee || '요금 확인 필요')}</strong>이용요금</span>
-        <span><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong>전화번호</span>
+        <span><small>유형</small><strong>${escapeHtml(details.type || details.waterFacilityType || '유형 확인 필요')}</strong></span>
+        <span><small>주요어종</small><strong>${escapeHtml((details.fishTypes || []).join(', ') || '어종 확인 필요')}</strong></span>
+        <span><small>이용요금</small><strong>${escapeHtml(details.fee || '요금 확인 필요')}</strong></span>
+        <span><small>전화번호</small><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong></span>
       </div>
-      <div class="life-card-actions"><a class="primary" href="${escapeHtml(searchUrl)}" target="_blank" rel="noopener">카카오맵 검색</a><a href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}<button type="button" data-fishing-close>닫기</button></div>
+      <div class="life-card-actions"><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}<button type="button" data-fishing-close>닫기</button></div>
       <p class="fine-print">운영 여부, 예약, 요금, 어종은 방문 전 전화 확인을 권장합니다.</p>`;
     card.querySelectorAll('[data-fishing-close]').forEach((button) => {
       button.addEventListener('click', () => {
@@ -705,25 +709,51 @@
     if (!sheet || sheet.dataset.lifeDragBound === 'true') return;
     sheet.dataset.lifeDragBound = 'true';
     let startY = 0;
+    let lastY = 0;
     let active = false;
+    const getY = (event) => event.clientY || event.touches?.[0]?.clientY || event.changedTouches?.[0]?.clientY || 0;
     const start = (event) => {
       if (!event.target.closest('.parking-sheet-handle, .parking-mobile-sheet-head, .life-mobile-filter-head')) return;
       active = true;
-      startY = event.clientY || event.touches?.[0]?.clientY || 0;
+      startY = getY(event);
+      lastY = startY;
+      sheet.classList.add('is-dragging');
+      if (event.pointerId != null && typeof sheet.setPointerCapture === 'function') {
+        try { sheet.setPointerCapture(event.pointerId); } catch (_) { /* noop */ }
+      }
     };
-    const end = (event) => {
+    const move = (event) => {
       if (!active) return;
-      const endY = event.clientY || event.changedTouches?.[0]?.clientY || startY;
-      const delta = endY - startY;
-      if (delta > 60) onClose?.();
-      if (delta < -60 && expandedClass) sheet.classList.add(expandedClass);
-      if (delta > 20 && expandedClass) sheet.classList.remove(expandedClass);
+      lastY = getY(event);
+      const delta = lastY - startY;
+      const baseY = expandedClass && sheet.classList.contains(expandedClass) ? 7 : 42;
+      const nextY = Math.min(96, Math.max(7, baseY + (delta / Math.max(window.innerHeight, 1)) * 100));
+      sheet.style.setProperty('--life-sheet-y', `${nextY}%`);
+      event.preventDefault?.();
+    };
+    const end = () => {
+      if (!active) return;
+      const delta = lastY - startY;
+      sheet.classList.remove('is-dragging');
+      sheet.style.removeProperty('--life-sheet-y');
+      if (delta > 90) {
+        if (expandedClass) sheet.classList.remove(expandedClass);
+        onClose?.();
+      } else if (delta < -80 && expandedClass) {
+        sheet.classList.add(expandedClass);
+      } else if (delta > 36 && expandedClass) {
+        sheet.classList.remove(expandedClass);
+      }
       active = false;
     };
     sheet.addEventListener('pointerdown', start);
+    sheet.addEventListener('pointermove', move);
     sheet.addEventListener('pointerup', end);
+    sheet.addEventListener('pointercancel', end);
     sheet.addEventListener('touchstart', start, { passive: true });
+    sheet.addEventListener('touchmove', move, { passive: false });
     sheet.addEventListener('touchend', end, { passive: true });
+    sheet.addEventListener('touchcancel', end, { passive: true });
   };
 
   const initMobileInteractions = () => {

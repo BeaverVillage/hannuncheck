@@ -3,7 +3,7 @@
   if (!root) return;
 
   const CACHE_BASE = '/assets/data/life/public-toilets';
-  const VERSION = 'v124-life-maps-final-ui-qa';
+  const VERSION = 'v125-life-maps-ui-complete';
   const MAX_LIST = 50;
   const MAX_MARKERS = 300;
   const MAX_DISTRICT_CACHE = 12;
@@ -524,7 +524,13 @@
   };
 
   const syncMobileSheet = () => {
-    if (elements.mobileSheet) elements.mobileSheet.classList.toggle('is-open', state.mobileOpen);
+    if (elements.mobileSheet) {
+      elements.mobileSheet.classList.toggle('is-open', state.mobileOpen);
+      if (!state.mobileOpen) {
+        elements.mobileSheet.classList.remove('is-expanded');
+        elements.mobileSheet.style.removeProperty('--life-sheet-y');
+      }
+    }
     if (elements.mobileToggle) {
       elements.mobileToggle.setAttribute('aria-expanded', state.mobileOpen ? 'true' : 'false');
       elements.mobileToggle.textContent = state.mobileOpen ? '목록 닫기' : '목록 보기';
@@ -812,25 +818,51 @@
     if (!sheet || sheet.dataset.lifeDragBound === 'true') return;
     sheet.dataset.lifeDragBound = 'true';
     let startY = 0;
+    let lastY = 0;
     let active = false;
+    const getY = (event) => event.clientY || event.touches?.[0]?.clientY || event.changedTouches?.[0]?.clientY || 0;
     const start = (event) => {
       if (!event.target.closest('.parking-sheet-handle, .parking-mobile-sheet-head, .life-mobile-filter-head')) return;
       active = true;
-      startY = event.clientY || event.touches?.[0]?.clientY || 0;
+      startY = getY(event);
+      lastY = startY;
+      sheet.classList.add('is-dragging');
+      if (event.pointerId != null && typeof sheet.setPointerCapture === 'function') {
+        try { sheet.setPointerCapture(event.pointerId); } catch (_) { /* noop */ }
+      }
     };
-    const end = (event) => {
+    const move = (event) => {
       if (!active) return;
-      const endY = event.clientY || event.changedTouches?.[0]?.clientY || startY;
-      const delta = endY - startY;
-      if (delta > 60) onClose?.();
-      if (delta < -60 && expandedClass) sheet.classList.add(expandedClass);
-      if (delta > 20 && expandedClass) sheet.classList.remove(expandedClass);
+      lastY = getY(event);
+      const delta = lastY - startY;
+      const baseY = expandedClass && sheet.classList.contains(expandedClass) ? 7 : 42;
+      const nextY = Math.min(96, Math.max(7, baseY + (delta / Math.max(window.innerHeight, 1)) * 100));
+      sheet.style.setProperty('--life-sheet-y', `${nextY}%`);
+      event.preventDefault?.();
+    };
+    const end = () => {
+      if (!active) return;
+      const delta = lastY - startY;
+      sheet.classList.remove('is-dragging');
+      sheet.style.removeProperty('--life-sheet-y');
+      if (delta > 90) {
+        if (expandedClass) sheet.classList.remove(expandedClass);
+        onClose?.();
+      } else if (delta < -80 && expandedClass) {
+        sheet.classList.add(expandedClass);
+      } else if (delta > 36 && expandedClass) {
+        sheet.classList.remove(expandedClass);
+      }
       active = false;
     };
     sheet.addEventListener('pointerdown', start);
+    sheet.addEventListener('pointermove', move);
     sheet.addEventListener('pointerup', end);
+    sheet.addEventListener('pointercancel', end);
     sheet.addEventListener('touchstart', start, { passive: true });
+    sheet.addEventListener('touchmove', move, { passive: false });
     sheet.addEventListener('touchend', end, { passive: true });
+    sheet.addEventListener('touchcancel', end, { passive: true });
   };
 
   const initMobileInteractions = () => {

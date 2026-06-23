@@ -3,7 +3,7 @@
   if (!root) return;
 
   const CACHE_BASE = '/assets/data/life/free-wifi';
-  const VERSION = 'v124-life-maps-final-ui-qa';
+  const VERSION = 'v125-life-maps-ui-complete';
   const MAX_LIST = 50;
   const MAX_MARKERS = 300;
   const MAX_DISTRICT_CACHE = 12;
@@ -429,7 +429,7 @@
     if (elements.mobileTitle) elements.mobileTitle.textContent = `${place} 무료 와이파이 목록`;
     if (elements.mobileSubtitle) elements.mobileSubtitle.textContent = total ? `${total.toLocaleString('ko-KR')}곳 중 ${Math.min(total, MAX_LIST)}곳 표시` : '조건에 맞는 결과가 없습니다.';
     updateSummaryCard(elements.countCard, '조회 후보', `${total.toLocaleString('ko-KR')}곳`, '조건 적용 결과');
-    updateSummaryCard(elements.ssidCard, '와이파이 이름 제공', `${ssidCount.toLocaleString('ko-KR')}곳`, '접속 이름 확인');
+    updateSummaryCard(elements.ssidCard, '와이파이 이름 있음', `${ssidCount.toLocaleString('ko-KR')}곳`, '현장 접속 이름');
     updateSummaryCard(elements.phoneCard, '관리 전화', `${phoneCount.toLocaleString('ko-KR')}곳`, '문의 가능');
     if (!state.loading) {
       const suffix = state.referencePoint || state.geo ? '현재 위치 기준 거리도 함께 표시합니다.' : '선택 지역 중심 기준으로 가까운 순을 참고합니다.';
@@ -486,7 +486,7 @@
         <div class="parking-result-title"><h3>${escapeHtml(item.name)}</h3>${distanceBadge}</div>
         <p class="parking-result-address">${escapeHtml(item.address || '주소 확인 필요')}</p>
         <div class="parking-result-metrics">
-          <span><strong>${escapeHtml(ssid)}</strong><small>와이파이 이름(SSID)</small></span>
+          <span><strong>${escapeHtml(ssid)}</strong><small>와이파이 이름</small></span>
           <span><strong>${escapeHtml(password)}</strong><small>비밀번호</small></span>
           <span><strong>${escapeHtml(facility)}</strong><small>시설 구분</small></span>
           <span><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong><small>관리 전화</small></span>
@@ -500,7 +500,13 @@
   };
 
   const syncMobileSheet = () => {
-    if (elements.mobileSheet) elements.mobileSheet.classList.toggle('is-open', state.mobileOpen);
+    if (elements.mobileSheet) {
+      elements.mobileSheet.classList.toggle('is-open', state.mobileOpen);
+      if (!state.mobileOpen) {
+        elements.mobileSheet.classList.remove('is-expanded');
+        elements.mobileSheet.style.removeProperty('--life-sheet-y');
+      }
+    }
     if (elements.mobileToggle) {
       elements.mobileToggle.setAttribute('aria-expanded', state.mobileOpen ? 'true' : 'false');
       elements.mobileToggle.textContent = state.mobileOpen ? '목록 닫기' : '목록 보기';
@@ -524,12 +530,12 @@
       <p>${escapeHtml(item.address || '주소 확인 필요')}</p></div><button class="life-selected-close" type="button" data-wifi-close aria-label="선택 카드 닫기">×</button></div>
       <div class="life-chip-row">${(item.badges || []).slice(0, 6).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
       <div class="life-detail-grid">
-        <span><strong>${escapeHtml(details.ssid || '와이파이 이름 확인 필요')}</strong>와이파이 이름(SSID)</span>
-        <span><strong>현장 확인 필요</strong>비밀번호</span>
-        <span><strong>${escapeHtml(item.placeDetail || '설치 상세 위치 확인 필요')}</strong>설치 위치</span>
-        <span><strong>${escapeHtml(details.facilityType || '시설 구분 확인 필요')}</strong>시설 구분</span>
-        <span><strong>${escapeHtml(details.provider || '제공기관 확인 필요')}</strong>제공기관</span>
-        <span><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong>관리 전화</span>
+        <span><small>와이파이 이름</small><strong>${escapeHtml(details.ssid || '와이파이 이름 확인 필요')}</strong></span>
+        <span><small>비밀번호</small><strong>현장 확인 필요</strong></span>
+        <span><small>설치 위치</small><strong>${escapeHtml(item.placeDetail || '설치 상세 위치 확인 필요')}</strong></span>
+        <span><small>시설 구분</small><strong>${escapeHtml(details.facilityType || '시설 구분 확인 필요')}</strong></span>
+        <span><small>제공기관</small><strong>${escapeHtml(details.provider || '제공기관 확인 필요')}</strong></span>
+        <span><small>관리 전화</small><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong></span>
       </div>
       <div class="life-card-actions"><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}<button type="button" data-wifi-close>닫기</button></div>
       <p class="fine-print">공공데이터에는 비밀번호가 제공되지 않을 수 있습니다. 실제 접속 가능 여부, 비밀번호 필요 여부, 와이파이 이름 변경, 시설 개방 여부는 현장에서 확인해 주세요.</p>`;
@@ -787,25 +793,51 @@
     if (!sheet || sheet.dataset.lifeDragBound === 'true') return;
     sheet.dataset.lifeDragBound = 'true';
     let startY = 0;
+    let lastY = 0;
     let active = false;
+    const getY = (event) => event.clientY || event.touches?.[0]?.clientY || event.changedTouches?.[0]?.clientY || 0;
     const start = (event) => {
       if (!event.target.closest('.parking-sheet-handle, .parking-mobile-sheet-head, .life-mobile-filter-head')) return;
       active = true;
-      startY = event.clientY || event.touches?.[0]?.clientY || 0;
+      startY = getY(event);
+      lastY = startY;
+      sheet.classList.add('is-dragging');
+      if (event.pointerId != null && typeof sheet.setPointerCapture === 'function') {
+        try { sheet.setPointerCapture(event.pointerId); } catch (_) { /* noop */ }
+      }
     };
-    const end = (event) => {
+    const move = (event) => {
       if (!active) return;
-      const endY = event.clientY || event.changedTouches?.[0]?.clientY || startY;
-      const delta = endY - startY;
-      if (delta > 60) onClose?.();
-      if (delta < -60 && expandedClass) sheet.classList.add(expandedClass);
-      if (delta > 20 && expandedClass) sheet.classList.remove(expandedClass);
+      lastY = getY(event);
+      const delta = lastY - startY;
+      const baseY = expandedClass && sheet.classList.contains(expandedClass) ? 7 : 42;
+      const nextY = Math.min(96, Math.max(7, baseY + (delta / Math.max(window.innerHeight, 1)) * 100));
+      sheet.style.setProperty('--life-sheet-y', `${nextY}%`);
+      event.preventDefault?.();
+    };
+    const end = () => {
+      if (!active) return;
+      const delta = lastY - startY;
+      sheet.classList.remove('is-dragging');
+      sheet.style.removeProperty('--life-sheet-y');
+      if (delta > 90) {
+        if (expandedClass) sheet.classList.remove(expandedClass);
+        onClose?.();
+      } else if (delta < -80 && expandedClass) {
+        sheet.classList.add(expandedClass);
+      } else if (delta > 36 && expandedClass) {
+        sheet.classList.remove(expandedClass);
+      }
       active = false;
     };
     sheet.addEventListener('pointerdown', start);
+    sheet.addEventListener('pointermove', move);
     sheet.addEventListener('pointerup', end);
+    sheet.addEventListener('pointercancel', end);
     sheet.addEventListener('touchstart', start, { passive: true });
+    sheet.addEventListener('touchmove', move, { passive: false });
     sheet.addEventListener('touchend', end, { passive: true });
+    sheet.addEventListener('touchcancel', end, { passive: true });
   };
 
   const initMobileInteractions = () => {

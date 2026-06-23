@@ -19,14 +19,14 @@
 <script data-schema="breadcrumb" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"한눈체크","item":"https://hannuncheck.com/"},{"@type":"ListItem","position":2,"name":"낚시터 찾기","item":"https://hannuncheck.com/tools/fishing-spot-map.html"}]}</script>
 <script data-schema="faqpage" type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"낚시터 정보는 실시간인가요?","acceptedAnswer":{"@type":"Answer","text":"아닙니다. 지방행정 인허가 데이터 기반 로컬 캐시 참고 정보입니다. 운영 여부, 요금, 어종, 예약 가능 여부는 현장 사정에 따라 달라질 수 있으므로 방문 전 전화 확인이 필요합니다."}},{"@type":"Question","name":"거리 표시는 어떤 기준인가요?","acceptedAnswer":{"@type":"Answer","text":"현재 위치 권한을 허용하면 현재 위치 기준 직선거리를 표시합니다. 위치를 사용하지 않으면 선택한 지역 또는 시군구 중심 기준 참고 거리로 표시됩니다."}},{"@type":"Question","name":"요금과 주요어종 정보는 그대로 믿어도 되나요?","acceptedAnswer":{"@type":"Answer","text":"요금과 주요어종은 원천 데이터에 기록된 참고 정보입니다. 계절, 운영 정책, 방류 상황, 예약 여부에 따라 달라질 수 있으므로 방문 전 확인이 필요합니다."}},{"@type":"Question","name":"폐업했거나 운영하지 않는 낚시터가 보일 수 있나요?","acceptedAnswer":{"@type":"Answer","text":"공공데이터 갱신 시점과 실제 현장 상태가 다를 수 있어 폐업, 휴업, 임시휴무 시설이 포함될 수 있습니다. 전화번호가 있으면 방문 전 통화 확인을 권장합니다."}},{"@type":"Question","name":"가족 단위 방문 전 무엇을 확인해야 하나요?","acceptedAnswer":{"@type":"Answer","text":"어린이 동반 가능 여부, 안전시설, 주차, 화장실, 편의시설, 예약 필요 여부, 이용요금과 영업시간을 확인하는 것이 좋습니다."}},{"@type":"Question","name":"지도에 표시되지 않는 낚시터도 있나요?","acceptedAnswer":{"@type":"Answer","text":"좌표가 제공되지 않거나 좌표 값이 잘못된 항목은 지도 표시 대상에서 제외될 수 있습니다. 좌표가 있는 공공데이터 캐시를 지도에 표시합니다."}}]}</script>
 <link href="/assets/css/base.css" rel="stylesheet"/>
-<link href="/assets/css/layout.css?v=20260623-v124-life-maps-final-ui-qa" rel="stylesheet"/>
-<link href="/assets/css/components.css?v=20260623-v124-life-maps-final-ui-qa" rel="stylesheet"/>
-<link href="/assets/css/parking-calc-base.css?v=20260623-v124-life-maps-final-ui-qa" rel="stylesheet"/>
-<link href="/assets/css/parking-calc-layout.css?v=20260623-v124-life-maps-final-ui-qa" rel="stylesheet"/>
-<link href="/assets/css/parking-calc-components.css?v=20260623-v124-life-maps-final-ui-qa" rel="stylesheet"/>
-<link href="/assets/css/tool-foundation.css?v=20260623-v124-life-maps-final-ui-qa" rel="stylesheet"/>
-<link href="/assets/css/life-map.css?v=20260623-v124-life-maps-final-ui-qa" rel="stylesheet"/>
-<script src="/assets/config/public-config.js?v=20260623-v124-life-maps-final-ui-qa"></script>
+<link href="/assets/css/layout.css?v=20260623-v125-life-maps-ui-complete" rel="stylesheet"/>
+<link href="/assets/css/components.css?v=20260623-v125-life-maps-ui-complete" rel="stylesheet"/>
+<link href="/assets/css/parking-calc-base.css?v=20260623-v125-life-maps-ui-complete" rel="stylesheet"/>
+<link href="/assets/css/parking-calc-layout.css?v=20260623-v125-life-maps-ui-complete" rel="stylesheet"/>
+<link href="/assets/css/parking-calc-components.css?v=20260623-v125-life-maps-ui-complete" rel="stylesheet"/>
+<link href="/assets/css/tool-foundation.css?v=20260623-v125-life-maps-ui-complete" rel="stylesheet"/>
+<link href="/assets/css/life-map.css?v=20260623-v125-life-maps-ui-complete" rel="stylesheet"/>
+<script src="/assets/config/public-config.js?v=20260623-v125-life-maps-ui-complete"></script>
     <!-- AdSense 심사 전에는 광고 스크립트를 비활성화합니다. -->
 </head>
 <body>
@@ -124,11 +124,25 @@
 </section>
 </div>
 </section>
-<section class="content-band muted"><div class="container calculator-guide"><p class="eyebrow">낚시터 찾기 가이드</p><h2>낚시터는 이렇게 확인하세요.</h2><p class="section-lead">위치만 보고 출발하기보다 요금, 어종, 시설, 전화번호를 함께 확인하는 흐름으로 구성했습니다.</p><div class="guide-grid"><article><h3>지역 먼저 선택</h3><p>처음에는 서울 기준으로 표시되며, 지역을 바꾸면 해당 지역 로컬 캐시를 불러옵니다.</p></article><article><h3>요금 확인</h3><p>이용요금은 원천 데이터 기준 참고 문구입니다. 실제 가격과 이용 조건은 방문 전 확인이 필요합니다.</p></article><article><h3>어종 확인</h3><p>주요어종 필터로 붕어, 잉어 등 원하는 낚시 대상이 있는 곳을 추릴 수 있습니다.</p></article><article><h3>전화 확인</h3><p>운영 여부와 예약 가능 여부는 전화 확인이 가장 안전합니다.</p></article><article><h3>현재 위치 활용</h3><p>위치 권한을 허용하면 현재 위치 기준 거리와 가까운 순 정렬을 참고할 수 있습니다.</p></article><article><h3>카카오맵 바로가기</h3><p>카카오맵 바로가기와 카카오맵 검색 버튼으로 실제 경로, 주변 환경, 최근 장소 정보를 다시 확인할 수 있습니다.</p></article></div></div></section>
+<section class="content-band muted"><div class="container calculator-guide"><p class="eyebrow">낚시터 찾기 가이드</p><h2>낚시터는 이렇게 확인하세요.</h2><p class="section-lead">위치만 보고 출발하기보다 요금, 어종, 시설, 전화번호를 함께 확인하는 흐름으로 구성했습니다.</p><div class="guide-grid"><article><h3>지역 먼저 선택</h3><p>처음에는 서울 기준으로 표시되며, 지역을 바꾸면 해당 지역 로컬 캐시를 불러옵니다.</p></article><article><h3>요금 확인</h3><p>이용요금은 원천 데이터 기준 참고 문구입니다. 실제 가격과 이용 조건은 방문 전 확인이 필요합니다.</p></article><article><h3>어종 확인</h3><p>주요어종 필터로 붕어, 잉어 등 원하는 낚시 대상이 있는 곳을 추릴 수 있습니다.</p></article><article><h3>전화 확인</h3><p>운영 여부와 예약 가능 여부는 전화 확인이 가장 안전합니다.</p></article><article><h3>현재 위치 활용</h3><p>위치 권한을 허용하면 현재 위치 기준 거리와 가까운 순 정렬을 참고할 수 있습니다.</p></article><article><h3>카카오맵 바로가기</h3><p>카카오맵 바로가기 버튼으로 실제 경로, 주변 환경, 최근 장소 정보를 다시 확인할 수 있습니다.</p></article></div></div></section>
 <section class="content-band muted life-adsense-content-v123"><div class="container calculator-guide"><p class="eyebrow">낚시터 정보 해석</p><h2>낚시터 찾기는 위치보다 방문 가능성을 함께 확인하는 도구입니다.</h2><p class="section-lead">가까운 낚시터라도 실제 운영 여부, 예약 가능 여부, 요금, 어종, 안전시설은 현장 사정에 따라 달라질 수 있습니다. 한눈체크는 공공데이터를 지도와 목록으로 정리해 출발 전 확인할 항목을 줄이는 데 초점을 둡니다.</p><div class="guide-grid"><article><h3>거리 기준 확인</h3><p>현재 위치를 허용하면 현재 위치 기준 직선거리를 표시합니다. 위치를 사용하지 않으면 선택한 지역 또는 시군구 중심 기준 참고 거리로 표시됩니다.</p></article><article><h3>요금·예약 확인</h3><p>이용요금은 원천 데이터의 문구를 정리한 참고값입니다. 시간권, 손맛터, 잡이터, 장비 대여, 예약 조건은 현장 안내가 우선입니다.</p></article><article><h3>어종 정보 확인</h3><p>주요어종은 등록 데이터 기준입니다. 계절, 방류 일정, 수질, 운영 방식에 따라 실제 낚시 가능한 어종이 달라질 수 있습니다.</p></article><article><h3>안전·편의시설 확인</h3><p>안전시설과 편의시설 문구가 있어도 실제 사용 가능 여부는 달라질 수 있습니다. 어린이 동반이나 야간 방문 전에는 전화 확인을 권장합니다.</p></article></div></div></section><section class="content-band life-adsense-content-v123"><div class="container calculator-guide"><p class="eyebrow">방문 전 체크리스트</p><h2>낚시터 방문 전에는 네 가지를 확인하세요.</h2><div class="guide-grid"><article><h3>운영 중인지</h3><p>공공데이터에는 휴업, 폐업, 임시 운영 변경이 늦게 반영될 수 있습니다.</p></article><article><h3>요금과 결제 방식</h3><p>입어료, 시간제 요금, 장비 대여료, 현금·카드 가능 여부를 확인하세요.</p></article><article><h3>예약과 혼잡도</h3><p>주말이나 성수기에는 예약 여부와 입장 제한이 달라질 수 있습니다.</p></article><article><h3>주변 기능</h3><p><a href="/tools/public-toilet-map.html">공중화장실 찾기</a>, <a href="/tools/free-wifi-map.html">무료 와이파이 찾기</a>, <a href="/tools/parking-fee-check.html">주차비 확인 지도</a>를 함께 확인하면 이동 계획을 세우기 쉽습니다.</p></article></div></div></section><section class="content-band" id="faq"><div class="container faq-section"><p class="eyebrow">자주 묻는 질문</p><h2>낚시터 찾기 FAQ</h2><details><summary>낚시터 정보는 실시간인가요?</summary><p>아닙니다. 지방행정 인허가 공공데이터 기반 로컬 캐시 정보입니다. 운영 여부, 요금, 예약 가능 여부는 방문 전 전화 확인이 필요합니다.</p></details><details><summary>거리 표시는 어떤 기준인가요?</summary><p>현재 위치 권한을 허용하면 현재 위치 기준 직선거리로 표시합니다. 위치를 사용하지 않으면 선택한 지역 또는 시군구 중심 기준 참고 거리로 표시됩니다.</p></details><details><summary>요금과 주요어종 정보는 그대로 믿어도 되나요?</summary><p>요금과 주요어종은 원천 데이터에 기록된 참고 정보입니다. 계절, 운영 정책, 방류 상황, 예약 여부에 따라 달라질 수 있습니다.</p></details><details><summary>폐업했거나 운영하지 않는 낚시터가 보일 수 있나요?</summary><p>공공데이터 갱신 시점과 실제 현장 상태가 다를 수 있어 폐업, 휴업, 임시휴무 시설이 포함될 수 있습니다.</p></details><details><summary>가족 단위 방문 전 무엇을 확인해야 하나요?</summary><p>어린이 동반 가능 여부, 안전시설, 주차, 화장실, 편의시설, 예약 필요 여부, 이용요금과 영업시간을 확인하는 것이 좋습니다.</p></details><details><summary>지도에 안 나오는 낚시터도 있나요?</summary><p>좌표가 제공되지 않았거나 좌표 값이 잘못된 항목은 지도용 캐시에서 제외될 수 있습니다.</p></details></div></section>
-<footer class="site-footer"><div class="container footer-grid"><div class="footer-note"><strong>한눈체크</strong><p>생활 속에서 확인이 필요한 정보를 한눈에 정리하고, 결과의 의미와 한계를 함께 설명하는 생활 확인 도구입니다.</p></div><nav aria-label="푸터 메뉴"><a href="/about.html">소개</a><a href="/privacy.html">개인정보처리방침</a><a href="/disclaimer.html">면책 안내</a><a href="/data-sources.html">데이터 출처</a><a href="/contact.html">문의·정정 요청</a></nav></div></footer>
-<script src="/assets/js/app.js?v=20260623-v124-life-maps-final-ui-qa"></script>
-<script defer src="/assets/js/check-toolkit.js?v=20260623-v124-life-maps-final-ui-qa"></script>
-<script defer src="/assets/js/fishing-spot-map.js?v=20260623-v124-life-maps-final-ui-qa"></script>
+<footer class="site-footer">
+<div class="container footer-grid">
+<div class="footer-note">
+<strong>한눈체크</strong>
+<p>생활 속에서 확인이 필요한 정보를 한눈에 정리하고, 결과의 의미와 한계를 함께 설명하는 생활 확인 도구입니다. 조회·측정 결과는 참고용이며, 실제 판단을 보장하지 않습니다.</p>
+</div>
+<nav aria-label="푸터 메뉴">
+<a href="/about.html">소개</a>
+<a href="/privacy.html">개인정보처리방침</a>
+<a href="/disclaimer.html">면책 안내</a>
+<a href="/data-sources.html">데이터 출처</a>
+<a href="/contact.html">문의·정정 요청</a>
+</nav>
+</div>
+</footer>
+<script src="/assets/js/app.js?v=20260623-v125-life-maps-ui-complete"></script>
+<script defer src="/assets/js/check-toolkit.js?v=20260623-v125-life-maps-ui-complete"></script>
+<script defer src="/assets/js/fishing-spot-map.js?v=20260623-v125-life-maps-ui-complete"></script>
 </body>
 </html>

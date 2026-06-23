@@ -19,14 +19,14 @@
 <script data-schema="breadcrumb" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"한눈체크","item":"https://hannuncheck.com/"},{"@type":"ListItem","position":2,"name":"공중화장실 찾기","item":"https://hannuncheck.com/tools/public-toilet-map.html"}]}</script>
 <script data-schema="faqpage" type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"공중화장실 정보는 실시간인가요?","acceptedAnswer":{"@type":"Answer","text":"아닙니다. 공공데이터 기반 로컬 캐시 참고 정보입니다. 실제 개방 여부, 청결 상태, 시설 사용 가능 여부, 관리 상태는 현장 상황에 따라 달라질 수 있습니다."}},{"@type":"Question","name":"상시개방은 지금 열림과 같은 뜻인가요?","acceptedAnswer":{"@type":"Answer","text":"상시개방은 원본 데이터의 개방시간 구분 또는 상세 문구를 기준으로 한 참고 분류입니다. 실제 이용 가능 여부는 현장 상황에 따라 달라질 수 있습니다."}},{"@type":"Question","name":"장애인 화장실, 기저귀교환대 정보는 정확한가요?","acceptedAnswer":{"@type":"Answer","text":"공공데이터의 시설 수와 설치 여부를 정리한 참고 정보입니다. 현장 관리 상태, 고장, 일시 폐쇄, 출입 제한은 반영되지 않을 수 있습니다."}},{"@type":"Question","name":"비상벨과 CCTV가 표시되면 안전한 곳인가요?","acceptedAnswer":{"@type":"Answer","text":"비상벨과 CCTV 표시는 설치 정보 기준 참고값입니다. 실제 작동 여부, 관리 상태, 주변 환경까지 보장하는 것은 아닙니다."}},{"@type":"Question","name":"현재 위치 기준으로 가까운 공중화장실을 볼 수 있나요?","acceptedAnswer":{"@type":"Answer","text":"브라우저 위치 권한을 허용하면 현재 위치 기준으로 거리와 가까운 순 정렬을 참고할 수 있습니다."}},{"@type":"Question","name":"지도 위치가 실제 입구와 다를 수 있나요?","acceptedAnswer":{"@type":"Answer","text":"네. 주소를 좌표로 변환한 위치라 실제 건물 입구, 지하·공원 내부 위치와 차이가 있을 수 있습니다. 현장 표지판과 카카오맵 정보를 함께 확인하세요."}}]}</script>
 <link href="/assets/css/base.css" rel="stylesheet"/>
-<link href="/assets/css/layout.css?v=20260623-v124-life-maps-final-ui-qa" rel="stylesheet"/>
-<link href="/assets/css/components.css?v=20260623-v124-life-maps-final-ui-qa" rel="stylesheet"/>
-<link href="/assets/css/parking-calc-base.css?v=20260623-v124-life-maps-final-ui-qa" rel="stylesheet"/>
-<link href="/assets/css/parking-calc-layout.css?v=20260623-v124-life-maps-final-ui-qa" rel="stylesheet"/>
-<link href="/assets/css/parking-calc-components.css?v=20260623-v124-life-maps-final-ui-qa" rel="stylesheet"/>
-<link href="/assets/css/tool-foundation.css?v=20260623-v124-life-maps-final-ui-qa" rel="stylesheet"/>
-<link href="/assets/css/life-map.css?v=20260623-v124-life-maps-final-ui-qa" rel="stylesheet"/>
-<script src="/assets/config/public-config.js?v=20260623-v124-life-maps-final-ui-qa"></script>
+<link href="/assets/css/layout.css?v=20260623-v125-life-maps-ui-complete" rel="stylesheet"/>
+<link href="/assets/css/components.css?v=20260623-v125-life-maps-ui-complete" rel="stylesheet"/>
+<link href="/assets/css/parking-calc-base.css?v=20260623-v125-life-maps-ui-complete" rel="stylesheet"/>
+<link href="/assets/css/parking-calc-layout.css?v=20260623-v125-life-maps-ui-complete" rel="stylesheet"/>
+<link href="/assets/css/parking-calc-components.css?v=20260623-v125-life-maps-ui-complete" rel="stylesheet"/>
+<link href="/assets/css/tool-foundation.css?v=20260623-v125-life-maps-ui-complete" rel="stylesheet"/>
+<link href="/assets/css/life-map.css?v=20260623-v125-life-maps-ui-complete" rel="stylesheet"/>
+<script src="/assets/config/public-config.js?v=20260623-v125-life-maps-ui-complete"></script>
     <!-- AdSense 심사 전에는 광고 스크립트를 비활성화합니다. -->
 </head>
 <body>
@@ -104,9 +104,23 @@
 </section>
 <section class="notice-card warning life-notice-card"><h2>공중화장실 정보 이용 전 확인</h2><p>본 결과는 지방행정 인허가 데이터 기반 로컬 캐시 참고 정보입니다. 실제 개방 여부, 청결 상태, 시설 사용 가능 여부는 현장 상황과 관리기관 사정에 따라 달라질 수 있습니다.</p></section>
 <section class="content-band muted life-adsense-content-v123"><div class="container calculator-guide"><p class="eyebrow">공중화장실 정보 해석</p><h2>공중화장실은 위치뿐 아니라 개방 여부와 시설 조건을 함께 확인해야 합니다.</h2><p class="section-lead">한눈체크는 공공데이터의 화장실명, 주소, 개방시간, 장애인 화장실, 기저귀교환대, 비상벨, CCTV 정보를 좌표 변환한 로컬 캐시로 정리합니다. 실제 이용 가능 여부는 현장 사정에 따라 달라질 수 있습니다.</p><div class="guide-grid"><article><h3>개방시간</h3><p>상시개방, 정시개방, 운영시간 확인 필요로 구분해 표시합니다. 상시개방이라도 공사, 청소, 시설 폐쇄로 일시 이용이 어려울 수 있습니다.</p></article><article><h3>장애인 화장실</h3><p>장애인용 변기나 시설 수가 제공된 데이터를 기준으로 표시합니다. 실제 접근 가능 여부와 고장 여부는 현장에서 확인이 필요합니다.</p></article><article><h3>기저귀교환대</h3><p>기저귀교환대가 있다고 표시되어도 건물 내부 위치, 운영시간, 일시 사용 제한이 있을 수 있습니다.</p></article><article><h3>비상벨·CCTV</h3><p>비상벨과 CCTV는 설치 정보 기준 참고값입니다. 실제 작동 상태와 주변 안전 환경까지 보장하는 정보는 아닙니다.</p></article></div></div></section><section class="content-band life-adsense-content-v123"><div class="container calculator-guide"><p class="eyebrow">이용 전 체크리스트</p><h2>급할 때는 가까운 곳부터, 조건이 필요할 때는 필터를 활용하세요.</h2><div class="guide-grid"><article><h3>가까운 순 확인</h3><p>현재 위치 권한을 허용하면 현재 위치 기준 거리와 가까운 순 정렬을 참고할 수 있습니다.</p></article><article><h3>필수 조건 필터</h3><p>장애인 화장실, 기저귀교환대, 비상벨 등 꼭 필요한 조건이 있으면 필터로 먼저 추리세요.</p></article><article><h3>지도 위치 재확인</h3><p>주소 기반 좌표라 실제 입구와 다를 수 있습니다. 카카오맵 바로가기에서 건물 입구와 주변 경로를 확인하세요.</p></article><article><h3>함께 보면 좋은 기능</h3><p><a href="/tools/free-wifi-map.html">무료 와이파이 찾기</a>, <a href="/tools/parking-fee-check.html">주차비 확인 지도</a>, <a href="/tools/outdoor-air.html">외출 위험 종합 체크</a>도 함께 확인할 수 있습니다.</p></article></div></div></section><section class="faq-section" aria-label="공중화장실 찾기 FAQ"><h2>자주 묻는 질문</h2><details><summary>공중화장실 정보는 실시간인가요?</summary><p>아닙니다. 공공데이터 기반 로컬 캐시 참고 정보입니다. 실제 개방 여부, 청결 상태, 시설 사용 가능 여부, 관리 상태는 현장 상황에 따라 달라질 수 있습니다.</p></details><details><summary>상시개방은 지금 열림인가요?</summary><p>상시개방은 원본 데이터의 개방시간 구분 또는 상세 문구 기준 참고 분류입니다. 실제 이용 가능 여부는 현장에서 달라질 수 있습니다.</p></details><details><summary>장애인 화장실, 기저귀교환대 정보는 정확한가요?</summary><p>공공데이터의 시설 수와 설치 여부를 정리한 참고 정보입니다. 현장 관리 상태, 고장, 일시 폐쇄, 출입 제한은 반영되지 않을 수 있습니다.</p></details><details><summary>비상벨과 CCTV가 표시되면 안전한 곳인가요?</summary><p>비상벨과 CCTV 표시는 설치 정보 기준 참고값입니다. 실제 작동 여부, 관리 상태, 주변 환경까지 보장하는 것은 아닙니다.</p></details><details><summary>현재 위치 기준 거리도 볼 수 있나요?</summary><p>현재 위치 권한을 허용하면 현재 위치 기준 거리와 가까운 순 정렬을 참고할 수 있습니다.</p></details><details><summary>지도 위치가 실제 입구와 다를 수 있나요?</summary><p>네. 주소를 좌표로 변환한 위치라 실제 건물 입구, 지하·공원 내부 위치와 차이가 있을 수 있습니다.</p></details></section>
-<footer class="site-footer"><div class="container footer-grid"><div class="footer-note"><strong>한눈체크</strong><p>생활 속에서 확인이 필요한 정보를 한눈에 정리하고, 결과의 의미와 한계를 함께 설명하는 생활 확인 도구입니다.</p></div><nav aria-label="푸터 메뉴"><a href="/about.html">소개</a><a href="/privacy.html">개인정보처리방침</a><a href="/disclaimer.html">면책 안내</a><a href="/data-sources.html">데이터 출처</a><a href="/contact.html">문의·정정 요청</a></nav></div></footer>
-<script src="/assets/js/app.js?v=20260623-v124-life-maps-final-ui-qa"></script>
-<script defer src="/assets/js/check-toolkit.js?v=20260623-v124-life-maps-final-ui-qa"></script>
-<script defer src="/assets/js/public-toilet-map.js?v=20260623-v124-life-maps-final-ui-qa"></script>
+<footer class="site-footer">
+<div class="container footer-grid">
+<div class="footer-note">
+<strong>한눈체크</strong>
+<p>생활 속에서 확인이 필요한 정보를 한눈에 정리하고, 결과의 의미와 한계를 함께 설명하는 생활 확인 도구입니다. 조회·측정 결과는 참고용이며, 실제 판단을 보장하지 않습니다.</p>
+</div>
+<nav aria-label="푸터 메뉴">
+<a href="/about.html">소개</a>
+<a href="/privacy.html">개인정보처리방침</a>
+<a href="/disclaimer.html">면책 안내</a>
+<a href="/data-sources.html">데이터 출처</a>
+<a href="/contact.html">문의·정정 요청</a>
+</nav>
+</div>
+</footer>
+<script src="/assets/js/app.js?v=20260623-v125-life-maps-ui-complete"></script>
+<script defer src="/assets/js/check-toolkit.js?v=20260623-v125-life-maps-ui-complete"></script>
+<script defer src="/assets/js/public-toilet-map.js?v=20260623-v125-life-maps-ui-complete"></script>
 </body>
 </html>

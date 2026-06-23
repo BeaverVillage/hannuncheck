@@ -14,14 +14,14 @@ const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const readJson = (rel) => JSON.parse(read(rel));
 const assert = (condition, message) => condition ? ok.push(message) : errors.push(message);
 
-const SHARED_VERSION = '20260623-v124-life-maps-final-ui-qa';
+const SHARED_VERSION = '20260623-v125-life-maps-ui-complete';
 const tools = [
   {
     name: '낚시터',
     html: 'tools/fishing-spot-map.html',
     js: 'assets/js/fishing-spot-map.js',
     dataIndex: 'assets/data/life/fishing-spots/index.json',
-    runtimeVersion: 'v124-life-maps-final-ui-qa',
+    runtimeVersion: 'v125-life-maps-ui-complete',
     mapRoot: 'data-fishing-map-tool',
     defaultRegion: 'seoul',
   },
@@ -30,7 +30,7 @@ const tools = [
     html: 'tools/free-wifi-map.html',
     js: 'assets/js/free-wifi-map.js',
     dataIndex: 'assets/data/life/free-wifi/index.json',
-    runtimeVersion: 'v124-life-maps-final-ui-qa',
+    runtimeVersion: 'v125-life-maps-ui-complete',
     mapRoot: 'data-wifi-map-tool',
     defaultRegion: 'seoul',
     defaultDistrictLabel: '강남구',
@@ -40,7 +40,7 @@ const tools = [
     html: 'tools/public-toilet-map.html',
     js: 'assets/js/public-toilet-map.js',
     dataIndex: 'assets/data/life/public-toilets/index.json',
-    runtimeVersion: 'v124-life-maps-final-ui-qa',
+    runtimeVersion: 'v125-life-maps-ui-complete',
     mapRoot: 'data-public-toilet-map-tool',
     defaultRegion: 'seoul',
     defaultDistrictLabel: '강남구',
@@ -55,8 +55,8 @@ for (const tool of tools) {
   const html = read(tool.html);
   const js = read(tool.js);
   const index = readJson(tool.dataIndex);
-  assert(html.includes(SHARED_VERSION), `${tool.name}: html asset query is v124-life-maps-final-ui-qa`);
-  assert(js.includes(`const VERSION = '${tool.runtimeVersion}'`), `${tool.name}: js runtime version is v124-life-maps-final-ui-qa`);
+  assert(html.includes(SHARED_VERSION), `${tool.name}: html asset query is v125-life-maps-ui-complete`);
+  assert(js.includes(`const VERSION = '${tool.runtimeVersion}'`), `${tool.name}: js runtime version is v125-life-maps-ui-complete`);
   assert(html.includes(tool.mapRoot), `${tool.name}: html has root marker`);
   assert(js.includes("selectedId: ''"), `${tool.name}: initial selectedId is empty`);
   assert(!/selectedId\s*=\s*state\.items\[0\]/.test(js), `${tool.name}: no first-item autoselect pattern`);

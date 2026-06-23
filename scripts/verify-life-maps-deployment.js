@@ -22,8 +22,8 @@ const LIFE_TOOLS = [
     dataIndex: 'assets/data/life/fishing-spots/index.json',
     dataDir: 'assets/data/life/fishing-spots',
     needles: ['fishing-spot-map.html', '낚시터 찾기'],
-    assetVersion: '20260623-v124-life-maps-final-ui-qa',
-    runtimeVersion: 'v124-life-maps-final-ui-qa',
+    assetVersion: '20260623-v125-life-maps-ui-complete',
+    runtimeVersion: 'v125-life-maps-ui-complete',
   },
   {
     name: '무료 와이파이 찾기',
@@ -33,8 +33,8 @@ const LIFE_TOOLS = [
     dataIndex: 'assets/data/life/free-wifi/index.json',
     dataDir: 'assets/data/life/free-wifi',
     needles: ['free-wifi-map.html', '무료 와이파이 찾기'],
-    assetVersion: '20260623-v124-life-maps-final-ui-qa',
-    runtimeVersion: 'v124-life-maps-final-ui-qa',
+    assetVersion: '20260623-v125-life-maps-ui-complete',
+    runtimeVersion: 'v125-life-maps-ui-complete',
   },
   {
     name: '공중화장실 찾기',
@@ -44,8 +44,8 @@ const LIFE_TOOLS = [
     dataIndex: 'assets/data/life/public-toilets/index.json',
     dataDir: 'assets/data/life/public-toilets',
     needles: ['public-toilet-map.html', '공중화장실 찾기'],
-    assetVersion: '20260623-v124-life-maps-final-ui-qa',
-    runtimeVersion: 'v124-life-maps-final-ui-qa',
+    assetVersion: '20260623-v125-life-maps-ui-complete',
+    runtimeVersion: 'v125-life-maps-ui-complete',
   },
 ];
 

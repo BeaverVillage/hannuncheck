@@ -526,9 +526,30 @@
     return item;
   };
 
-  const getCriticalProvidedItems = (item = {}) => (Array.isArray(item.criticalCare) ? item.criticalCare : [])
+  const getCriticalEntries = (item = {}) => (Array.isArray(item.criticalCare) ? item.criticalCare : [])
     .map(normalizeCriticalEntry)
     .filter((entry) => normalizeTextForCache(entry?.label || '') || normalizeTextForCache(entry?.statusLabel || entry?.value || ''));
+
+  const isCriticalProvided = (entry = {}) => {
+    const normalized = normalizeCriticalEntry(entry);
+    const statusLabel = normalizeAvailabilityText(normalized);
+    if (statusLabel === '정보 미제공' || statusLabel === '전화 확인') return false;
+    return normalized.tone === 'good' || statusLabel === '제공됨';
+  };
+
+  const getCriticalProvidedItems = (item = {}) => getCriticalEntries(item).filter(isCriticalProvided);
+
+  const getCriticalCounts = (item = {}) => {
+    const entries = getCriticalEntries(item);
+    const provided = entries.filter(isCriticalProvided).length;
+    return {
+      total: entries.length,
+      provided,
+      unknown: entries.filter((entry) => normalizeCriticalEntry(entry).statusLabel === '정보 미제공').length,
+    };
+  };
+
+  const getCriticalProvidedCount = (item = {}) => getCriticalCounts(item).provided;
 
   const getLiveStatusPayload = (item = {}) => {
     const payload = {};
@@ -1101,9 +1122,9 @@
   };
 
   const formatCriticalSummary = (item) => {
-    const total = getCriticalProvidedItems(item).length;
+    const { total, provided } = getCriticalCounts(item);
     if (!total) return '정보 없음';
-    return `${total}개 제공`;
+    return `${provided}/${total}개 제공`;
   };
 
   const formatFacilitySummary = (item) => {
@@ -1119,7 +1140,7 @@
     if (Number.isFinite(beds) && beds > 0) score += Math.min(40, beds * 2);
     if (item.emergencyTel || item.mainTel) score += 14;
     if (hasMapCoordinates(item)) score += 10;
-    if (Number(item.criticalAvailableCount) > 0) score += 8;
+    if (getCriticalProvidedCount(item) > 0) score += 8;
     if (item.sourceMode === 'local_emergency_cache') score -= 2;
     return score;
   };
@@ -1127,7 +1148,7 @@
   const sortItems = (items, sort) => [...items].sort((a, b) => {
     if (sort === 'beds') return Math.max(0, numberOrNeg(b.emergencyBeds)) - Math.max(0, numberOrNeg(a.emergencyBeds)) || emergencyRankScore(b) - emergencyRankScore(a) || numberOrMax(a.distanceM) - numberOrMax(b.distanceM);
     if (sort === 'phone') return Number(Boolean(b.emergencyTel || b.mainTel)) - Number(Boolean(a.emergencyTel || a.mainTel)) || emergencyRankScore(b) - emergencyRankScore(a) || numberOrMax(a.distanceM) - numberOrMax(b.distanceM);
-    if (sort === 'critical') return numberOrNeg(b.criticalAvailableCount) - numberOrNeg(a.criticalAvailableCount) || Math.max(0, numberOrNeg(b.emergencyBeds)) - Math.max(0, numberOrNeg(a.emergencyBeds)) || emergencyRankScore(b) - emergencyRankScore(a) || numberOrMax(a.distanceM) - numberOrMax(b.distanceM);
+    if (sort === 'critical') return getCriticalProvidedCount(b) - getCriticalProvidedCount(a) || Math.max(0, numberOrNeg(b.emergencyBeds)) - Math.max(0, numberOrNeg(a.emergencyBeds)) || emergencyRankScore(b) - emergencyRankScore(a) || numberOrMax(a.distanceM) - numberOrMax(b.distanceM);
     if (sort === 'night') return Number(Boolean(b.isNightCandidate)) - Number(Boolean(a.isNightCandidate)) || numberOrNeg(b.closeMinutes) - numberOrNeg(a.closeMinutes) || numberOrMax(a.distanceM) - numberOrMax(b.distanceM);
     return numberOrMax(a.distanceM) - numberOrMax(b.distanceM) || emergencyRankScore(b) - emergencyRankScore(a);
   });
@@ -1138,7 +1159,7 @@
     const nearest = items.find((item) => Number.isFinite(Number(item.distanceM)));
     if (state.careMode === 'emergency') {
       const withBeds = items.filter((item) => Number.isFinite(Number(item.emergencyBeds)) && Number(item.emergencyBeds) > 0).length;
-      const criticalCount = items.filter((item) => Number(item.criticalAvailableCount) > 0).length;
+      const criticalCount = items.filter((item) => getCriticalProvidedCount(item) > 0).length;
       const messageCount = items.filter((item) => Array.isArray(item.messages) && item.messages.length).length;
       elements.summaryCount.innerHTML = `<span>조회 후보</span><strong>${count.toLocaleString('ko-KR')}곳</strong><small>${escapeHtml(getRegionLabel())} · 응급실 상태 확인</small>`;
       elements.summaryBeds.innerHTML = `<span>가용 병상 표시</span><strong>${withBeds.toLocaleString('ko-KR')}곳</strong><small>공공데이터 기준 · 전화 확인 필요</small>`;
@@ -1208,7 +1229,7 @@
       ].filter(Boolean).slice(0, 4);
       return `<div class="emergency-status-chip-row">${chips.map((chip) => `<span class="emergency-mini-chip ${escapeHtml(chip.tone || 'neutral')}">${escapeHtml(chip.text)}</span>`).join('')}</div>`;
     }
-    const critical = getCriticalProvidedItems(item).slice(0, 4).map((entry) => ({ text: `${entry.label} ${entry.statusLabel || (entry.tone === 'good' ? '제공됨' : '전화 확인')}`, tone: entry.tone }));
+    const critical = getCriticalEntries(item).slice(0, 4).map((entry) => ({ text: `${entry.label} ${entry.statusLabel || (entry.tone === 'good' ? '제공됨' : '전화 확인')}`, tone: entry.tone }));
     const facility = (item.facilityStatus || []).slice(0, 3).map((entry) => ({ text: `${entry.label} ${entry.tone === 'good' ? '가능' : '확인'}`, tone: entry.tone }));
     const combined = [...critical, ...facility].slice(0, 6);
     if (!combined.length) combined.push({ text: '세부 상태 전화 확인', tone: 'neutral' });
@@ -1241,7 +1262,7 @@
       const phoneText = phone ? '전화 있음' : '전화 확인 필요';
       const locationText = hasMapCoordinates(item) ? '위치 확인' : '주소 확인 필요';
       const statusText = isEmergency
-        ? (getCriticalProvidedItems(item).length ? '중증 항목 제공' : '중증 항목 확인')
+        ? formatCriticalSummary(item)
         : (item.isNightCandidate ? '야간 운영 참고' : '운영 확인 필요');
       const mapTone = hasMapCoordinates(item) ? 'good' : 'caution';
       return `<article class="parking-result-card emergency-hospital-card emergency-hospital-card--ev emergency-hospital-card--compact ${state.selectedId === item.id ? 'selected' : ''}" data-hospital-id="${escapeHtml(item.id)}">
@@ -1306,7 +1327,7 @@
     const mapText = hasMapCoordinates(item) ? '지도에서 확인' : '주소 확인 필요';
     const bedsText = isEmergencyItem(item) ? formatBeds(item.emergencyBeds) : (item.operationTime || '운영시간 확인');
     const criticalText = isEmergencyItem(item) ? formatCriticalSummary(item) : '';
-    const hasCriticalItems = isEmergencyItem(item) && getCriticalProvidedItems(item).length > 0;
+    const hasCriticalItems = isEmergencyItem(item) && getCriticalEntries(item).length > 0;
     const statusText = isEmergencyItem(item) ? criticalText : (item.isNightCandidate ? '야간 운영 참고' : '전화 확인');
     elements.mapDetail.hidden = false;
     elements.mapDetail.innerHTML = `
@@ -1369,7 +1390,7 @@
       <p class="emergency-detail-address">${escapeHtml(item.address || '주소 정보 없음')}</p>
       <div class="emergency-detail-grid">
         <div><span>가용 병상</span><strong>${formatBeds(item.emergencyBeds)}</strong></div>
-        <div><span>중증 항목</span><strong>${escapeHtml(formatCriticalSummary(item))}</strong><button type="button" class="metric-detail-link" data-critical-id="${escapeHtml(item.id)}" ${getCriticalProvidedItems(item).length ? '' : 'disabled'}>항목 보기</button></div>
+        <div><span>중증 항목</span><strong>${escapeHtml(formatCriticalSummary(item))}</strong><button type="button" class="metric-detail-link" data-critical-id="${escapeHtml(item.id)}" ${getCriticalEntries(item).length ? '' : 'disabled'}>항목 보기</button></div>
         <div><span>전화</span><strong>${escapeHtml(phone || '전화 확인')}</strong></div>
         <div><span>거리</span><strong>${escapeHtml(distanceText)}</strong></div>
         <div><span>위치</span><strong>${escapeHtml(mapText)}</strong></div>
@@ -1418,7 +1439,9 @@
     const item = state.items.find((entry) => entry.id === id) || null;
     const popup = ensureCriticalPopup();
     const body = popup.querySelector('[data-critical-body]');
-    const entries = getCriticalProvidedItems(item);
+    const entries = getCriticalEntries(item);
+    const { total, provided } = getCriticalCounts(item);
+    const summaryText = total ? `${provided}/${total}개 제공` : '정보 없음';
     const rows = entries.length ? entries.map((entry) => {
       const tone = escapeHtml(entry.tone || 'neutral');
       const label = escapeHtml(entry.label || '중증 항목');
@@ -1426,6 +1449,7 @@
       return `<li class="${tone}"><strong>${label}</strong><span>${value}</span></li>`;
     }).join('') : '<li class="neutral"><strong>제공 항목 없음</strong><span>119 또는 병원 전화로 확인해 주세요.</span></li>';
     body.innerHTML = `
+      <p class="fine-print"><strong>제공 항목: ${escapeHtml(summaryText)}</strong></p>
       <p class="fine-print">${escapeHtml(item?.name || '선택한 기관')}의 중증질환 관련 공공데이터 제공 항목입니다. 실제 수용 가능 여부는 현장 상황에 따라 달라질 수 있으므로 방문 전 전화 확인이 필요합니다.</p>
       <ul>${rows}</ul>`;
     popup.hidden = false;

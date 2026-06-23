@@ -3,7 +3,7 @@
   if (!root) return;
 
   const CACHE_BASE = '/assets/data/life/free-wifi';
-  const VERSION = 'v127-location-search-current-ui';
+  const VERSION = 'v128-recovered-location-search';
   const MAX_LIST = 50;
   const MAX_MARKERS = 300;
   const MAX_DISTRICT_CACHE = 12;

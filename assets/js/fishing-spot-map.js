@@ -7,7 +7,7 @@
   const CACHE_BASE = '/assets/data/life/fishing-spots';
   const MAX_LIST = 80;
   const MAX_MARKERS = 220;
-  const VERSION = 'v127-location-search-current-ui';
+  const VERSION = 'v128-recovered-location-search';
   const REGION_CENTERS = {
     seoul: { lat: 37.5665, lng: 126.9780, label: '서울' },
     busan: { lat: 35.1796, lng: 129.0756, label: '부산' },

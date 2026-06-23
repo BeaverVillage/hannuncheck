@@ -5,8 +5,8 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = process.cwd();
-const VERSION = '20260623-v126-life-maps-ui-polish-final';
-const RUNTIME = 'v126-life-maps-ui-polish-final';
+const VERSION = '20260623-v128-recovered-location-search';
+const RUNTIME = 'v128-recovered-location-search';
 const tools = [
   {
     key: 'fishing',

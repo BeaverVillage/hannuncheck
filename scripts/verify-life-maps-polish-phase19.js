@@ -12,8 +12,8 @@ const assert = (cond, msg) => {
 const checks = [];
 const ok = (msg) => checks.push(msg);
 
-const version = '20260623-v126-life-maps-ui-polish-final';
-const runtime = 'v126-life-maps-ui-polish-final';
+const version = '20260623-v128-recovered-location-search';
+const runtime = 'v128-recovered-location-search';
 const tools = [
   ['낚시터', 'tools/fishing-spot-map.html', 'assets/js/fishing-spot-map.js'],
   ['무료 와이파이', 'tools/free-wifi-map.html', 'assets/js/free-wifi-map.js'],

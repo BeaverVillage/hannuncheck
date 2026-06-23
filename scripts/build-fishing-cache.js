@@ -21,7 +21,7 @@ const path = require('path');
 const { TextDecoder } = require('util');
 
 const ROOT = path.resolve(__dirname, '..');
-const VERSION = 'v110-life-fishing-cache-coordinate-fix';
+const VERSION = 'v128-life-fishing-cache-location-repair';
 const args = parseArgs(process.argv.slice(2));
 const DEFAULT_INPUTS = [
   path.join(ROOT, 'data/source/fishing-spots.csv'),
@@ -44,6 +44,12 @@ const MANUAL_COORDINATE_FIXES = [
     lat: 37.0044351477144,
     lng: 126.452296151466,
     reason: '원본 CSV 좌표 오류 보정(서산 대산읍 화곡리 1891)',
+  },
+  {
+    matchAddressIncludes: '서산시 대산읍 화곡리 1845',
+    lat: 37.0044351477144,
+    lng: 126.452296151466,
+    reason: '원본 CSV 좌표 오류 보정(서산 대산읍 화곡리 1845)',
   },
 ];
 

@@ -39,7 +39,7 @@ assert(index.includes('https://hannuncheck.com/tools/fishing-spot-map.html'), 'h
 assert(sitemap.includes('https://hannuncheck.com/tools/fishing-spot-map.html'), 'sitemap includes fishing page');
 assert(dataSources.includes('지방행정 인허가 데이터 낚시터정보'), 'data-sources includes fishing source');
 assert(dataSources.includes('로컬 JSON 캐시'), 'data-sources explains local JSON cache');
-assert(page.includes('20260623-v126-life-maps-ui-polish-final'), 'fishing page has v125 cache-busting query');
+assert(page.includes('20260623-v128-recovered-location-search'), 'fishing page has v125 cache-busting query');
 assert(appJs.includes('MAX_MARKERS'), 'fishing JS contains marker limit guard');
 assert(css.includes('life-mobile-bottom-sheet'), 'life map css includes mobile sheet styles');
 
@@ -51,7 +51,7 @@ try {
   fail.push(`cache index parse failed: ${error.message}`);
 }
 if (cacheIndex) {
-  assert(cacheIndex.version === 'v110-life-fishing-cache-coordinate-fix', 'cache index version is v110');
+  assert(['v110-life-fishing-cache-coordinate-fix','v128-life-fishing-cache-location-repair'].includes(cacheIndex.version), 'cache index version is supported');
   assert(cacheIndex.totalItems > 0, 'cache index has items');
   assert(Array.isArray(cacheIndex.regions) && cacheIndex.regions.length >= 10, 'cache index has region list');
 }

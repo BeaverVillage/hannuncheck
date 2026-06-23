@@ -554,7 +554,7 @@
     border: 1px solid #dbeafe;
     box-shadow: 0 -20px 48px rgba(15, 23, 42, 0.24);
   }
-  .life-map-app.is-filter-open::before {
+  .life-tool-shell.is-filter-open::before {
     content: '';
     position: fixed;
     inset: 0;
@@ -1014,7 +1014,7 @@
   .life-mobile-bottom-sheet.is-expanded .parking-mobile-results {
     max-height: calc(82vh - 92px) !important;
   }
-  .life-map-app.is-filter-open .parking-dashboard__controls {
+  .life-tool-shell.is-filter-open .parking-dashboard__controls {
     transform: translateY(var(--life-sheet-y, 0));
     transition: transform .22s ease;
     bottom: 0 !important;
@@ -1024,7 +1024,7 @@
   .life-map-app.is-filter-open .parking-dashboard__controls .parking-control-card {
     padding: 12px !important;
   }
-  .life-map-app.is-filter-open .parking-dashboard__controls .life-filter-grid {
+  .life-tool-shell.is-filter-open .parking-dashboard__controls .life-filter-grid {
     grid-template-columns: 1fr !important;
   }
   .parking-mobile-list-toggle {
@@ -2277,4 +2277,41 @@
   margin-left: auto !important;
   margin-right: auto !important;
   background: transparent !important;
+}
+
+/* v132: mobile life-map controls must stay reachable through the bottom sheet. */
+@media (max-width: 860px) {
+  .life-map-app .life-map-toolbar .life-filter-toggle-button {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100% !important;
+    min-height: 42px !important;
+    padding: 9px 12px !important;
+  }
+
+  .life-tool-shell.is-filter-open::before {
+    z-index: 145 !important;
+  }
+
+  .life-tool-shell.is-filter-open .parking-dashboard__controls {
+    display: block !important;
+    position: fixed !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    z-index: 150 !important;
+    max-height: min(82dvh, 720px) !important;
+    overflow-y: auto !important;
+    padding: 14px 14px max(18px, env(safe-area-inset-bottom)) !important;
+    border-radius: 26px 26px 0 0 !important;
+  }
+
+  .life-tool-shell.is-filter-open .parking-dashboard__controls .life-filter-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .life-map-app .life-selected-card {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+  }
 }

@@ -1669,7 +1669,7 @@
       lastMoveTime = Date.now();
       dragVelocityY = 0;
       sheet.classList.add('is-dragging', 'is-gesture-owned');
-      sheet.style.setProperty('--parking-sheet-height', `${evMobileSheetHeight(dragViewportHeight)}px`);
+      sheet.style.setProperty('--parking-sheet-height', `${evMobileSheetHeight(dragViewportHeight)}px`, 'important');
       applyEvMobileSheetY(startSheetY, dragViewportHeight);
       try { if (pointerId != null) target?.setPointerCapture?.(pointerId); } catch (_) {}
       return true;
@@ -1779,7 +1779,9 @@
   function applyEvMobileSheetY(value, viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700) {
     const pos = evMobileSheetPositions(viewportHeight);
     const y = clamp(value, pos.expanded, pos.collapsed);
-    els.mobileSheet?.style.setProperty('--parking-sheet-y', `${y}px`);
+    els.mobileSheet?.style.setProperty('--parking-sheet-y', `${y}px`, 'important');
+    els.mobileSheet?.style.setProperty('bottom', `${-y}px`, 'important');
+    els.mobileSheet?.style.setProperty('transform', 'none', 'important');
     return y;
   }
 
@@ -1804,7 +1806,7 @@
     const sheet = els.mobileSheet;
     if (!sheet) return;
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700;
-    sheet.style.setProperty('--parking-sheet-height', `${evMobileSheetHeight(viewportHeight)}px`);
+    sheet.style.setProperty('--parking-sheet-height', `${evMobileSheetHeight(viewportHeight)}px`, 'important');
     const normalized = mode === 'open' ? 'half' : mode === 'closed' ? 'collapsed' : mode;
     applyEvMobileSheetY(yForEvMobileSheetMode(normalized, viewportHeight), viewportHeight);
     sheet.classList.remove('is-open', 'is-expanded', 'is-collapsed', 'is-dragging');

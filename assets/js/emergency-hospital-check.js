@@ -1669,8 +1669,10 @@
     const collapsed = Math.max(0, height - peek);
     const list = Math.max(0, Math.min(collapsed, height - Math.min(viewportHeight * 0.48, height - 24)));
     const y = normalizedMode === 'detail' ? 0 : normalizedMode === 'collapsed' ? collapsed : list;
-    sheet.style.setProperty('--parking-sheet-height', `${height}px`);
-    sheet.style.setProperty('--parking-sheet-y', `${y}px`);
+    sheet.style.setProperty('--parking-sheet-height', `${height}px`, 'important');
+    sheet.style.setProperty('--parking-sheet-y', `${y}px`, 'important');
+    sheet.style.setProperty('bottom', `${-y}px`, 'important');
+    sheet.style.setProperty('transform', 'none', 'important');
     sheet.dataset.sheetState = normalizedMode;
     sheet.classList.remove('is-open', 'is-expanded', 'is-collapsed', 'is-dragging', 'is-detail');
     if (normalizedMode === 'detail') sheet.classList.add('is-open', 'is-expanded', 'is-detail');
@@ -1687,6 +1689,7 @@
     const head = sheet.querySelector('.parking-mobile-sheet-head');
     const handle = sheet.querySelector('.parking-sheet-handle');
     const targets = [head, handle].filter(Boolean);
+    const usesPointerEvents = Boolean(window.PointerEvent);
     let dragging = false;
     let startY = 0;
     let startSheetY = 0;
@@ -1710,14 +1713,16 @@
     const applyY = (y) => {
       const p = positions();
       const next = clamp(y, p.expanded, p.collapsed);
-      sheet.style.setProperty('--parking-sheet-height', `${p.h}px`);
-      sheet.style.setProperty('--parking-sheet-y', `${next}px`);
+      sheet.style.setProperty('--parking-sheet-height', `${p.h}px`, 'important');
+      sheet.style.setProperty('--parking-sheet-y', `${next}px`, 'important');
+      sheet.style.setProperty('bottom', `${-next}px`, 'important');
+      sheet.style.setProperty('transform', 'none', 'important');
       return next;
     };
     const interactive = (target) => target?.closest?.('button,a,input,select,textarea');
     const getY = (event) => event.clientY ?? event.touches?.[0]?.clientY ?? null;
     const start = (event) => {
-      if (interactive(event.target)) return;
+      if (dragging || interactive(event.target)) return;
       const y = getY(event);
       if (y == null) return;
       dragging = true;
@@ -1731,11 +1736,15 @@
       if (pointerId != null && event.currentTarget?.setPointerCapture) {
         try { event.currentTarget.setPointerCapture(pointerId); } catch (_) {}
       }
-      window.addEventListener('pointermove', move, { passive: false });
-      window.addEventListener('pointerup', end, { passive: false });
-      window.addEventListener('pointercancel', end, { passive: false });
-      window.addEventListener('touchmove', move, { passive: false });
-      window.addEventListener('touchend', end, { passive: false });
+      if (usesPointerEvents) {
+        window.addEventListener('pointermove', move, { passive: false });
+        window.addEventListener('pointerup', end, { passive: false });
+        window.addEventListener('pointercancel', end, { passive: false });
+      } else {
+        window.addEventListener('touchmove', move, { passive: false });
+        window.addEventListener('touchend', end, { passive: false });
+        window.addEventListener('touchcancel', end, { passive: false });
+      }
       event.preventDefault?.();
     };
     const move = (event) => {
@@ -1756,16 +1765,20 @@
       const p = positions();
       const y = applyY(startSheetY + lastY - startY + velocity * 120);
       const mode = [['expanded', Math.abs(y - p.expanded)], ['half', Math.abs(y - p.half)], ['collapsed', Math.abs(y - p.collapsed)]].sort((a,b) => a[1] - b[1])[0][0];
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', end);
-      window.removeEventListener('pointercancel', end);
-      window.removeEventListener('touchmove', move);
-      window.removeEventListener('touchend', end);
+      if (usesPointerEvents) {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', end);
+        window.removeEventListener('pointercancel', end);
+      } else {
+        window.removeEventListener('touchmove', move);
+        window.removeEventListener('touchend', end);
+        window.removeEventListener('touchcancel', end);
+      }
       setEmergencyMobileSheetState(mode);
     };
     targets.forEach((target) => {
-      if (window.PointerEvent) target.addEventListener('pointerdown', start, { passive: false });
-      target.addEventListener('touchstart', start, { passive: false });
+      if (usesPointerEvents) target.addEventListener('pointerdown', start, { passive: false });
+      else target.addEventListener('touchstart', start, { passive: false });
       target.addEventListener('click', () => { if (!dragging && sheet.classList.contains('is-collapsed')) setEmergencyMobileSheetState('half'); });
     });
     window.addEventListener('resize', () => { if (!dragging) setEmergencyMobileSheetState(state.mobileSheetMode || 'collapsed'); });

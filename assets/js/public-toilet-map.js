@@ -3,7 +3,7 @@
   if (!root) return;
 
   const CACHE_BASE = '/assets/data/life/public-toilets';
-  const VERSION = 'v129-location-search-ui-refine';
+  const VERSION = 'v130-ev106-life-map-mobile-fix';
   const MAX_LIST = 50;
   const MAX_MARKERS = 300;
   const MAX_DISTRICT_CACHE = 12;
@@ -108,6 +108,7 @@
   const hasText = (value) => normalize(value).length > 0;
   const number = (value) => Number.isFinite(Number(value)) ? Number(value) : null;
   const isValidPoint = (item) => Number.isFinite(Number(item?.lat)) && Number.isFinite(Number(item?.lng));
+  const isMobileDevice = () => window.matchMedia?.('(max-width: 860px)').matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
   const currentRegionCenter = () => REGION_CENTERS[state.currentRegion] || REGION_CENTERS.seoul;
   const buildTelLink = (phone) => phone ? `tel:${String(phone).replace(/[^0-9+]/g, '')}` : '';
   const detailsOf = (item) => item?.details || {};
@@ -185,9 +186,17 @@
   };
 
   const getKakaoMapUrl = (item) => {
-    if (isValidPoint(item)) return `https://map.kakao.com/link/map/${encodeURIComponent(item.name || '공중화장실')},${Number(item.lat)},${Number(item.lng)}`;
+    if (isValidPoint(item)) {
+      return `https://map.kakao.com/link/map/${encodeURIComponent(item.name || '공중화장실')},${Number(item.lat)},${Number(item.lng)}`;
+    }
     const query = item?.address || item?.name || '공중화장실';
     return `https://map.kakao.com/link/search/${encodeURIComponent(query)}`;
+  };
+
+  const getKakaoMapAppUrl = (item) => {
+    if (isValidPoint(item)) return `kakaomap://look?p=${Number(item.lat)},${Number(item.lng)}`;
+    const query = [item?.name, item?.address].filter(hasText).join(' ') || '공중화장실';
+    return `kakaomap://search?q=${encodeURIComponent(query)}`;
   };
 
 
@@ -541,6 +550,7 @@
     const details = item.details || {};
     const tel = buildTelLink(item.phone);
     const mapUrl = getKakaoMapUrl(item);
+    const mapAppUrl = getKakaoMapAppUrl(item);
     const features = featureBadges(item);
     card.hidden = false;
     card.innerHTML = `<div class="life-selected-card-head"><div><h3>${escapeHtml(item.name)}</h3>
@@ -552,7 +562,7 @@
         <span><small>편의·안전</small><strong>${escapeHtml(features || '시설 확인 필요')}</strong></span>
         <span><small>관리 전화</small><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong></span>
       </div>
-      <div class="life-card-actions"><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}<button type="button" data-toilet-close>닫기</button></div>
+      <div class="life-card-actions"><a class="primary" href="${escapeHtml(mapUrl)}" data-life-kakao-link data-kakao-app-url="${escapeHtml(mapAppUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}<button type="button" data-toilet-close>닫기</button></div>
       <p class="fine-print">실제 개방 여부, 시설 이용 가능 여부, 관리 상태는 현장 상황과 다를 수 있습니다.</p>`;
     card.querySelectorAll('[data-toilet-close]').forEach((button) => {
       button.addEventListener('click', () => {
@@ -859,10 +869,8 @@
       const regionKey = regionKeyFromName(admin.regionName) || state.currentRegion || 'seoul';
       const districtKey = districtKeyFromName(regionKey, admin.districtName);
       if (regionKey && districtKey) return { regionKey, districtKey, distance: 0 };
-      if (regionKey && regionMeta(regionKey)) {
-        const fallbackDistrict = regionMeta(regionKey)?.districts?.[0]?.key || '';
-        return { regionKey, districtKey: fallbackDistrict, distance: 0 };
-      }
+      // 구/군이 확정되지 않으면 첫 번째 구로 떨어뜨리지 말고 좌표 기반 fallback을 사용한다.
+      // 그래야 광진구 등 실제 위치가 강남구 기본값으로 고정되지 않는다.
     }
     return nearestRegionDistrictFallback(point);
   };
@@ -1038,6 +1046,16 @@
     applyFilters({ resetSelection: true });
   };
 
+
+  const handleLifeKakaoLinkClick = (event) => {
+    const link = event.target.closest('[data-life-kakao-link]');
+    if (!link || !isMobileDevice()) return;
+    const appUrl = link.dataset.kakaoAppUrl;
+    if (!appUrl) return;
+    event.preventDefault();
+    window.location.href = appUrl;
+  };
+
   const closeMobileFilterSheet = () => {
     root.classList.remove('is-filter-open');
     document.body.classList.remove('life-filter-open');
@@ -1069,13 +1087,49 @@
     sheet.dataset.lifeDragBound = 'true';
     let startY = 0;
     let lastY = 0;
+    let startPercent = 44;
     let active = false;
+
     const getY = (event) => event.clientY || event.touches?.[0]?.clientY || event.changedTouches?.[0]?.clientY || 0;
+    const isMobileSheet = () => sheet.classList.contains('life-mobile-bottom-sheet');
+    const currentPercent = () => {
+      if (!isMobileSheet()) return sheet.classList.contains(expandedClass) ? 0 : 44;
+      if (sheet.classList.contains('is-expanded')) return 0;
+      if (sheet.classList.contains('is-open')) return 44;
+      return 92;
+    };
+    const setSheetPercent = (percent) => {
+      sheet.style.setProperty('--life-sheet-y', `${Math.max(0, Math.min(94, percent))}%`);
+    };
+    const collapseMobileSheet = () => {
+      state.mobileOpen = false;
+      sheet.classList.remove('is-open', 'is-expanded');
+      sheet.classList.add('is-collapsed');
+      sheet.style.removeProperty('--life-sheet-y');
+      syncMobileSheet();
+    };
+    const halfMobileSheet = () => {
+      state.mobileOpen = true;
+      sheet.classList.add('is-open');
+      sheet.classList.remove('is-expanded', 'is-collapsed');
+      sheet.style.removeProperty('--life-sheet-y');
+      syncMobileSheet();
+    };
+    const expandMobileSheet = () => {
+      state.mobileOpen = true;
+      sheet.classList.add('is-open', 'is-expanded');
+      sheet.classList.remove('is-collapsed');
+      sheet.style.removeProperty('--life-sheet-y');
+      syncMobileSheet();
+    };
+
     const start = (event) => {
-      if (!event.target.closest('.parking-sheet-handle')) return;
+      const target = event.target;
+      if (!target.closest('.parking-sheet-handle') && !target.closest('.parking-mobile-sheet-head')) return;
       active = true;
       startY = getY(event);
       lastY = startY;
+      startPercent = currentPercent();
       sheet.classList.add('is-dragging');
       if (event.pointerId != null && typeof sheet.setPointerCapture === 'function') {
         try { sheet.setPointerCapture(event.pointerId); } catch (_) { /* noop */ }
@@ -1084,43 +1138,42 @@
     const move = (event) => {
       if (!active) return;
       lastY = getY(event);
-      const delta = lastY - startY;
-      const baseY = expandedClass && sheet.classList.contains(expandedClass) ? 7 : 42;
-      const nextY = Math.min(96, Math.max(7, baseY + (delta / Math.max(window.innerHeight, 1)) * 100));
-      sheet.style.setProperty('--life-sheet-y', `${nextY}%`);
+      const delta = ((lastY - startY) / Math.max(window.innerHeight || 1, 1)) * 100;
+      setSheetPercent(startPercent + delta);
       event.preventDefault?.();
     };
     const end = () => {
       if (!active) return;
-      const delta = lastY - startY;
+      active = false;
       sheet.classList.remove('is-dragging');
+      const deltaPx = lastY - startY;
+      const finalPercent = Math.max(0, Math.min(94, startPercent + (deltaPx / Math.max(window.innerHeight || 1, 1)) * 100));
       sheet.style.removeProperty('--life-sheet-y');
-      if (delta > 90) {
+
+      if (isMobileSheet()) {
+        if (deltaPx > 90 || finalPercent > 70) collapseMobileSheet();
+        else if (deltaPx < -70 || finalPercent < 24) expandMobileSheet();
+        else halfMobileSheet();
+        return;
+      }
+      if (deltaPx > 80 || finalPercent > 64) {
         if (expandedClass) sheet.classList.remove(expandedClass);
         onClose?.();
-      } else if (delta < -80 && expandedClass) {
-        if (sheet.classList.contains('life-mobile-bottom-sheet')) {
-          state.mobileOpen = true;
-          sheet.classList.add('is-open');
-          sheet.classList.remove('is-collapsed');
-        }
+      } else if (expandedClass && (deltaPx < -60 || finalPercent < 24)) {
         sheet.classList.add(expandedClass);
-      } else if (delta < -28 && sheet.classList.contains('life-mobile-bottom-sheet')) {
-        state.mobileOpen = true;
-        syncMobileSheet();
-      } else if (delta > 36 && expandedClass) {
+      } else if (expandedClass) {
         sheet.classList.remove(expandedClass);
       }
-      active = false;
     };
+
     sheet.addEventListener('pointerdown', start);
-    sheet.addEventListener('pointermove', move);
-    sheet.addEventListener('pointerup', end);
-    sheet.addEventListener('pointercancel', end);
+    window.addEventListener('pointermove', move, { passive: false });
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
     sheet.addEventListener('touchstart', start, { passive: true });
-    sheet.addEventListener('touchmove', move, { passive: false });
-    sheet.addEventListener('touchend', end, { passive: true });
-    sheet.addEventListener('touchcancel', end, { passive: true });
+    window.addEventListener('touchmove', move, { passive: false });
+    window.addEventListener('touchend', end, { passive: true });
+    window.addEventListener('touchcancel', end, { passive: true });
   };
 
   const initMobileInteractions = () => {
@@ -1138,7 +1191,21 @@
     });
   };
 
+
+  const ensureMobileLocationButton = () => {
+    const mapCard = elements.map?.closest('.parking-map-card') || elements.map?.parentElement;
+    if (!mapCard || mapCard.querySelector('[data-life-mobile-location]')) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'life-map-current-floating';
+    button.dataset.lifeMobileLocation = 'true';
+    button.textContent = '현재 위치';
+    button.addEventListener('click', useCurrentLocation);
+    mapCard.appendChild(button);
+  };
+
   const bindEvents = () => {
+    root.addEventListener('click', handleLifeKakaoLinkClick);
     elements.form?.addEventListener('submit', (event) => {
       event.preventDefault();
       applyFilters({ resetSelection: true });
@@ -1171,6 +1238,7 @@
     });
     elements.useLocation?.addEventListener('click', useCurrentLocation);
     elements.mapLocation?.addEventListener('click', useCurrentLocation);
+    ensureMobileLocationButton();
     elements.mobileToggle?.addEventListener('click', () => {
       state.mobileOpen = !state.mobileOpen;
       syncMobileSheet();

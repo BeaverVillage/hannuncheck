@@ -23,8 +23,8 @@ assert(css.includes('overflow: auto'), 'selected/list panels include overflow gu
 tools.forEach((tool) => {
   const js = read(tool.js);
   const html = read(tool.html);
-  assert(html.includes('20260623-v129-location-search-ui-refine'), `${tool.name}: v129-location-search-ui-refine html cache busting applied`);
-  assert(js.includes("const VERSION = 'v129-location-search-ui-refine'"), `${tool.name}: v129-location-search-ui-refine runtime version applied`);
+  assert(html.includes('20260623-v130-ev106-life-map-mobile-fix'), `${tool.name}: v130-ev106-life-map-mobile-fix html cache busting applied`);
+  assert(js.includes("const VERSION = 'v130-ev106-life-map-mobile-fix'"), `${tool.name}: v130-ev106-life-map-mobile-fix runtime version applied`);
   assert(js.includes('data-life-card-select'), `${tool.name}: whole list-card click target exists`);
   assert(js.includes('addEventListener(\'keydown\''), `${tool.name}: keyboard selection support exists`);
   assert(js.includes('renderDistanceBadge'), `${tool.name}: distance badge renderer exists`);

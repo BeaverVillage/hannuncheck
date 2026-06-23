@@ -1934,3 +1934,139 @@
   .life-mobile-bottom-sheet.is-expanded { transform: translateY(0) !important; }
   .life-mobile-bottom-sheet.is-dragging { transform: translateY(var(--life-sheet-y, 46%)) !important; }
 }
+
+/* v130: 전기차 v106 롤백 이후 생활지도 전용 최종 격리 보정 */
+.life-map-app .life-map-card,
+.life-map-app .parking-map-card {
+  position: relative !important;
+}
+
+/* PC: 무료 와이파이/공중화장실 툴바 버튼 깨짐 방지. 낚시터는 기존 폭 유지 */
+.wifi-map-app .life-map-toolbar,
+.toilet-map-app .life-map-toolbar {
+  display: grid !important;
+  grid-template-columns: minmax(230px, 1fr) minmax(130px, 155px) minmax(130px, 155px) minmax(112px, 126px) !important;
+  align-items: center !important;
+  gap: 8px !important;
+  max-width: calc(100% - 24px) !important;
+}
+.wifi-map-app .life-map-toolbar form,
+.toilet-map-app .life-map-toolbar form {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+}
+.wifi-map-app .life-map-toolbar select,
+.toilet-map-app .life-map-toolbar select {
+  width: 100% !important;
+  max-width: none !important;
+}
+.wifi-map-app .life-map-toolbar .ghost,
+.toilet-map-app .life-map-toolbar .ghost {
+  width: 100% !important;
+  min-width: 112px !important;
+  white-space: nowrap !important;
+}
+
+/* 모바일: 현재 위치는 지도 안쪽 좌하단 버튼으로만 노출 */
+.life-map-current-floating {
+  display: none;
+}
+
+.life-map-app .life-reference-marker {
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+.life-map-app .life-reference-marker.is-current {
+  background: #111827 !important;
+  color: #fff !important;
+}
+.life-map-app .life-reference-marker.is-search {
+  background: #1d4ed8 !important;
+  color: #fff !important;
+}
+
+/* footer는 생활지도 페이지에서도 전체 폭 남색 배경 유지 */
+.life-map-app ~ .site-footer,
+.site-footer {
+  background: #101820 !important;
+  color: #cbd5e1 !important;
+}
+.site-footer > .container.footer-grid,
+.site-footer .footer-grid {
+  max-width: 1120px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+@media (max-width: 860px) {
+  .life-map-app .life-map-card,
+  .life-map-app .parking-map-card {
+    min-height: 70dvh !important;
+  }
+  .life-map-app .life-map,
+  .life-map-app .parking-map {
+    min-height: 70dvh !important;
+  }
+  .life-map-toolbar .ghost[id$="-map-location"] {
+    display: none !important;
+    position: static !important;
+  }
+  .life-map-current-floating {
+    position: absolute !important;
+    left: 14px !important;
+    bottom: 82px !important;
+    z-index: 32 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 90px !important;
+    min-height: 42px !important;
+    padding: 9px 13px !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(16, 185, 129, 0.35) !important;
+    background: rgba(236, 253, 245, 0.96) !important;
+    color: #065f46 !important;
+    font-weight: 950 !important;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.14) !important;
+    cursor: pointer !important;
+  }
+  .wifi-map-app .life-map-current-floating {
+    border-color: rgba(37, 99, 235, 0.26) !important;
+    background: rgba(239, 246, 255, 0.96) !important;
+    color: #1e40af !important;
+  }
+  .toilet-map-app .life-map-current-floating {
+    border-color: rgba(8, 145, 178, 0.28) !important;
+    background: rgba(236, 254, 255, 0.96) !important;
+    color: #155e75 !important;
+  }
+  .life-mobile-bottom-sheet {
+    height: min(76dvh, 640px) !important;
+    transform: translateY(calc(100% - 68px)) !important;
+  }
+  .life-mobile-bottom-sheet.is-collapsed {
+    transform: translateY(calc(100% - 68px)) !important;
+  }
+  .life-mobile-bottom-sheet.is-open {
+    transform: translateY(44%) !important;
+  }
+  .life-mobile-bottom-sheet.is-expanded {
+    transform: translateY(0) !important;
+  }
+  .life-mobile-bottom-sheet.is-dragging {
+    transition: none !important;
+    transform: translateY(var(--life-sheet-y, 44%)) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .life-map-app .life-map-card,
+  .life-map-app .parking-map-card,
+  .life-map-app .life-map,
+  .life-map-app .parking-map {
+    min-height: 68dvh !important;
+  }
+}

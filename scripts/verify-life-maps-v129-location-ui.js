@@ -8,11 +8,11 @@ const pages = ['tools/fishing-spot-map.html', 'tools/free-wifi-map.html', 'tools
 const scripts = ['assets/js/fishing-spot-map.js', 'assets/js/free-wifi-map.js', 'assets/js/public-toilet-map.js'];
 pages.forEach((p) => {
   const html = read(p);
-  assert(html.includes('20260623-v129-location-search-ui-refine'), `${p} v129 query missing`);
+  assert(html.includes('20260623-v130-ev106-life-map-mobile-fix'), `${p} v129 query missing`);
 });
 scripts.forEach((p) => {
   const js = read(p);
-  assert(js.includes('v129-location-search-ui-refine'), `${p} v129 version missing`);
+  assert(js.includes('v130-ev106-life-map-mobile-fix'), `${p} v129 version missing`);
   assert(js.includes('kakaoCoordToAdmin'), `${p} reverse geocode admin resolver missing`);
   assert(js.includes('coord2RegionCode'), `${p} coord2RegionCode missing`);
   assert(js.includes('현재 위치'), `${p} current location label missing`);

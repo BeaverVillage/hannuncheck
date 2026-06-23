@@ -12,8 +12,8 @@ const assert = (cond, msg) => {
 const checks = [];
 const ok = (msg) => checks.push(msg);
 
-const version = '20260623-v129-location-search-ui-refine';
-const runtime = 'v129-location-search-ui-refine';
+const version = '20260623-v130-ev106-life-map-mobile-fix';
+const runtime = 'v130-ev106-life-map-mobile-fix';
 const tools = [
   ['낚시터', 'tools/fishing-spot-map.html', 'assets/js/fishing-spot-map.js'],
   ['무료 와이파이', 'tools/free-wifi-map.html', 'assets/js/free-wifi-map.js'],
@@ -32,7 +32,7 @@ for (const [name, htmlFile, jsFile] of tools) {
   assert(js.includes('카카오맵 바로가기'), `${name}: Kakao map shortcut text missing`);
   assert(js.includes('life-detail-grid--compact'), `${name}: compact detail grid missing`);
   assert(js.includes("elements.mobileSheet.classList.toggle('is-collapsed'"), `${name}: collapsed mobile sheet state missing`);
-  assert(js.includes("event.target.closest('.parking-sheet-handle')"), `${name}: drag must start from handle only`);
+  assert(js.includes("target.closest('.parking-sheet-handle')") || js.includes("target.closest('.parking-mobile-sheet-head')"), `${name}: drag must start from handle/header only`);
   ok(`${name}: js/html polish contract passed`);
 }
 
@@ -50,7 +50,7 @@ assert(css.includes('.life-mobile-bottom-sheet.is-collapsed'), 'mobile bottom sh
 assert(css.includes('transform: translateY(calc(100% - 70px))'), 'mobile bottom sheet bottom bar transform missing');
 assert(css.includes('.life-mobile-bottom-sheet.is-expanded') && css.includes('transform: translateY(0)'), 'mobile bottom sheet expanded transform missing');
 assert(css.includes('.life-marker::before') && css.includes('content: none !important'), 'marker pseudo shadow removal missing');
-assert(css.includes('.site-footer') && css.includes('background: #f8fafc'), 'footer light standard override missing');
+assert(css.includes('.site-footer') && css.includes('background: #101820'), 'footer navy standard override missing');
 ok('CSS polish contract passed');
 
 // Footer markup should be consistent on core pages.

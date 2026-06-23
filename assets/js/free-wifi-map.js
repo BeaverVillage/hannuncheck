@@ -3,7 +3,7 @@
   if (!root) return;
 
   const CACHE_BASE = '/assets/data/life/free-wifi';
-  const VERSION = 'v129-location-search-ui-refine';
+  const VERSION = 'v130-ev106-life-map-mobile-fix';
   const MAX_LIST = 50;
   const MAX_MARKERS = 300;
   const MAX_DISTRICT_CACHE = 12;
@@ -105,6 +105,7 @@
   const hasText = (value) => normalize(value).length > 0;
   const number = (value) => Number.isFinite(Number(value)) ? Number(value) : null;
   const isValidPoint = (item) => Number.isFinite(Number(item?.lat)) && Number.isFinite(Number(item?.lng));
+  const isMobileDevice = () => window.matchMedia?.('(max-width: 860px)').matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
   const currentRegionCenter = () => REGION_CENTERS[state.currentRegion] || REGION_CENTERS.seoul;
   const buildTelLink = (phone) => phone ? `tel:${String(phone).replace(/[^0-9+]/g, '')}` : '';
   const hasSsid = (item) => item?.__hasSsid === true || hasText(item?.details?.ssid);
@@ -228,6 +229,12 @@
     }
     const query = item?.address || item?.name || '무료 와이파이';
     return `https://map.kakao.com/link/search/${encodeURIComponent(query)}`;
+  };
+
+  const getKakaoMapAppUrl = (item) => {
+    if (isValidPoint(item)) return `kakaomap://look?p=${Number(item.lat)},${Number(item.lng)}`;
+    const query = [item?.name, item?.address].filter(hasText).join(' ') || '무료 와이파이';
+    return `kakaomap://search?q=${encodeURIComponent(query)}`;
   };
 
 
@@ -561,6 +568,7 @@
     const details = item.details || {};
     const tel = buildTelLink(item.phone);
     const mapUrl = getKakaoMapUrl(item);
+    const mapAppUrl = getKakaoMapAppUrl(item);
     card.hidden = false;
     card.innerHTML = `<div class="life-selected-card-head"><div><h3>${escapeHtml(item.name)}</h3>
       <p>${escapeHtml(item.address || '주소 확인 필요')}</p></div><button class="life-selected-close" type="button" data-wifi-close aria-label="선택 카드 닫기">×</button></div>
@@ -572,7 +580,7 @@
         <span><small>관리 전화</small><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong></span>
       </div>
       ${Array.isArray(item.__installations) && item.__installations.length > 1 ? `<button type="button" class="life-installation-toggle" data-wifi-installations>설치 위치 보기 ${item.__installations.length.toLocaleString('ko-KR')}곳</button><div class="life-installation-popup" hidden data-wifi-installation-panel><strong>설치 위치</strong><ul>${item.__installations.slice(0, 80).map((entry, idx) => `<li><span>${idx + 1}. ${escapeHtml(entry.placeDetail || entry.name || '상세 위치 확인 필요')}</span>${entry.ssid ? `<small>와이파이 이름 ${escapeHtml(entry.ssid)}</small>` : ''}</li>`).join('')}</ul></div>` : ''}
-      <div class="life-card-actions"><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}<button type="button" data-wifi-close>닫기</button></div>
+      <div class="life-card-actions"><a class="primary" href="${escapeHtml(mapUrl)}" data-life-kakao-link data-kakao-app-url="${escapeHtml(mapAppUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}<button type="button" data-wifi-close>닫기</button></div>
       <p class="fine-print">공공데이터에는 비밀번호가 제공되지 않을 수 있습니다. 실제 접속 가능 여부와 비밀번호 필요 여부는 현장에서 확인해 주세요.</p>`;
     card.querySelectorAll('[data-wifi-close]').forEach((button) => {
       button.addEventListener('click', () => {
@@ -883,10 +891,8 @@
       const regionKey = regionKeyFromName(admin.regionName) || state.currentRegion || 'seoul';
       const districtKey = districtKeyFromName(regionKey, admin.districtName);
       if (regionKey && districtKey) return { regionKey, districtKey, distance: 0 };
-      if (regionKey && regionMeta(regionKey)) {
-        const fallbackDistrict = regionMeta(regionKey)?.districts?.[0]?.key || '';
-        return { regionKey, districtKey: fallbackDistrict, distance: 0 };
-      }
+      // 구/군이 확정되지 않으면 첫 번째 구로 떨어뜨리지 말고 좌표 기반 fallback을 사용한다.
+      // 그래야 광진구 등 실제 위치가 강남구 기본값으로 고정되지 않는다.
     }
     return nearestRegionDistrictFallback(point);
   };
@@ -1062,6 +1068,16 @@
     applyFilters({ resetSelection: true });
   };
 
+
+  const handleLifeKakaoLinkClick = (event) => {
+    const link = event.target.closest('[data-life-kakao-link]');
+    if (!link || !isMobileDevice()) return;
+    const appUrl = link.dataset.kakaoAppUrl;
+    if (!appUrl) return;
+    event.preventDefault();
+    window.location.href = appUrl;
+  };
+
   const closeMobileFilterSheet = () => {
     root.classList.remove('is-filter-open');
     document.body.classList.remove('life-filter-open');
@@ -1093,13 +1109,49 @@
     sheet.dataset.lifeDragBound = 'true';
     let startY = 0;
     let lastY = 0;
+    let startPercent = 44;
     let active = false;
+
     const getY = (event) => event.clientY || event.touches?.[0]?.clientY || event.changedTouches?.[0]?.clientY || 0;
+    const isMobileSheet = () => sheet.classList.contains('life-mobile-bottom-sheet');
+    const currentPercent = () => {
+      if (!isMobileSheet()) return sheet.classList.contains(expandedClass) ? 0 : 44;
+      if (sheet.classList.contains('is-expanded')) return 0;
+      if (sheet.classList.contains('is-open')) return 44;
+      return 92;
+    };
+    const setSheetPercent = (percent) => {
+      sheet.style.setProperty('--life-sheet-y', `${Math.max(0, Math.min(94, percent))}%`);
+    };
+    const collapseMobileSheet = () => {
+      state.mobileOpen = false;
+      sheet.classList.remove('is-open', 'is-expanded');
+      sheet.classList.add('is-collapsed');
+      sheet.style.removeProperty('--life-sheet-y');
+      syncMobileSheet();
+    };
+    const halfMobileSheet = () => {
+      state.mobileOpen = true;
+      sheet.classList.add('is-open');
+      sheet.classList.remove('is-expanded', 'is-collapsed');
+      sheet.style.removeProperty('--life-sheet-y');
+      syncMobileSheet();
+    };
+    const expandMobileSheet = () => {
+      state.mobileOpen = true;
+      sheet.classList.add('is-open', 'is-expanded');
+      sheet.classList.remove('is-collapsed');
+      sheet.style.removeProperty('--life-sheet-y');
+      syncMobileSheet();
+    };
+
     const start = (event) => {
-      if (!event.target.closest('.parking-sheet-handle')) return;
+      const target = event.target;
+      if (!target.closest('.parking-sheet-handle') && !target.closest('.parking-mobile-sheet-head')) return;
       active = true;
       startY = getY(event);
       lastY = startY;
+      startPercent = currentPercent();
       sheet.classList.add('is-dragging');
       if (event.pointerId != null && typeof sheet.setPointerCapture === 'function') {
         try { sheet.setPointerCapture(event.pointerId); } catch (_) { /* noop */ }
@@ -1108,43 +1160,42 @@
     const move = (event) => {
       if (!active) return;
       lastY = getY(event);
-      const delta = lastY - startY;
-      const baseY = expandedClass && sheet.classList.contains(expandedClass) ? 7 : 42;
-      const nextY = Math.min(96, Math.max(7, baseY + (delta / Math.max(window.innerHeight, 1)) * 100));
-      sheet.style.setProperty('--life-sheet-y', `${nextY}%`);
+      const delta = ((lastY - startY) / Math.max(window.innerHeight || 1, 1)) * 100;
+      setSheetPercent(startPercent + delta);
       event.preventDefault?.();
     };
     const end = () => {
       if (!active) return;
-      const delta = lastY - startY;
+      active = false;
       sheet.classList.remove('is-dragging');
+      const deltaPx = lastY - startY;
+      const finalPercent = Math.max(0, Math.min(94, startPercent + (deltaPx / Math.max(window.innerHeight || 1, 1)) * 100));
       sheet.style.removeProperty('--life-sheet-y');
-      if (delta > 90) {
+
+      if (isMobileSheet()) {
+        if (deltaPx > 90 || finalPercent > 70) collapseMobileSheet();
+        else if (deltaPx < -70 || finalPercent < 24) expandMobileSheet();
+        else halfMobileSheet();
+        return;
+      }
+      if (deltaPx > 80 || finalPercent > 64) {
         if (expandedClass) sheet.classList.remove(expandedClass);
         onClose?.();
-      } else if (delta < -80 && expandedClass) {
-        if (sheet.classList.contains('life-mobile-bottom-sheet')) {
-          state.mobileOpen = true;
-          sheet.classList.add('is-open');
-          sheet.classList.remove('is-collapsed');
-        }
+      } else if (expandedClass && (deltaPx < -60 || finalPercent < 24)) {
         sheet.classList.add(expandedClass);
-      } else if (delta < -28 && sheet.classList.contains('life-mobile-bottom-sheet')) {
-        state.mobileOpen = true;
-        syncMobileSheet();
-      } else if (delta > 36 && expandedClass) {
+      } else if (expandedClass) {
         sheet.classList.remove(expandedClass);
       }
-      active = false;
     };
+
     sheet.addEventListener('pointerdown', start);
-    sheet.addEventListener('pointermove', move);
-    sheet.addEventListener('pointerup', end);
-    sheet.addEventListener('pointercancel', end);
+    window.addEventListener('pointermove', move, { passive: false });
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
     sheet.addEventListener('touchstart', start, { passive: true });
-    sheet.addEventListener('touchmove', move, { passive: false });
-    sheet.addEventListener('touchend', end, { passive: true });
-    sheet.addEventListener('touchcancel', end, { passive: true });
+    window.addEventListener('touchmove', move, { passive: false });
+    window.addEventListener('touchend', end, { passive: true });
+    window.addEventListener('touchcancel', end, { passive: true });
   };
 
   const initMobileInteractions = () => {
@@ -1162,7 +1213,21 @@
     });
   };
 
+
+  const ensureMobileLocationButton = () => {
+    const mapCard = elements.map?.closest('.parking-map-card') || elements.map?.parentElement;
+    if (!mapCard || mapCard.querySelector('[data-life-mobile-location]')) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'life-map-current-floating';
+    button.dataset.lifeMobileLocation = 'true';
+    button.textContent = '현재 위치';
+    button.addEventListener('click', useCurrentLocation);
+    mapCard.appendChild(button);
+  };
+
   const bindEvents = () => {
+    root.addEventListener('click', handleLifeKakaoLinkClick);
     elements.form?.addEventListener('submit', (event) => {
       event.preventDefault();
       applyFilters({ resetSelection: true });
@@ -1195,6 +1260,7 @@
     });
     elements.useLocation?.addEventListener('click', useCurrentLocation);
     elements.mapLocation?.addEventListener('click', useCurrentLocation);
+    ensureMobileLocationButton();
     elements.mobileToggle?.addEventListener('click', () => {
       state.mobileOpen = !state.mobileOpen;
       syncMobileSheet();

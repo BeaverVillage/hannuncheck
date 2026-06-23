@@ -905,10 +905,9 @@
   const mappableItems = (items = []) => items.filter(hasMapCoordinates);
 
   const getMapCenter = (items = state.items) => {
-    const selected = items.find((item) => item.id === state.selectedId);
-    const candidate = hasMapCoordinates(selected) ? selected : items.find(hasMapCoordinates);
-    if (candidate && hasMapCoordinates(candidate)) {
-      return { lat: Number(candidate.lat), lng: Number(candidate.lng) };
+    const selected = state.selectedId ? items.find((item) => item.id === state.selectedId) : null;
+    if (selected && hasMapCoordinates(selected)) {
+      return { lat: Number(selected.lat), lng: Number(selected.lng) };
     }
     if (state.referencePoint && Number.isFinite(Number(state.referencePoint.lat)) && Number.isFinite(Number(state.referencePoint.lng))) return state.referencePoint;
     if (state.geo && Number.isFinite(Number(state.geo.lat)) && Number.isFinite(Number(state.geo.lng))) return state.geo;
@@ -1589,7 +1588,7 @@
       state.items = localFallback;
       state.summary = { criteria: `${getRegionLabel()} 응급실 기본정보 캐시`, count: localFallback.length, sourceMode: 'local_emergency_cache' };
       state.warnings = ['응급실 기본정보와 지도 위치는 로컬 캐시 기준입니다. 실시간 병상·중증 정보는 공공데이터 응답으로 보강합니다.'];
-      state.selectedId = state.items.some((item) => item.id === state.selectedId) ? state.selectedId : (state.items[0]?.id || '');
+      state.selectedId = state.items.some((item) => item.id === state.selectedId) ? state.selectedId : '';
       state.detailOpen = false;
       render();
     }
@@ -1608,7 +1607,7 @@
         state.dataMode = 'cache';
         state.warnings.push('실시간 응급실 상태 정보는 확인하지 못해 로컬 기본정보 캐시를 표시합니다. 방문 전 전화 확인이 필요합니다.');
       }
-      state.selectedId = state.items.some((item) => item.id === state.selectedId) ? state.selectedId : (state.items[0]?.id || '');
+      state.selectedId = state.items.some((item) => item.id === state.selectedId) ? state.selectedId : '';
       state.detailOpen = false;
       const suffix = state.careMode === 'emergency' ? '중증·상태 정보도 방문 전 전화 확인이 필요합니다.' : '운영시간과 접수 마감은 방문 전 전화 확인이 필요합니다.';
       setStatus(`${state.items.length.toLocaleString('ko-KR')}곳의 ${meta().label} 정보를 확인했습니다. ${suffix}`, 'success');
@@ -1620,7 +1619,7 @@
         state.items = localFallback;
         state.summary = { criteria: `${getRegionLabel()} 응급실 기본정보 캐시`, count: localFallback.length, sourceMode: 'local_emergency_cache' };
         state.warnings = [message, '실시간 병상·중증 정보는 확인하지 못해 로컬 기본정보 캐시를 표시합니다. 실제 방문 전 전화 확인이 필요합니다.'];
-        state.selectedId = state.items.some((item) => item.id === state.selectedId) ? state.selectedId : (state.items[0]?.id || '');
+        state.selectedId = state.items.some((item) => item.id === state.selectedId) ? state.selectedId : '';
         state.detailOpen = false;
         setStatus(`실시간 상태 정보는 확인하지 못했지만 ${localFallback.length.toLocaleString('ko-KR')}곳의 기본정보 캐시를 표시합니다.`, 'warning');
         render();
@@ -1777,7 +1776,7 @@
   elements.mapSortToggle?.addEventListener('click', () => {
     if (isMobileView()) return openMobileActionSheet('정렬 기준', [
       { value: 'distance', label: '가까운 순' }, { value: 'beds', label: '병상 우선' }, { value: 'phone', label: '전화 우선' }, { value: 'critical', label: '중증 정보' }
-    ], elements.sort?.value || 'distance', (value) => { if (elements.sort) elements.sort.value = value; syncModeUi(); if (state.items.length) { state.items = sortItems(state.items, value); state.selectedId = state.items[0]?.id || state.selectedId; render(); } });
+    ], elements.sort?.value || 'distance', (value) => { if (elements.sort) elements.sort.value = value; syncModeUi(); if (state.items.length) { state.items = sortItems(state.items, value); state.selectedId = state.items.some((item) => item.id === state.selectedId) ? state.selectedId : ''; render(); } });
     toggleToolbarPanel(elements.mapSortToggle, elements.mapSortPanel);
   });
   elements.mobileSortButton?.addEventListener('click', () => openMobileActionSheet('정렬 기준', [
@@ -1831,7 +1830,7 @@
       syncModeUi();
       if (state.items.length) {
         state.items = sortItems(state.items, elements.sort.value || 'distance');
-        state.selectedId = state.items[0]?.id || state.selectedId;
+        state.selectedId = state.items.some((item) => item.id === state.selectedId) ? state.selectedId : '';
         render();
       }
     });
@@ -1845,7 +1844,7 @@
       syncModeUi();
       if (state.items.length) {
         state.items = sortItems(state.items, elements.sort.value || 'distance');
-        state.selectedId = state.items[0]?.id || state.selectedId;
+        state.selectedId = state.items.some((item) => item.id === state.selectedId) ? state.selectedId : '';
         render();
       }
     });
@@ -1928,7 +1927,7 @@
       syncModeUi();
       if (state.items.length) {
         state.items = sortItems(state.items, elements.sort?.value || 'distance');
-        state.selectedId = state.items[0]?.id || state.selectedId;
+        state.selectedId = state.items.some((item) => item.id === state.selectedId) ? state.selectedId : '';
         state.mapHasFitResults = false;
         render();
       }

@@ -7,7 +7,7 @@
   const CACHE_BASE = '/assets/data/life/fishing-spots';
   const MAX_LIST = 80;
   const MAX_MARKERS = 220;
-  const VERSION = 'v125-life-maps-ui-complete';
+  const VERSION = 'v126-life-maps-ui-polish-final';
   const REGION_CENTERS = {
     seoul: { lat: 37.5665, lng: 126.9780, label: '서울' },
     busan: { lat: 35.1796, lng: 129.0756, label: '부산' },
@@ -396,25 +396,18 @@
     const selected = state.selectedId === item.id;
     const tel = buildTelLink(item.phone);
     const mapUrl = getKakaoMapUrl(item);
-    const fish = (details.fishTypes || []).slice(0, 3).join(', ') || '어종 확인 필요';
+    const fish = (details.fishTypes || []).slice(0, 2).join(', ') || '어종 확인 필요';
     const fee = details.fee || '요금 확인 필요';
     const type = details.type || details.waterFacilityType || '유형 확인 필요';
-    const facilities = details.convenienceFacilities || details.safetyFacilities || '시설 확인 필요';
-    return `<article class="parking-result-card ${selected ? 'selected' : ''}" data-life-card-select="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="${escapeHtml(item.name)} 지도에서 선택">
-      <button class="parking-result-rank" type="button" data-fishing-select="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)} 선택">${index + 1}</button>
-      <div class="parking-result-main">
+    const summary = [type, fish, fee, hasText(item.phone) ? '전화 가능' : '전화 확인 필요'].filter(Boolean).join(' · ');
+    return `<article class="parking-result-card life-list-card ${selected ? 'selected' : ''}" data-life-card-select="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="${escapeHtml(item.name)} 지도에서 선택">
+      <div class="parking-result-main life-list-main">
         <div class="parking-result-title"><h3>${escapeHtml(item.name)}</h3>${distanceBadge}</div>
         <p class="parking-result-address">${escapeHtml(item.address || '주소 확인 필요')}</p>
-        <div class="parking-result-metrics">
-          <span><strong>${escapeHtml(type)}</strong><small>유형</small></span>
-          <span><strong>${escapeHtml(fish)}</strong><small>주요어종</small></span>
-          <span><strong>${escapeHtml(fee)}</strong><small>이용요금</small></span>
-          <span><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong><small>전화번호</small></span>
-        </div>
-        <div class="parking-card-badges">${(item.badges || []).slice(0, 6).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
-        ${options.mobile ? '' : `<div class="life-card-actions-inline"><button type="button" data-fishing-select="${escapeHtml(item.id)}">지도에서 선택</button><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>`}
-        ${options.mobile ? `<div class="life-card-actions-inline"><button type="button" data-fishing-select="${escapeHtml(item.id)}">선택</button><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>` : ''}
-        <p class="fine-print">${escapeHtml(facilities)}</p>
+        <p class="life-list-summary">${escapeHtml(summary)}</p>
+        <div class="parking-card-badges">${(item.badges || []).slice(0, 4).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
+        ${options.mobile ? '' : `<div class="life-card-actions-inline"><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>`}
+        ${options.mobile ? `<div class="life-card-actions-inline"><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>` : ''}
       </div>
     </article>`;
   };
@@ -422,6 +415,7 @@
   const syncMobileSheet = () => {
     if (elements.mobileSheet) {
       elements.mobileSheet.classList.toggle('is-open', state.mobileOpen);
+      elements.mobileSheet.classList.toggle('is-collapsed', !state.mobileOpen);
       if (!state.mobileOpen) {
         elements.mobileSheet.classList.remove('is-expanded');
         elements.mobileSheet.style.removeProperty('--life-sheet-y');
@@ -448,8 +442,8 @@
     card.hidden = false;
     card.innerHTML = `<div class="life-selected-card-head"><div><h3>${escapeHtml(item.name)}</h3>
       <p>${escapeHtml(item.address || '주소 확인 필요')}</p></div><button class="life-selected-close" type="button" data-fishing-close aria-label="선택 카드 닫기">×</button></div>
-      <div class="life-chip-row">${(item.badges || []).slice(0, 6).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
-      <div class="life-detail-grid">
+      <div class="life-chip-row">${(item.badges || []).slice(0, 4).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
+      <div class="life-detail-grid life-detail-grid--compact">
         <span><small>유형</small><strong>${escapeHtml(details.type || details.waterFacilityType || '유형 확인 필요')}</strong></span>
         <span><small>주요어종</small><strong>${escapeHtml((details.fishTypes || []).join(', ') || '어종 확인 필요')}</strong></span>
         <span><small>이용요금</small><strong>${escapeHtml(details.fee || '요금 확인 필요')}</strong></span>
@@ -713,7 +707,7 @@
     let active = false;
     const getY = (event) => event.clientY || event.touches?.[0]?.clientY || event.changedTouches?.[0]?.clientY || 0;
     const start = (event) => {
-      if (!event.target.closest('.parking-sheet-handle, .parking-mobile-sheet-head, .life-mobile-filter-head')) return;
+      if (!event.target.closest('.parking-sheet-handle')) return;
       active = true;
       startY = getY(event);
       lastY = startY;
@@ -740,7 +734,15 @@
         if (expandedClass) sheet.classList.remove(expandedClass);
         onClose?.();
       } else if (delta < -80 && expandedClass) {
+        if (sheet.classList.contains('life-mobile-bottom-sheet')) {
+          state.mobileOpen = true;
+          sheet.classList.add('is-open');
+          sheet.classList.remove('is-collapsed');
+        }
         sheet.classList.add(expandedClass);
+      } else if (delta < -28 && sheet.classList.contains('life-mobile-bottom-sheet')) {
+        state.mobileOpen = true;
+        syncMobileSheet();
       } else if (delta > 36 && expandedClass) {
         sheet.classList.remove(expandedClass);
       }

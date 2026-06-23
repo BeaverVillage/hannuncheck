@@ -3,7 +3,7 @@
   if (!root) return;
 
   const CACHE_BASE = '/assets/data/life/public-toilets';
-  const VERSION = 'v125-life-maps-ui-complete';
+  const VERSION = 'v126-life-maps-ui-polish-final';
   const MAX_LIST = 50;
   const MAX_MARKERS = 300;
   const MAX_DISTRICT_CACHE = 12;
@@ -503,22 +503,17 @@
     const tel = buildTelLink(item.phone);
     const mapUrl = getKakaoMapUrl(item);
     const openType = details.openType || '운영시간 확인 필요';
-    const openDetail = details.openDetail || '운영시간 상세 확인 필요';
-    return `<article class="parking-result-card ${selected ? 'selected' : ''}" data-life-card-select="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="${escapeHtml(item.name)} 지도에서 선택">
-      <button class="parking-result-rank" type="button" data-toilet-select="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)} 선택">${index + 1}</button>
-      <div class="parking-result-main">
+    const openDetail = details.openDetail || '시간 확인 필요';
+    const features = featureBadges(item);
+    const summary = [openType, openDetail, features, hasText(item.phone) ? '관리 전화 있음' : '관리 전화 확인 필요'].filter(Boolean).join(' · ');
+    return `<article class="parking-result-card life-list-card ${selected ? 'selected' : ''}" data-life-card-select="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="${escapeHtml(item.name)} 지도에서 선택">
+      <div class="parking-result-main life-list-main">
         <div class="parking-result-title"><h3>${escapeHtml(item.name)}</h3>${distanceBadge}</div>
         <p class="parking-result-address">${escapeHtml(item.address || '주소 확인 필요')}</p>
-        <div class="parking-result-metrics">
-          <span><strong>${escapeHtml(openType)}</strong><small>개방 구분</small></span>
-          <span><strong>${escapeHtml(item.category || '공중화장실')}</strong><small>구분</small></span>
-          <span><strong>${escapeHtml(featureBadges(item))}</strong><small>편의·안전</small></span>
-          <span><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong><small>관리 전화</small></span>
-        </div>
-        <div class="parking-card-badges">${(item.badges || []).slice(0, 6).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
-        ${options.mobile ? '' : `<div class="life-card-actions-inline"><button type="button" data-toilet-select="${escapeHtml(item.id)}">지도에서 선택</button><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>`}
-        ${options.mobile ? `<div class="life-card-actions-inline"><button type="button" data-toilet-select="${escapeHtml(item.id)}">선택</button><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>` : ''}
-        <p class="fine-print">${escapeHtml(openDetail)}</p>
+        <p class="life-list-summary">${escapeHtml(summary)}</p>
+        <div class="parking-card-badges">${(item.badges || []).slice(0, 4).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
+        ${options.mobile ? '' : `<div class="life-card-actions-inline"><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>`}
+        ${options.mobile ? `<div class="life-card-actions-inline"><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}</div>` : ''}
       </div>
     </article>`;
   };
@@ -526,6 +521,7 @@
   const syncMobileSheet = () => {
     if (elements.mobileSheet) {
       elements.mobileSheet.classList.toggle('is-open', state.mobileOpen);
+      elements.mobileSheet.classList.toggle('is-collapsed', !state.mobileOpen);
       if (!state.mobileOpen) {
         elements.mobileSheet.classList.remove('is-expanded');
         elements.mobileSheet.style.removeProperty('--life-sheet-y');
@@ -549,19 +545,17 @@
     const details = item.details || {};
     const tel = buildTelLink(item.phone);
     const mapUrl = getKakaoMapUrl(item);
+    const features = featureBadges(item);
     card.hidden = false;
     card.innerHTML = `<div class="life-selected-card-head"><div><h3>${escapeHtml(item.name)}</h3>
       <p>${escapeHtml(item.address || '주소 확인 필요')}</p></div><button class="life-selected-close" type="button" data-toilet-close aria-label="선택 카드 닫기">×</button></div>
-      <div class="life-chip-row">${(item.badges || []).slice(0, 6).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
-      <div class="life-detail-grid">
-        <span><strong>${escapeHtml(details.openType || '운영시간 확인 필요')}</strong>개방 구분</span>
-        <span><strong>${escapeHtml(details.openDetail || '상세시간 확인 필요')}</strong>개방시간상세</span>
-        <span><strong>${escapeHtml(hasDisabled(item) ? '있음' : '확인 필요')}</strong>장애인 화장실</span>
-        <span><strong>${escapeHtml(hasBaby(item) ? '있음' : '확인 필요')}</strong>기저귀교환대</span>
-        <span><strong>${escapeHtml(hasBell(item) ? '있음' : '확인 필요')}</strong>비상벨</span>
-        <span><strong>${escapeHtml(hasCctv(item) ? '있음' : '확인 필요')}</strong>CCTV</span>
+      <div class="life-chip-row">${(item.badges || []).slice(0, 4).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
+      <div class="life-detail-grid life-detail-grid--compact">
+        <span><small>개방 구분</small><strong>${escapeHtml(details.openType || '운영시간 확인 필요')}</strong></span>
+        <span><small>개방시간</small><strong>${escapeHtml(details.openDetail || '상세시간 확인 필요')}</strong></span>
+        <span><small>편의·안전</small><strong>${escapeHtml(features || '시설 확인 필요')}</strong></span>
+        <span><small>관리 전화</small><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong></span>
       </div>
-      <p>${escapeHtml(details.manager || '관리기관 확인 필요')}</p>
       <div class="life-card-actions"><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}<button type="button" data-toilet-close>닫기</button></div>
       <p class="fine-print">실제 개방 여부, 시설 이용 가능 여부, 관리 상태는 현장 상황과 다를 수 있습니다.</p>`;
     card.querySelectorAll('[data-toilet-close]').forEach((button) => {
@@ -822,7 +816,7 @@
     let active = false;
     const getY = (event) => event.clientY || event.touches?.[0]?.clientY || event.changedTouches?.[0]?.clientY || 0;
     const start = (event) => {
-      if (!event.target.closest('.parking-sheet-handle, .parking-mobile-sheet-head, .life-mobile-filter-head')) return;
+      if (!event.target.closest('.parking-sheet-handle')) return;
       active = true;
       startY = getY(event);
       lastY = startY;
@@ -849,7 +843,15 @@
         if (expandedClass) sheet.classList.remove(expandedClass);
         onClose?.();
       } else if (delta < -80 && expandedClass) {
+        if (sheet.classList.contains('life-mobile-bottom-sheet')) {
+          state.mobileOpen = true;
+          sheet.classList.add('is-open');
+          sheet.classList.remove('is-collapsed');
+        }
         sheet.classList.add(expandedClass);
+      } else if (delta < -28 && sheet.classList.contains('life-mobile-bottom-sheet')) {
+        state.mobileOpen = true;
+        syncMobileSheet();
       } else if (delta > 36 && expandedClass) {
         sheet.classList.remove(expandedClass);
       }

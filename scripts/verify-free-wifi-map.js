@@ -38,7 +38,7 @@ const index = JSON.parse(read('assets/data/life/free-wifi/index.json'));
 
 [
   "const CACHE_BASE = '/assets/data/life/free-wifi'",
-  "const VERSION = 'v125-life-maps-ui-complete'",
+  "const VERSION = 'v126-life-maps-ui-polish-final'",
   'const MAX_LIST = 50',
   'const MAX_MARKERS = 300',
   'const MAX_DISTRICT_CACHE = 12',

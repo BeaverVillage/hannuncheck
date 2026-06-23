@@ -101,7 +101,7 @@ async function main() {
   const cache = loadExistingCache();
   const entries = cache.entries || {};
   const selectedModes = args.mode === 'all' ? ['emergency', 'hospital', 'pharmacy'] : [args.mode || 'emergency'];
-  const region = normalizeRegion(args.region || '서울');
+  const region = normalizeRegion(args.region || (args.source ? '전국' : '서울'));
   const district = String(args.district || '').trim();
   const qt = String(args.qt || getTodayQt()).replace(/[^0-9]/g, '') || getTodayQt();
   const rows = Number.isFinite(args.rows) ? Math.max(10, Math.min(args.rows, 1000)) : 200;

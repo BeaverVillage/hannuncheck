@@ -10,7 +10,7 @@ import {
   toNumber,
 } from './_lib/check-core.js';
 
-const SERVER_VERSION = 'v99-emergency-mobile-critical-state-fix';
+const SERVER_VERSION = 'v102-night-medical-kakao-manual-patch';
 const NMC_SOURCE = 'NMC EMERGENCY MEDICAL DATA';
 const NMC_HOSPITAL_SOURCE = 'NMC HOSPITAL CLINIC DATA';
 const NMC_PHARMACY_SOURCE = 'NMC PHARMACY DATA';
@@ -895,7 +895,7 @@ function normalizeSeriousStatusItem(row, rank = 0) {
     const raw = firstText(row, field.keys);
     const normalized = normalizeAvailability(raw);
     if (!normalized) return null;
-    return { label: field.label, value: raw, ...normalized };
+    return { label: field.label, value: raw, statusLabel: normalized.label, tone: normalized.tone };
   }).filter(Boolean);
   return {
     id: firstText(row, ['hpid', 'HPID', 'id']) || `serious-${rank}`,
@@ -925,7 +925,7 @@ function buildFacilityStatus(row) {
     const raw = firstText(row, field.keys);
     const normalized = normalizeAvailability(raw);
     if (!normalized) return null;
-    return { label: field.label, value: raw, ...normalized };
+    return { label: field.label, value: raw, statusLabel: normalized.label, tone: normalized.tone };
   }).filter(Boolean);
 }
 

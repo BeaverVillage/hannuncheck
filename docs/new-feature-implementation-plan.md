@@ -17,7 +17,7 @@
 ## 3차 의료기관 카카오 캐시
 
 - 의료기관 카카오맵 place_url 로컬 캐시 구조를 추가했습니다.
-- `assets/data/medical/kakao-place-cache.json` 초기 파일을 추가했습니다.
+- `assets/data/medical/kakao-place/` 지역별 카카오 장소 캐시를 사용합니다.
 - `scripts/enrich-medical-kakao-places.js`로 응급실, 야간 병원, 야간 약국의 카카오 장소 매칭 캐시를 생성할 수 있게 했습니다.
 - 의료기관 상태 정보는 캐시하지 않고, 장소 링크 정보만 캐시합니다.
 

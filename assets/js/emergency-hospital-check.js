@@ -10,8 +10,13 @@
     return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}km` : `${Math.round(value)}m`;
   });
   const buildKakaoSearchUrl = toolkit.buildKakaoSearchUrl || ((item) => `https://map.kakao.com/link/search/${encodeURIComponent(`${item.name} ${item.address}`)}`);
-  const MEDICAL_KAKAO_CACHE_URL = '/assets/data/medical/kakao-place-cache.json?v=20260621-v99-emergency-mobile-critical-state-fix';
-  const EMERGENCY_NATIONAL_CACHE_URL = '/assets/data/medical/emergency-national-cache.json?v=20260621-v99-emergency-mobile-critical-state-fix';
+  const MEDICAL_CACHE_VERSION = '20260623-v103-medical-cache-split';
+  const EMERGENCY_NATIONAL_CACHE_URL = `/assets/data/medical/emergency-national-cache.json?v=${MEDICAL_CACHE_VERSION}`;
+  const MEDICAL_KAKAO_EMERGENCY_CACHE_URL = `/assets/data/medical/kakao-place/emergency.json?v=${MEDICAL_CACHE_VERSION}`;
+  const medicalRegionFile = (region) => `${encodeURIComponent((region || '서울특별시').trim())}.json`;
+  const NIGHT_HOSPITAL_CACHE_URL = (region) => `/assets/data/medical/night-hospital/${medicalRegionFile(region)}?v=${MEDICAL_CACHE_VERSION}`;
+  const NIGHT_PHARMACY_CACHE_URL = (region) => `/assets/data/medical/night-pharmacy/${medicalRegionFile(region)}?v=${MEDICAL_CACHE_VERSION}`;
+  const MEDICAL_KAKAO_REGION_CACHE_URL = (mode, region) => `/assets/data/medical/kakao-place/${mode}/${medicalRegionFile(region)}?v=${MEDICAL_CACHE_VERSION}`;
 
   const MODE_META = {
     emergency: { label: '응급실', searchLabel: '응급실 확인하기', listLabel: '응급실 비교 목록', mapSuffix: '응급실', detailTitle: '선택한 응급실' },
@@ -26,6 +31,10 @@
     전북: { lat: 35.7175, lng: 127.1530 }, 전남: { lat: 34.8679, lng: 126.9910 }, 경북: { lat: 36.4919, lng: 128.8889 },
     경남: { lat: 35.4606, lng: 128.2132 }, 제주: { lat: 33.4996, lng: 126.5312 },
   };
+  const CRITICAL_STATUS_LABELS = [
+    '뇌출혈 수술', '뇌경색 재관류', '심근경색 재관류', '복부손상 수술', '사지접합 수술',
+    '응급내시경', '응급투석', '조산산모', '정신질환', '신생아', '중증화상',
+  ];
 
 
   const elements = {
@@ -107,10 +116,16 @@
     mapHasFitResults: false,
     mapResultSignature: '',
     selectionMove: false,
+    referenceMove: false,
     mobileSheetMode: 'collapsed',
     liveStatusById: new Map(),
     emergencyCachePromise: null,
+    nightCaches: { hospital: null, pharmacy: null },
+    nightCacheReady: { hospital: false, pharmacy: false },
+    nightCachePromises: { hospital: null, pharmacy: null },
     kakaoCachePromise: null,
+    kakaoCaches: {},
+    kakaoCachePromises: {},
   };
 
   const escapeHtml = (value) => String(value ?? '')
@@ -139,6 +154,26 @@
   };
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const countGood = (items) => (Array.isArray(items) ? items.filter((item) => item.tone === 'good').length : 0);
+  const GENERIC_CRITICAL_LABEL_RE = /^(Y|N|O|X|가능|불가|전화 확인|확인|정보미제공|정보 미제공|제공됨|제공 안 됨|미제공)$/i;
+  const normalizeAvailabilityText = (entry = {}) => {
+    const raw = normalizeTextForCache(entry.statusLabel || entry.status || entry.result || entry.available || entry.labelText || entry.value || '');
+    const label = normalizeTextForCache(entry.label || entry.name || '');
+    const source = raw || (GENERIC_CRITICAL_LABEL_RE.test(label) ? label : '');
+    if (/^(Y|YES|O|가능|가|정상|TRUE|제공됨)$/i.test(source)) return '제공됨';
+    if (/^(N|NO|X|불가|부|FALSE|제공 안 됨)$/i.test(source)) return '전화 확인';
+    if (/정보\s*미제공|미제공|정보없음|미상/i.test(source)) return '정보 미제공';
+    if (/가능|운영|가용|있음/i.test(source)) return '제공됨';
+    if (/불가|마감|중지|없음|폐쇄/i.test(source)) return '전화 확인';
+    return source || '전화 확인';
+  };
+  const normalizeCriticalEntry = (entry = {}, index = 0) => {
+    const rawLabel = normalizeTextForCache(entry.label || entry.name || '');
+    const fallbackLabel = CRITICAL_STATUS_LABELS[index] || `중증 항목 ${index + 1}`;
+    const label = (!rawLabel || GENERIC_CRITICAL_LABEL_RE.test(rawLabel)) ? fallbackLabel : rawLabel;
+    const statusLabel = normalizeAvailabilityText(entry);
+    const tone = entry.tone || (/제공됨/.test(statusLabel) ? 'good' : /정보 미제공/.test(statusLabel) ? 'neutral' : 'caution');
+    return { ...entry, label, statusLabel, value: normalizeTextForCache(entry.value || entry.raw || ''), tone };
+  };
 
   const setStatus = (message, tone = 'info') => {
     if (!elements.status) return;
@@ -164,6 +199,7 @@
   const sortLabel = (value) => ({ distance: '가까운 순', beds: '병상 우선', phone: '전화 우선', critical: '중증 정보', night: '야간 운영' }[value] || '가까운 순');
   const isMobileView = () => window.matchMedia?.('(max-width: 860px)')?.matches || window.innerWidth <= 860;
   const currentRegionFull = () => normalizeRegionForCache(elements.region?.value || getRegionLabel());
+  const currentRegionName = () => currentRegionFull().full || currentRegionFull().raw || '서울특별시';
 
   const syncToolbarInputs = () => {
     if (elements.mapKeyword && elements.keyword && elements.mapKeyword !== document.activeElement) elements.mapKeyword.value = elements.keyword.value || '';
@@ -201,11 +237,31 @@
     return { type: 'search', label: '카카오맵 검색', url: buildKakaoSearchUrl(item), confidence: 'none' };
   };
 
-  const loadKakaoPlaceCache = async () => {
+  const getKakaoCacheUrl = (mode = state.careMode, region = currentRegionName()) => {
+    if (mode === 'emergency') return MEDICAL_KAKAO_EMERGENCY_CACHE_URL;
+    return MEDICAL_KAKAO_REGION_CACHE_URL(mode === 'pharmacy' ? 'pharmacy' : 'hospital', region);
+  };
+
+  const loadKakaoPlaceCache = async (mode = state.careMode) => {
     const util = window.HannunKakaoPlaceLink;
-    if (!util?.loadCache) return;
-    state.kakaoCache = await util.loadCache(MEDICAL_KAKAO_CACHE_URL, { cache: 'force-cache' });
+    if (!util?.loadCache) return null;
+    const region = mode === 'emergency' ? '전국' : currentRegionName();
+    const key = `${mode}:${region}`;
+    if (state.kakaoCaches[key]) {
+      state.kakaoCache = state.kakaoCaches[key];
+      return state.kakaoCache;
+    }
+    if (!state.kakaoCachePromises[key]) {
+      state.kakaoCachePromises[key] = util.loadCache(getKakaoCacheUrl(mode, region), { cache: 'force-cache' })
+        .then((cache) => {
+          state.kakaoCaches[key] = cache;
+          return cache;
+        })
+        .catch(() => ({ version: 'cache-unavailable', entries: {}, index: {} }));
+    }
+    state.kakaoCache = await state.kakaoCachePromises[key];
     if (state.items.length) render();
+    return state.kakaoCache;
   };
 
 
@@ -370,6 +426,7 @@
     state.mapHasFitResults = false;
     state.mapResultSignature = '';
     state.selectionMove = false;
+    state.referenceMove = true;
     setRegionFromPlace(place);
     if (elements.keyword) elements.keyword.value = place.name || '';
     if (elements.mapKeyword) elements.mapKeyword.value = place.name || '';
@@ -444,7 +501,8 @@
   };
 
   const getCriticalProvidedItems = (item = {}) => (Array.isArray(item.criticalCare) ? item.criticalCare : [])
-    .filter((entry) => normalizeTextForCache(entry?.label || entry?.name || '') || normalizeTextForCache(entry?.value || entry?.status || ''));
+    .map(normalizeCriticalEntry)
+    .filter((entry) => normalizeTextForCache(entry?.label || '') || normalizeTextForCache(entry?.statusLabel || entry?.value || ''));
 
   const getLiveStatusPayload = (item = {}) => {
     const payload = {};
@@ -543,9 +601,9 @@
       address: item.address || cached.address,
       emergencyTel: item.emergencyTel || cached.emergencyTel,
       mainTel: item.mainTel || cached.mainTel,
-      lat: hasItemCoords ? item.lat : cached.lat,
-      lng: hasItemCoords ? item.lng : cached.lng,
-      hasCoordinates: hasItemCoords || cached.hasCoordinates,
+      lat: cached.hasCoordinates ? cached.lat : item.lat,
+      lng: cached.hasCoordinates ? cached.lng : item.lng,
+      hasCoordinates: cached.hasCoordinates || hasItemCoords,
       isLocalCacheOnly: false,
       locationSourceMode: hasItemCoords ? item.locationSourceMode : 'local_emergency_cache',
     };
@@ -571,6 +629,236 @@
       return copy;
     });
     return sortItems(result, elements.sort?.value || 'distance').slice(0, options.limit || 40);
+  };
+
+
+  const getTodayDayCode = (date = new Date()) => {
+    const day = date.getDay();
+    return String(day === 0 ? 7 : day);
+  };
+
+  const getNightCacheUrl = (mode = state.careMode, region = currentRegionName()) => (mode === 'pharmacy' ? NIGHT_PHARMACY_CACHE_URL(region) : NIGHT_HOSPITAL_CACHE_URL(region));
+
+  const resolveCachePartUrl = (baseUrl, partFile) => {
+    try {
+      return new URL(partFile, new URL(baseUrl, window.location.origin)).toString();
+    } catch (_) {
+      const cleanBase = String(baseUrl || '').split('?')[0].replace(/[^/]+$/, '');
+      return `${cleanBase}${partFile}`;
+    }
+  };
+
+  const fetchCachePayload = async (url) => {
+    const response = await fetch(url, { cache: 'force-cache' });
+    if (!response.ok) throw new Error(`cache ${response.status}`);
+    const payload = await response.json();
+    if (Array.isArray(payload?.parts) && payload.parts.length) {
+      const mergedEntries = {};
+      for (const part of payload.parts) {
+        const partUrl = resolveCachePartUrl(url, part.file || part.url || '');
+        const partResponse = await fetch(partUrl, { cache: 'force-cache' });
+        if (!partResponse.ok) throw new Error(`cache part ${partResponse.status}`);
+        const partPayload = await partResponse.json();
+        Object.assign(mergedEntries, partPayload.entries || {});
+      }
+      payload.entries = mergedEntries;
+    }
+    return payload;
+  };
+
+  
+  const readOperationForDay = (entry = {}, dayCode = getTodayDayCode()) => {
+    const byDay = entry.operationByDay || entry.weeklyHours || {};
+    const day = byDay[String(dayCode)] || byDay[dayCode] || {};
+    const openTime = normalizeTextForCache(day.open || day.openTime || entry.openTime || '');
+    const closeTime = normalizeTextForCache(day.close || day.closeTime || entry.closeTime || '');
+    const label = normalizeTextForCache(day.label || day.operationTime || entry.operationTime || formatTimeRange(openTime, closeTime));
+    const openMinutes = Number.isFinite(Number(day.openMinutes)) ? Number(day.openMinutes) : parseTimeMinutes(openTime);
+    const closeMinutes = Number.isFinite(Number(day.closeMinutes)) ? Number(day.closeMinutes) : parseTimeMinutes(closeTime);
+    const isNightCandidate = Boolean(day.isNightCandidate) || (Number.isFinite(closeMinutes) && closeMinutes >= 18 * 60);
+    const isAllNight = Boolean(day.isAllNight) || (Number.isFinite(closeMinutes) && (closeMinutes >= 24 * 60 || closeTime === '2400' || closeTime === '0000'));
+    return {
+      openTime,
+      closeTime,
+      operationTime: label,
+      openMinutes: Number.isFinite(openMinutes) ? openMinutes : null,
+      closeMinutes: Number.isFinite(closeMinutes) ? closeMinutes : null,
+      isNightCandidate,
+      isAllNight,
+      statusLabel: normalizeTextForCache(day.statusLabel || entry.statusLabel || (isAllNight ? '심야 운영 참고' : isNightCandidate ? '야간 운영 참고' : label ? '운영시간 확인' : '전화 확인 필요')),
+      statusTone: normalizeTextForCache(day.statusTone || entry.statusTone || (isNightCandidate || isAllNight ? 'good' : label ? 'neutral' : 'caution')),
+    };
+  };
+
+  const parseTimeMinutes = (value) => {
+    const digits = String(value || '').replace(/\D+/g, '').slice(0, 4);
+    if (digits.length < 3) return NaN;
+    const padded = digits.padStart(4, '0');
+    const hour = Number(padded.slice(0, 2));
+    const minute = Number(padded.slice(2, 4));
+    return Number.isFinite(hour) && Number.isFinite(minute) ? hour * 60 + minute : NaN;
+  };
+
+  const formatTimeRange = (openTime, closeTime) => {
+    const fmt = (value) => {
+      const digits = String(value || '').replace(/\D+/g, '').slice(0, 4);
+      if (!digits) return '';
+      const padded = digits.padStart(4, '0');
+      return `${padded.slice(0, 2)}:${padded.slice(2, 4)}`;
+    };
+    const open = fmt(openTime);
+    const close = fmt(closeTime);
+    if (open && close) return `${open} ~ ${close}`;
+    if (open) return `${open} 시작`;
+    if (close) return `${close} 종료`;
+    return '';
+  };
+
+  const normalizeNightCacheEntry = (entry = {}, mode = state.careMode, index = 0) => {
+    const id = normalizeTextForCache(entry.id || entry.sourceId || entry.hpid || `${mode}-${index + 1}`);
+    const lat = Number(entry.lat);
+    const lng = Number(entry.lng);
+    const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lng) && lat >= 30 && lat <= 45 && lng >= 120 && lng <= 135;
+    const operation = readOperationForDay(entry);
+    const kind = mode === 'pharmacy' ? 'pharmacy' : 'hospital';
+    const item = {
+      id,
+      sourceId: id,
+      kind,
+      type: kind,
+      name: normalizeTextForCache(entry.name || entry.dutyName || (kind === 'pharmacy' ? '야간 약국' : '야간 병원')),
+      address: normalizeTextForCache(entry.address || entry.dutyAddr || ''),
+      region: normalizeTextForCache(entry.sido || entry.region || inferSido(entry.address || '')),
+      district: normalizeTextForCache(entry.sigungu || entry.district || ''),
+      emergencyTel: '',
+      mainTel: normalizeTextForCache(entry.mainTel || entry.dutyTel1 || entry.telno || ''),
+      lat: hasCoordinates ? lat : null,
+      lng: hasCoordinates ? lng : null,
+      hasCoordinates,
+      distanceM: null,
+      emergencyBeds: null,
+      totalBeds: null,
+      hospitalType: normalizeTextForCache(entry.hospitalType || entry.dutyEmclsName || ''),
+      department: normalizeTextForCache(entry.department || entry.dutyDivNam || ''),
+      operationByDay: entry.operationByDay || entry.weeklyHours || {},
+      operationTime: operation.operationTime,
+      openTime: operation.openTime,
+      closeTime: operation.closeTime,
+      openMinutes: operation.openMinutes,
+      closeMinutes: operation.closeMinutes,
+      isNightCandidate: operation.isNightCandidate,
+      isAllNight: operation.isAllNight,
+      statusLabel: operation.statusLabel,
+      statusTone: operation.statusTone,
+      facilityStatus: [],
+      facilityAvailableCount: 0,
+      criticalCare: [],
+      criticalAvailableCount: 0,
+      messages: [],
+      sourceMode: kind === 'pharmacy' ? 'local_night_pharmacy_cache' : 'local_night_hospital_cache',
+      source: kind === 'pharmacy' ? 'LOCAL NIGHT PHARMACY CACHE' : 'LOCAL NIGHT HOSPITAL CACHE',
+      updatedAt: normalizeTextForCache(entry.updatedAt || ''),
+      isLocalCacheOnly: true,
+    };
+    if (state.geo && item.hasCoordinates) item.distanceM = distanceBetweenM(state.geo, item);
+    return item;
+  };
+
+  const createNightCareCacheIndex = (payload = {}, mode = state.careMode) => {
+    const rawEntries = payload.entries || payload.items || [];
+    const entries = (Array.isArray(rawEntries) ? rawEntries : Object.values(rawEntries))
+      .map((entry, index) => normalizeNightCacheEntry(entry, mode, index))
+      .filter((item) => item.id && item.name);
+    const byId = new Map();
+    const byName = new Map();
+    entries.forEach((item) => {
+      byId.set(item.id, item);
+      byId.set(`${mode}:${item.id}`, item);
+      const nameKey = normalizeMatchText(item.name);
+      if (nameKey && !byName.has(nameKey)) byName.set(nameKey, item);
+    });
+    return { ...payload, entries, byId, byName };
+  };
+
+  const ensureNightCareCache = async (mode = state.careMode) => {
+    if (!['hospital', 'pharmacy'].includes(mode)) return createNightCareCacheIndex({ entries: {} }, mode);
+    const region = currentRegionName();
+    const cacheKey = `${mode}:${region}`;
+    if (state.nightCaches[cacheKey]?.entries) return state.nightCaches[cacheKey];
+    if (state.nightCachePromises[cacheKey]) return state.nightCachePromises[cacheKey];
+    state.nightCachePromises[cacheKey] = (async () => {
+      try {
+        state.nightCaches[cacheKey] = createNightCareCacheIndex(await fetchCachePayload(getNightCacheUrl(mode, region)), mode);
+        state.nightCacheReady[mode] = true;
+      } catch (error) {
+        state.nightCaches[cacheKey] = createNightCareCacheIndex({ entries: {} }, mode);
+        state.nightCacheReady[mode] = false;
+      }
+      return state.nightCaches[cacheKey];
+    })();
+    return state.nightCachePromises[cacheKey];
+  };
+
+  const getNightCacheMatch = (item = {}, mode = state.careMode) => {
+    const cache = state.nightCaches[`${mode}:${currentRegionName()}`];
+    if (!cache) return null;
+    const id = normalizeTextForCache(item.id || item.sourceId || item.hpid || '');
+    if (id) {
+      const match = cache.byId?.get(id) || cache.byId?.get(`${mode}:${id}`);
+      if (match) return match;
+    }
+    const nameKey = normalizeMatchText(item.name || '');
+    return nameKey ? cache.byName?.get(nameKey) || null : null;
+  };
+
+  const mergeNightCareCacheBasics = (items = [], mode = state.careMode) => items.map((item) => {
+    if (isEmergencyItem(item)) return item;
+    const cached = getNightCacheMatch(item, mode);
+    if (!cached) return item;
+    const hasItemCoords = hasMapCoordinates(item);
+    const merged = {
+      ...cached,
+      ...item,
+      sourceId: item.sourceId || item.id || cached.sourceId,
+      id: item.id || cached.id,
+      name: item.name || cached.name,
+      address: item.address || cached.address,
+      mainTel: item.mainTel || cached.mainTel,
+      lat: cached.hasCoordinates ? cached.lat : item.lat,
+      lng: cached.hasCoordinates ? cached.lng : item.lng,
+      hasCoordinates: cached.hasCoordinates || hasItemCoords,
+      operationTime: item.operationTime || cached.operationTime,
+      openTime: item.openTime || cached.openTime,
+      closeTime: item.closeTime || cached.closeTime,
+      isNightCandidate: item.isNightCandidate || cached.isNightCandidate,
+      isLocalCacheOnly: false,
+      locationSourceMode: hasItemCoords ? item.locationSourceMode : cached.sourceMode,
+    };
+    if (!hasUsableDistance(merged.distanceM) && state.geo && merged.hasCoordinates) merged.distanceM = distanceBetweenM(state.geo, merged);
+    return merged;
+  });
+
+  const filterNightCareCache = (options = {}) => {
+    const mode = state.careMode;
+    const cache = state.nightCaches[`${mode}:${currentRegionName()}`];
+    if (!['hospital', 'pharmacy'].includes(mode) || !cache?.entries?.length) return [];
+    const { raw, full } = normalizeRegionForCache(elements.region?.value || getRegionLabel());
+    const district = normalizeTextForCache(elements.district?.value || '');
+    const keyword = normalizeMatchText(options.keyword ?? elements.keyword?.value ?? elements.mapKeyword?.value ?? '');
+    const department = normalizeMatchText(elements.department?.value || '');
+    const result = cache.entries.filter((item) => {
+      const address = item.address || '';
+      if (full && raw && !address.includes(full) && !address.includes(raw) && item.region !== full && item.region !== raw) return false;
+      if (district && !address.includes(district) && item.district !== district) return false;
+      if (keyword && !normalizeMatchText(`${item.name} ${item.address}`).includes(keyword)) return false;
+      if (department && !normalizeMatchText(`${item.department} ${item.hospitalType}`).includes(department)) return false;
+      return true;
+    }).map((item) => {
+      const copy = { ...item };
+      if (state.geo && copy.hasCoordinates) copy.distanceM = distanceBetweenM(state.geo, copy);
+      return copy;
+    });
+    return sortItems(result, elements.sort?.value || 'night').slice(0, options.limit || 40);
   };
 
 
@@ -752,10 +1040,21 @@
       state.mapHasFitResults = true;
     } else {
       const signature = [state.careMode, getRegionLabel(), elements.district?.value || '', state.referencePoint?.type || '', state.referencePoint?.lat || '', state.referencePoint?.lng || '', validItems.map((item) => item.id).join(',')].join('|');
-      if (!state.mapHasFitResults || state.mapResultSignature !== signature) {
-        if (validItems.length > 1 || hasReference) {
+      if (hasReference && state.referenceMove && state.referencePoint) {
+        const refCenter = new window.kakao.maps.LatLng(Number(state.referencePoint.lat), Number(state.referencePoint.lng));
+        if (typeof state.map.panTo === 'function') state.map.panTo(refCenter);
+        else state.map.setCenter(refCenter);
+        if (typeof state.map.getLevel === 'function' && state.map.getLevel() > 6) state.map.setLevel(5);
+        state.referenceMove = false;
+        state.mapHasFitResults = true;
+        state.mapResultSignature = signature;
+      } else if (!state.mapHasFitResults || state.mapResultSignature !== signature) {
+        if (hasReference && state.referencePoint) {
+          state.map.setCenter(new window.kakao.maps.LatLng(Number(state.referencePoint.lat), Number(state.referencePoint.lng)));
+          if (typeof state.map.getLevel === 'function' && state.map.getLevel() > 6) state.map.setLevel(5);
+        } else if (validItems.length > 1) {
           state.map.setBounds(bounds, 72, 72, 72, 72);
-          if (getRegionLabel() === '서울' && !hasReference && typeof state.map.getLevel === 'function' && state.map.getLevel() > 7) {
+          if (getRegionLabel() === '서울' && typeof state.map.getLevel === 'function' && state.map.getLevel() > 7) {
             state.map.setLevel(7);
           }
         } else {
@@ -883,7 +1182,7 @@
       ].filter(Boolean).slice(0, 4);
       return `<div class="emergency-status-chip-row">${chips.map((chip) => `<span class="emergency-mini-chip ${escapeHtml(chip.tone || 'neutral')}">${escapeHtml(chip.text)}</span>`).join('')}</div>`;
     }
-    const critical = (item.criticalCare || []).slice(0, 4).map((entry) => ({ text: `${entry.label} ${entry.tone === 'good' ? '가능' : '확인'}`, tone: entry.tone }));
+    const critical = getCriticalProvidedItems(item).slice(0, 4).map((entry) => ({ text: `${entry.label} ${entry.statusLabel || (entry.tone === 'good' ? '제공됨' : '전화 확인')}`, tone: entry.tone }));
     const facility = (item.facilityStatus || []).slice(0, 3).map((entry) => ({ text: `${entry.label} ${entry.tone === 'good' ? '가능' : '확인'}`, tone: entry.tone }));
     const combined = [...critical, ...facility].slice(0, 6);
     if (!combined.length) combined.push({ text: '세부 상태 전화 확인', tone: 'neutral' });
@@ -958,7 +1257,8 @@
 
   const renderStatusGroup = (title, items, emptyText) => {
     if (!Array.isArray(items) || !items.length) return `<div class="emergency-status-group"><h4>${escapeHtml(title)}</h4><p class="fine-print">${escapeHtml(emptyText)}</p></div>`;
-    return `<div class="emergency-status-group"><h4>${escapeHtml(title)}</h4><div class="emergency-status-chip-row detail">${items.slice(0, 10).map((entry) => `<span class="emergency-mini-chip ${escapeHtml(entry.tone || 'neutral')}">${escapeHtml(entry.label || '항목')} · ${escapeHtml(entry.value || entry.label || '확인')}</span>`).join('')}</div></div>`;
+    const normalized = items.map(normalizeCriticalEntry);
+    return `<div class="emergency-status-group"><h4>${escapeHtml(title)}</h4><div class="emergency-status-chip-row detail">${normalized.slice(0, 10).map((entry) => `<span class="emergency-mini-chip ${escapeHtml(entry.tone || 'neutral')}">${escapeHtml(entry.label || '항목')} · ${escapeHtml(entry.statusLabel || '전화 확인')}</span>`).join('')}</div></div>`;
   };
 
   const renderMessages = (item) => {
@@ -1096,7 +1396,7 @@
     const rows = entries.length ? entries.map((entry) => {
       const tone = escapeHtml(entry.tone || 'neutral');
       const label = escapeHtml(entry.label || '중증 항목');
-      const value = escapeHtml(entry.value || (entry.tone === 'good' ? '제공' : '확인 필요'));
+      const value = escapeHtml(entry.statusLabel || '전화 확인');
       return `<li class="${tone}"><strong>${label}</strong><span>${value}</span></li>`;
     }).join('') : '<li class="neutral"><strong>제공 항목 없음</strong><span>119 또는 병원 전화로 확인해 주세요.</span></li>';
     body.innerHTML = `
@@ -1174,6 +1474,7 @@
     state.mapHasFitResults = false;
     state.mapResultSignature = '';
     state.selectionMove = false;
+    state.referenceMove = false;
     syncModeUi();
     setStatus(`조건을 선택한 뒤 ${meta().searchLabel}를 눌러 주세요.`, 'info');
     render();
@@ -1193,9 +1494,11 @@
       department: elements.department?.value || '',
       sort: elements.sort?.value || (state.careMode === 'emergency' ? 'distance' : 'night'),
       mode: state.careMode,
-      _v: 'v99',
+      _v: 'v101',
     });
-    if (state.geo) {
+    // 응급실 현재 위치/장소 검색은 거리 정렬 기준점입니다.
+    // 서버 조회 범위를 구 주변으로 좁히지 않기 위해 응급실 모드에서는 좌표를 API 파라미터로 보내지 않습니다.
+    if (state.geo && state.careMode !== 'emergency') {
       params.set('lat', String(state.geo.lat));
       params.set('lng', String(state.geo.lng));
     }
@@ -1206,8 +1509,9 @@
   const setRegionFromPlace = (place = {}) => {
     if (place.region1 && elements.region) elements.region.value = place.region1;
     if (place.region1 && elements.mapRegion) elements.mapRegion.value = place.region1;
-    if (place.region2 && elements.district) elements.district.value = place.region2;
-    if (place.region2 && elements.mapDistrict) elements.mapDistrict.value = place.region2;
+    // 장소 검색 위치는 거리 정렬 기준점일 뿐입니다. 구 단위 필터로 자동 축소하지 않습니다.
+    if (elements.district) elements.district.value = '';
+    if (elements.mapDistrict) elements.mapDistrict.value = '';
     syncToolbarInputs();
   };
 
@@ -1231,6 +1535,7 @@
       state.keywordMode = 'place';
       state.geo = { lat: Number(place.lat), lng: Number(place.lng) };
       state.referencePoint = { lat: Number(place.lat), lng: Number(place.lng), type: 'search', label: '검색 위치', name: place.name || query, query };
+      state.referenceMove = true;
       setRegionFromPlace(place);
     } catch (_) {
       state.keywordMode = 'facility';
@@ -1247,8 +1552,11 @@
     if (state.careMode === 'emergency') {
       await ensureEmergencyNationalCache();
       // 장소명 검색은 후보 선택 팝업에서만 처리합니다.
+    } else {
+      await ensureNightCareCache(state.careMode);
     }
-    const localFallback = filterEmergencyCache();
+    await loadKakaoPlaceCache(state.careMode);
+    const localFallback = state.careMode === 'emergency' ? filterEmergencyCache() : filterNightCareCache();
     if (localFallback.length) {
       state.dataMode = 'cache';
       state.items = localFallback;
@@ -1262,10 +1570,11 @@
       const data = await fetchJson(buildApiUrl(), { cache: 'no-store' });
       if (data?.ok === false) throw Object.assign(new Error(data.message || `${meta().label} 정보를 불러오지 못했습니다.`), { data });
       state.dataMode = 'api';
-      const mergedApiItems = mergeEmergencyCacheBasics(Array.isArray(data.items) ? data.items : []);
-      rememberLiveStatus(mergedApiItems);
+      const rawApiItems = Array.isArray(data.items) ? data.items : [];
+      const mergedApiItems = state.careMode === 'emergency' ? mergeEmergencyCacheBasics(rawApiItems) : mergeNightCareCacheBasics(rawApiItems, state.careMode);
+      if (state.careMode === 'emergency') rememberLiveStatus(mergedApiItems);
       const apiItems = state.careMode === 'emergency' ? mergedApiItems.map(applyLiveStatus).filter(matchesCurrentRegion) : mergedApiItems;
-      state.items = apiItems.length ? apiItems : localFallback;
+      state.items = sortItems(apiItems.length ? apiItems : localFallback, elements.sort?.value || (state.careMode === 'emergency' ? 'distance' : 'night'));
       state.summary = data.summary || (localFallback.length ? { criteria: `${getRegionLabel()} 응급실 기본정보 캐시`, count: localFallback.length, sourceMode: 'local_emergency_cache' } : {});
       state.warnings = Array.isArray(data.warnings) ? data.warnings : [];
       if (!apiItems.length && localFallback.length) {
@@ -1299,24 +1608,26 @@
   };
 
 
-  const setEmergencyMobileSheetState = (mode = 'half') => {
+  const setEmergencyMobileSheetState = (mode = 'list') => {
     const sheet = elements.mobileSheet;
     if (!sheet) return;
-    state.mobileSheetMode = mode;
+    const normalizedMode = mode === 'half' ? 'list' : mode === 'expanded' ? 'detail' : mode === 'closed' ? 'collapsed' : mode;
+    state.mobileSheetMode = normalizedMode;
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700;
     const height = Math.min(Math.max(360, viewportHeight * 0.88), 760);
     const peek = 58;
     const collapsed = Math.max(0, height - peek);
-    const half = Math.max(0, Math.min(collapsed, height - Math.min(viewportHeight * 0.48, height - 24)));
-    const y = mode === 'expanded' ? 0 : mode === 'collapsed' ? collapsed : half;
+    const list = Math.max(0, Math.min(collapsed, height - Math.min(viewportHeight * 0.48, height - 24)));
+    const y = normalizedMode === 'detail' ? 0 : normalizedMode === 'collapsed' ? collapsed : list;
     sheet.style.setProperty('--parking-sheet-height', `${height}px`);
     sheet.style.setProperty('--parking-sheet-y', `${y}px`);
-    sheet.classList.remove('is-open', 'is-expanded', 'is-collapsed', 'is-dragging');
-    if (mode === 'expanded') sheet.classList.add('is-open', 'is-expanded');
-    else if (mode === 'collapsed') sheet.classList.add('is-collapsed');
+    sheet.dataset.sheetState = normalizedMode;
+    sheet.classList.remove('is-open', 'is-expanded', 'is-collapsed', 'is-dragging', 'is-detail');
+    if (normalizedMode === 'detail') sheet.classList.add('is-open', 'is-expanded', 'is-detail');
+    else if (normalizedMode === 'collapsed') sheet.classList.add('is-collapsed');
     else sheet.classList.add('is-open');
-    elements.mobileListToggle?.setAttribute('aria-expanded', mode !== 'collapsed' ? 'true' : 'false');
-    if (elements.mobileListToggle) elements.mobileListToggle.textContent = mode === 'collapsed' ? '목록 보기' : '목록 접기';
+    elements.mobileListToggle?.setAttribute('aria-expanded', normalizedMode !== 'collapsed' ? 'true' : 'false');
+    if (elements.mobileListToggle) elements.mobileListToggle.textContent = normalizedMode === 'collapsed' ? '목록 보기' : '목록 접기';
   };
 
   const initEmergencyMobileSheetDrag = () => {
@@ -1429,7 +1740,7 @@
   elements.mapModeToggle?.addEventListener('click', () => {
     if (isMobileView()) return openMobileActionSheet('확인 유형', [
       { value: 'emergency', label: '응급실' }, { value: 'hospital', label: '야간 병원' }, { value: 'pharmacy', label: '야간 약국' }
-    ], state.careMode, (value) => { if (!MODE_META[value]) return; state.careMode = value; resetToIdle(); if (value === 'emergency') searchHospitals(); });
+    ], state.careMode, (value) => { if (!MODE_META[value]) return; state.careMode = value; resetToIdle(); searchHospitals(); });
     toggleToolbarPanel(elements.mapModeToggle, elements.mapModePanel);
   });
   elements.mapRegionToggle?.addEventListener('click', () => {
@@ -1448,9 +1759,9 @@
 
   elements.mobileModeButton?.addEventListener('click', () => openMobileActionSheet('확인 유형', [
     { value: 'emergency', label: '응급실' }, { value: 'hospital', label: '야간 병원' }, { value: 'pharmacy', label: '야간 약국' }
-  ], state.careMode, (value) => { if (!MODE_META[value]) return; state.careMode = value; resetToIdle(); if (value === 'emergency') searchHospitals(); }));
+  ], state.careMode, (value) => { if (!MODE_META[value]) return; state.careMode = value; resetToIdle(); searchHospitals(); }));
 
-  elements.mobileRegionButton?.addEventListener('click', () => openMobileActionSheet('지역 선택', Object.keys(REGION_CENTERS).map((value) => ({ value, label: value })), getRegionLabel(), (value) => { if (elements.region) elements.region.value = value; if (elements.mapRegion) elements.mapRegion.value = value; state.referencePoint = null; state.geo = null; syncToolbarInputs(); searchHospitals(); }));
+  elements.mobileRegionButton?.addEventListener('click', () => openMobileActionSheet('지역 선택', Object.keys(REGION_CENTERS).map((value) => ({ value, label: value })), getRegionLabel(), (value) => { if (elements.region) elements.region.value = value; if (elements.mapRegion) elements.mapRegion.value = value; if (elements.district) elements.district.value = ''; if (elements.mapDistrict) elements.mapDistrict.value = ''; state.referencePoint = null; state.geo = null; syncToolbarInputs(); searchHospitals(); }));
 
   elements.mobileFilterButton?.addEventListener('click', () => openMobileActionSheet('조건 필터', [
     { value: 'all', label: '전체 보기' }, { value: 'beds', label: '병상 정보 있음' }, { value: 'phone', label: '전화번호 있음' }, { value: 'map', label: '지도 표시 가능' }
@@ -1481,7 +1792,7 @@
       if (state.careMode === 'emergency' && elements.sort?.value === 'night') elements.sort.value = 'distance';
       closeToolbarPopovers();
       resetToIdle();
-      if (state.careMode === 'emergency') searchHospitals();
+      searchHospitals();
     });
   });
 
@@ -1552,7 +1863,7 @@
       if (state.careMode !== 'emergency' && ['beds', 'critical'].includes(elements.sort?.value)) elements.sort.value = 'night';
       if (state.careMode === 'emergency' && elements.sort?.value === 'night') elements.sort.value = 'distance';
       resetToIdle();
-      if (state.careMode === 'emergency') searchHospitals();
+      searchHospitals();
     });
   });
 
@@ -1569,14 +1880,18 @@
       state.mapHasFitResults = false;
       state.mapResultSignature = '';
       state.referencePoint = { lat, lng, type: 'current', label: '현재 위치' };
+      state.referenceMove = true;
       state.keywordMode = 'place';
       if (elements.sort) elements.sort.value = 'distance';
       try {
         const region = await fetchJson(`/api/kakao-local?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`, { timeoutMs: 5000, cache: 'no-store' });
         const regionLabel = region?.region1;
         if (regionLabel && elements.region) elements.region.value = regionLabel;
-        if (region?.region2 && elements.district) elements.district.value = region.region2;
+        if (regionLabel && elements.mapRegion) elements.mapRegion.value = regionLabel;
       } catch (_) {}
+      // 현재 위치는 거리 계산 기준점입니다. 사용자가 고른 지역 범위를 구 단위로 자동 축소하지 않습니다.
+      if (elements.district) elements.district.value = '';
+      if (elements.mapDistrict) elements.mapDistrict.value = '';
       syncToolbarInputs();
       setStatus('현재 위치를 기준으로 가까운 응급실을 다시 정렬합니다.', 'success');
       searchHospitals();

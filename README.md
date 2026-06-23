@@ -1,4 +1,21 @@
+# v103 배포 메모
+
+- Cloudflare Pages 단일 파일 25MiB 제한 대응을 위해 의료 대용량 캐시를 지역별로 분할했습니다.
+- 제거된 단일 대용량 파일: `night-hospital-cache.json`, `night-pharmacy-cache.json`, `kakao-place-cache.json`
+- 새 경로: `assets/data/medical/night-hospital/{지역}.json`, `assets/data/medical/night-pharmacy/{지역}.json`, `assets/data/medical/kakao-place/{mode}/{지역}.json`
+- 서울/경기처럼 큰 캐시는 내부적으로 `part-xx.json` 파티션 매니페스트를 사용합니다.
+- 새로 캐시를 생성한 뒤에는 `node scripts/split-medical-cache-by-region.js`를 실행해 배포용으로 분할하세요.
+
 # 한눈체크
+
+## v103-medical-regional-cache-split
+
+- 온병원/일산차병원 카카오맵 URL 수동 패치 반영 상태를 유지했습니다.
+- Cloudflare Pages 단일 파일 제한 대응을 위해 야간 병원·야간 약국·의료기관 카카오 캐시를 지역별 파일로 분할했습니다.
+- 서울/경기처럼 큰 지역 파일은 작은 `part-xx.json` 파티션으로 나눴고, 프론트는 매니페스트를 읽어 필요한 파티션만 병합합니다.
+- 응급실 페이지에서 선택 지역의 야간 병원/약국 캐시와 카카오 캐시만 불러오도록 수정했습니다.
+- 배포 확인 버전: `v103-medical-regional-cache-split`.
+
 
 한눈체크는 생활 속에서 확인이 필요한 정보를 한 화면에서 정리해 보여주는 정적 사이트 + Cloudflare Pages Functions 프로젝트입니다.
 
@@ -16,7 +33,7 @@
 - 거래 전 체크리스트
 - 컴퓨터 사양 확인
 
-## v99-emergency-mobile-critical-state-fix
+## v100-emergency-state-machine-current-location-fix
 
 이번 버전은 운영 UI 최종 점검본입니다. 메인, sitemap, 데이터 출처, 환경변수 예시, 응급실 지도형 UI, 외출 위험 오류 문구, 의료기관 카카오맵 로컬 캐시 연결 상태를 다시 확인했습니다.
 
@@ -67,7 +84,38 @@ HIRA_API_KEY=
 
 ## 배포 확인
 
-배포 후 `/api/config`의 `serverVersion`이 `v99-emergency-mobile-critical-state-fix`로 보이면 이번 최종 점검본이 반영된 것입니다.
+배포 후 `/api/config`의 `serverVersion`이 `v103-medical-regional-cache-split`로 보이면 이번 작업본이 반영된 것입니다.
+
+
+## 야간 병원·야간 약국 로컬 캐시 생성
+
+로컬에서만 실행합니다. `.env.local`은 배포 ZIP이나 GitHub에 포함하지 않습니다.
+
+```powershell
+cd "프로젝트_폴더"
+notepad .env.local
+# NMC_HOSPITAL_API_KEY=병의원_KEY
+# NMC_PHARMACY_API_KEY=약국_KEY
+# KAKAO_REST_API_KEY=카카오_REST_API_KEY
+
+# 소량 테스트
+node scripts/build-night-medical-cache.js --mode=hospital --region=서울 --limit=30
+node scripts/build-night-medical-cache.js --mode=pharmacy --region=서울 --limit=30
+
+# 전국 캐시 생성
+node scripts/build-night-medical-cache.js --mode=all --region=전국
+
+# 생성된 야간 병원/약국 캐시를 기준으로 카카오맵 바로가기 매칭
+node scripts/enrich-medical-kakao-places.js --mode=hospital --source=assets/data/medical/night-hospital-cache.json
+node scripts/enrich-medical-kakao-places.js --mode=pharmacy --source=assets/data/medical/night-pharmacy-cache.json
+
+# 배포 전 대용량 단일 JSON을 지역별/파티션별 캐시로 분할
+node scripts/split-medical-cache-by-region.js
+
+del .env.local
+```
+
+야간 병원·약국 캐시는 기본정보와 제공기관 운영시간만 저장합니다. 실제 야간 진료, 조제 가능 여부, 접수 마감, 임시 휴무는 방문 전 전화 확인이 필요합니다.
 
 ## 의료기관 카카오맵 캐시 생성
 
@@ -88,7 +136,7 @@ node scripts/enrich-medical-kakao-places.js --mode=all --region=대전 --limit=3
 del .env.local
 ```
 
-## v99-emergency-mobile-critical-state-fix
+## v100-emergency-state-machine-current-location-fix
 
 - 응급실·야간 병원·약국 확인 페이지를 전기차 충전소 지도 계열의 상단 조건 카드 + 지도 중심 + 결과 목록 구조로 다시 정리했습니다.
 - 왼쪽에 고립되어 보이던 조회 전/선택 카드 구조를 제거하고, 선택 상세 카드는 실제 항목 선택 후에만 결과 흐름 아래 표시되도록 변경했습니다.

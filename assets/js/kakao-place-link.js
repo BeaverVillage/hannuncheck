@@ -83,11 +83,31 @@
     return { ...payload, index };
   };
 
+  const resolveRelativeUrl = (baseUrl, partFile) => {
+    try {
+      return new URL(partFile, new URL(baseUrl, window.location.origin)).toString();
+    } catch (_) {
+      const cleanBase = String(baseUrl || '').split('?')[0].replace(/[^/]+$/, '');
+      return `${cleanBase}${partFile}`;
+    }
+  };
+
   const loadCache = async (url, options = {}) => {
     try {
       const response = await fetch(url, { cache: options.cache || 'no-store' });
       if (!response.ok) throw new Error(`cache ${response.status}`);
       const payload = await response.json();
+      if (Array.isArray(payload?.parts) && payload.parts.length) {
+        const mergedEntries = {};
+        for (const part of payload.parts) {
+          const partUrl = resolveRelativeUrl(url, part.file || part.url || '');
+          const partResponse = await fetch(partUrl, { cache: options.cache || 'no-store' });
+          if (!partResponse.ok) throw new Error(`cache part ${partResponse.status}`);
+          const partPayload = await partResponse.json();
+          Object.assign(mergedEntries, partPayload.entries || {});
+        }
+        payload.entries = mergedEntries;
+      }
       return createIndex(payload);
     } catch (error) {
       return {

@@ -67,6 +67,24 @@
     <priority>0.85</priority>
   </url>
   <url>
+    <loc>https://hannuncheck.com/tools/fishing-spot-map.html</loc>
+    <lastmod>2026-06-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.82</priority>
+  </url>
+  <url>
+    <loc>https://hannuncheck.com/tools/free-wifi-map.html</loc>
+    <lastmod>2026-06-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.82</priority>
+  </url>
+  <url>
+    <loc>https://hannuncheck.com/tools/public-toilet-map.html</loc>
+    <lastmod>2026-06-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.82</priority>
+  </url>
+  <url>
     <loc>https://hannuncheck.com/tools/pc-spec.html</loc>
     <lastmod>2026-06-21</lastmod>
     <changefreq>weekly</changefreq>

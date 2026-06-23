@@ -1,0 +1,308 @@
+/* 한눈체크 생활지도 공통 2차 안정화: 낚시터 찾기 */
+.life-hero-band {
+  background:
+    radial-gradient(circle at 14% 16%, rgba(34, 197, 94, 0.16), transparent 36%),
+    linear-gradient(135deg, #f8fff9 0%, #eefaf1 55%, #f8fffb 100%);
+}
+.life-map-app .parking-panel-head span,
+.life-map-app .step-label,
+.life-map-app .parking-data-badges span { color: #047857; }
+.life-map-app .step-label::before,
+.life-map-app .parking-result-sort-tabs button.active,
+.life-map-app .parking-map-research-button { background: #059669; border-color: #059669; }
+.life-map-app .parking-control-card { border-color: #d9f2e3; background: #fbfffc; }
+.life-map-app .parking-map-card { border-color: #d8f3e2; background: #ecfdf5; }
+.life-map-app .parking-map.is-fallback {
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.58) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,0.58) 1px, transparent 1px),
+    linear-gradient(135deg, #d1fae5, #f0fdf4);
+  background-size: 44px 44px, 44px 44px, auto;
+}
+.life-map-app .parking-result-card.selected,
+.life-map-app .parking-result-card:focus-within { border-color: rgba(5, 150, 105, 0.55); box-shadow: 0 14px 30px rgba(5, 150, 105, 0.12); }
+.life-map-dashboard.parking-dashboard {
+  display: grid;
+  grid-template-columns: minmax(310px, 0.82fr) minmax(0, 2.18fr);
+  gap: 18px;
+  align-items: start;
+}
+.life-dashboard-main {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.88fr) minmax(420px, 1.12fr);
+  gap: 18px;
+  min-width: 0;
+}
+.life-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.life-action-row { display: flex; gap: 8px; align-items: center; }
+.life-action-row .primary-button,
+.life-action-row .secondary-action-button { flex: 1; }
+.life-map-toolbar {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid rgba(217, 242, 227, 0.92);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.94);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+.life-map-toolbar form { display: flex; gap: 6px; flex: 1; min-width: 0; }
+.life-map-toolbar input,
+.life-map-toolbar select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d9f2e3;
+  border-radius: 12px;
+  padding: 10px 11px;
+  font: inherit;
+}
+.life-map-toolbar button {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: #fff;
+  background: #059669;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.life-map-toolbar .ghost { color: #065f46; background: #ecfdf5; border: 1px solid #bbf7d0; }
+.life-summary-card {
+  display: grid;
+  gap: 4px;
+  min-width: 128px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #f8fffb;
+  border: 1px solid #dcfce7;
+}
+.life-summary-card span { color: #047857; font-weight: 900; font-size: 0.76rem; }
+.life-summary-card strong { color: #064e3b; font-size: 1.08rem; }
+.life-summary-card small { color: #64748b; font-size: 0.74rem; }
+.life-marker {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  height: 34px;
+  padding: 0 10px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  color: #fff;
+  background: #059669;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22);
+  font-weight: 950;
+  cursor: pointer;
+}
+.life-marker.selected { background: #0f766e; transform: translateY(-2px); }
+.life-fallback-marker {
+  position: absolute;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+.life-fallback-marker.hidden { display: none; }
+.life-selected-card {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 5;
+  max-width: min(420px, calc(100% - 32px));
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 20px;
+  color: #0f172a;
+  background: rgba(255,255,255,0.96);
+  border: 1px solid #d9f2e3;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.18);
+}
+.life-selected-card[hidden] { display: none; }
+.life-selected-card h3 { margin: 0; color: #064e3b; font-size: 1.05rem; }
+.life-selected-card p { margin: 0; color: #64748b; font-size: 0.86rem; line-height: 1.55; }
+.life-card-actions,
+.life-card-actions-inline { display: flex; flex-wrap: wrap; gap: 8px; }
+.life-card-actions a,
+.life-card-actions-inline a,
+.life-card-actions-inline button,
+.life-selected-card a,
+.life-selected-card button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 11px;
+  border-radius: 999px;
+  border: 1px solid #bbf7d0;
+  color: #065f46;
+  background: #ecfdf5;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-decoration: none;
+  cursor: pointer;
+}
+.life-card-actions a.primary,
+.life-card-actions-inline a.primary,
+.life-selected-card a.primary { color: #fff; background: #059669; border-color: #059669; }
+.life-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.life-detail-grid span {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border-radius: 13px;
+  background: #f8fafc;
+  border: 1px solid #e5eef7;
+  color: #475569;
+  font-size: 0.75rem;
+}
+.life-detail-grid strong { color: #0f172a; font-size: 0.86rem; line-height: 1.35; }
+.life-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.life-chip-row span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: #065f46;
+  background: #dcfce7;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+.life-mobile-bottom-sheet { display: none; }
+@media (max-width: 1080px) {
+  .life-map-dashboard.parking-dashboard,
+  .life-dashboard-main { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .life-map-app .parking-dashboard__results { display: none; }
+  .life-map-card { min-height: 70vh; }
+  .life-map-toolbar { flex-wrap: wrap; }
+  .life-map-toolbar form { flex-basis: 100%; }
+  .life-mobile-bottom-sheet {
+    display: none;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    max-height: 58vh;
+    overflow: auto;
+    padding: 14px;
+    border-radius: 24px 24px 0 0;
+    background: rgba(255,255,255,0.98);
+    border: 1px solid #dbeafe;
+    box-shadow: 0 -16px 40px rgba(15, 23, 42, 0.18);
+  }
+  .life-mobile-bottom-sheet.is-open { display: block; }
+  .life-selected-card { left: 12px; right: 12px; bottom: 92px; max-width: none; }
+}
+@media (max-width: 620px) {
+  .life-filter-grid,
+  .life-detail-grid,
+  .parking-date-grid,
+  .parking-result-metrics { grid-template-columns: 1fr; }
+  .life-action-row { flex-direction: column; }
+  .life-action-row .primary-button,
+  .life-action-row .secondary-action-button { width: 100%; }
+  .parking-result-card { grid-template-columns: 1fr; }
+}
+
+/* 한눈체크 생활지도 6차: 무료 와이파이 찾기 */
+.wifi-hero-band {
+  background:
+    radial-gradient(circle at 14% 16%, rgba(37, 99, 235, 0.15), transparent 36%),
+    linear-gradient(135deg, #f8fbff 0%, #eff6ff 55%, #f8fbff 100%);
+}
+.wifi-map-app .parking-panel-head span,
+.wifi-map-app .step-label,
+.wifi-map-app .parking-data-badges span { color: #1d4ed8; }
+.wifi-map-app .step-label::before,
+.wifi-map-app .parking-result-sort-tabs button.active,
+.wifi-map-app .parking-map-research-button { background: #2563eb; border-color: #2563eb; }
+.wifi-map-app .parking-control-card { border-color: #dbeafe; background: #fbfdff; }
+.wifi-map-app .parking-map-card { border-color: #dbeafe; background: #eff6ff; }
+.wifi-map-app .parking-map.is-fallback {
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.62) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,0.62) 1px, transparent 1px),
+    linear-gradient(135deg, #dbeafe, #eff6ff);
+  background-size: 44px 44px, 44px 44px, auto;
+}
+.wifi-map-app .parking-result-card.selected,
+.wifi-map-app .parking-result-card:focus-within { border-color: rgba(37, 99, 235, 0.55); box-shadow: 0 14px 30px rgba(37, 99, 235, 0.12); }
+.wifi-map-app .life-map-toolbar { border-color: rgba(219, 234, 254, 0.95); }
+.wifi-map-app .life-map-toolbar input,
+.wifi-map-app .life-map-toolbar select { border-color: #dbeafe; }
+.wifi-map-app .life-map-toolbar button { background: #2563eb; }
+.wifi-map-app .life-map-toolbar .ghost { color: #1e40af; background: #eff6ff; border-color: #bfdbfe; }
+.wifi-map-app .life-summary-card { background: #f8fbff; border-color: #dbeafe; }
+.wifi-map-app .life-summary-card span { color: #1d4ed8; }
+.wifi-map-app .life-summary-card strong { color: #1e3a8a; }
+.wifi-map-app .life-marker,
+.wifi-marker { background: #2563eb; }
+.wifi-map-app .life-marker.selected,
+.wifi-marker.selected { background: #1d4ed8; }
+.wifi-map-app .life-selected-card { border-color: #dbeafe; }
+.wifi-map-app .life-selected-card h3 { color: #1e3a8a; }
+.wifi-map-app .life-card-actions a,
+.wifi-map-app .life-card-actions-inline a,
+.wifi-map-app .life-card-actions-inline button,
+.wifi-map-app .life-selected-card a,
+.wifi-map-app .life-selected-card button { border-color: #bfdbfe; color: #1e40af; background: #eff6ff; }
+.wifi-map-app .life-card-actions a.primary,
+.wifi-map-app .life-card-actions-inline a.primary,
+.wifi-map-app .life-selected-card a.primary { color: #fff; background: #2563eb; border-color: #2563eb; }
+.wifi-map-app .life-chip-row span { color: #1e40af; background: #dbeafe; }
+
+/* 한눈체크 생활지도 9차: 공중화장실 찾기 */
+.toilet-hero-band {
+  background:
+    radial-gradient(circle at 14% 16%, rgba(14, 165, 233, 0.14), transparent 36%),
+    linear-gradient(135deg, #f8fdff 0%, #ecfeff 55%, #f8fdff 100%);
+}
+.toilet-map-app .parking-panel-head span,
+.toilet-map-app .step-label,
+.toilet-map-app .parking-data-badges span { color: #0e7490; }
+.toilet-map-app .step-label::before,
+.toilet-map-app .parking-result-sort-tabs button.active,
+.toilet-map-app .parking-map-research-button { background: #0891b2; border-color: #0891b2; }
+.toilet-map-app .parking-control-card { border-color: #cffafe; background: #fbfeff; }
+.toilet-map-app .parking-map-card { border-color: #cffafe; background: #ecfeff; }
+.toilet-map-app .parking-map.is-fallback {
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.62) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,0.62) 1px, transparent 1px),
+    linear-gradient(135deg, #cffafe, #ecfeff);
+  background-size: 44px 44px, 44px 44px, auto;
+}
+.toilet-map-app .parking-result-card.selected,
+.toilet-map-app .parking-result-card:focus-within { border-color: rgba(8, 145, 178, 0.55); box-shadow: 0 14px 30px rgba(8, 145, 178, 0.12); }
+.toilet-map-app .life-map-toolbar { border-color: rgba(207, 250, 254, 0.95); }
+.toilet-map-app .life-map-toolbar input,
+.toilet-map-app .life-map-toolbar select { border-color: #cffafe; }
+.toilet-map-app .life-map-toolbar button { background: #0891b2; }
+.toilet-map-app .life-map-toolbar .ghost { color: #155e75; background: #ecfeff; border-color: #a5f3fc; }
+.toilet-map-app .life-summary-card { background: #f8fdff; border-color: #cffafe; }
+.toilet-map-app .life-summary-card span { color: #0e7490; }
+.toilet-map-app .life-summary-card strong { color: #164e63; }
+.toilet-map-app .life-marker,
+.toilet-marker { background: #0891b2; }
+.toilet-map-app .life-marker.selected,
+.toilet-marker.selected { background: #0e7490; }
+.toilet-map-app .life-selected-card { border-color: #cffafe; }
+.toilet-map-app .life-selected-card h3 { color: #164e63; }
+.toilet-map-app .life-card-actions a,
+.toilet-map-app .life-card-actions-inline a,
+.toilet-map-app .life-card-actions-inline button,
+.toilet-map-app .life-selected-card a,
+.toilet-map-app .life-selected-card button { border-color: #a5f3fc; color: #155e75; background: #ecfeff; }
+.toilet-map-app .life-card-actions a.primary,
+.toilet-map-app .life-card-actions-inline a.primary,
+.toilet-map-app .life-selected-card a.primary { color: #fff; background: #0891b2; border-color: #0891b2; }
+.toilet-map-app .life-chip-row span { color: #155e75; background: #cffafe; }

@@ -3,7 +3,7 @@
   if (!root) return;
 
   const CACHE_BASE = '/assets/data/life/free-wifi';
-  const VERSION = 'v130-ev106-life-map-mobile-fix';
+  const VERSION = 'v131-ev106-emergency-mobile-life-ui';
   const MAX_LIST = 50;
   const MAX_MARKERS = 300;
   const MAX_DISTRICT_CACHE = 12;
@@ -1107,95 +1107,106 @@
   const attachDragToSheet = (sheet, onClose, expandedClass) => {
     if (!sheet || sheet.dataset.lifeDragBound === 'true') return;
     sheet.dataset.lifeDragBound = 'true';
+
+    let active = false;
     let startY = 0;
     let lastY = 0;
-    let startPercent = 44;
-    let active = false;
+    let startOffset = 0;
 
     const getY = (event) => event.clientY || event.touches?.[0]?.clientY || event.changedTouches?.[0]?.clientY || 0;
     const isMobileSheet = () => sheet.classList.contains('life-mobile-bottom-sheet');
-    const currentPercent = () => {
-      if (!isMobileSheet()) return sheet.classList.contains(expandedClass) ? 0 : 44;
-      if (sheet.classList.contains('is-expanded')) return 0;
-      if (sheet.classList.contains('is-open')) return 44;
-      return 92;
+    const sheetHeight = () => Math.max(sheet.offsetHeight || 1, 1);
+    const collapsedOffset = () => Math.max(sheetHeight() - 70, 0);
+    const halfOffset = () => Math.round(sheetHeight() * 0.44);
+    const expandedOffset = () => 0;
+
+    const getCurrentOffset = () => {
+      if (!isMobileSheet()) return sheet.classList.contains(expandedClass) ? expandedOffset() : halfOffset();
+      if (sheet.classList.contains('is-expanded')) return expandedOffset();
+      if (sheet.classList.contains('is-open')) return halfOffset();
+      return collapsedOffset();
     };
-    const setSheetPercent = (percent) => {
-      sheet.style.setProperty('--life-sheet-y', `${Math.max(0, Math.min(94, percent))}%`);
+
+    const setDragOffset = (value) => {
+      const next = Math.max(expandedOffset(), Math.min(collapsedOffset(), value));
+      sheet.style.setProperty('--life-sheet-y-px', `${next}px`);
     };
-    const collapseMobileSheet = () => {
-      state.mobileOpen = false;
-      sheet.classList.remove('is-open', 'is-expanded');
-      sheet.classList.add('is-collapsed');
-      sheet.style.removeProperty('--life-sheet-y');
-      syncMobileSheet();
+
+    const applyMobileState = (mode) => {
+      if (!isMobileSheet()) return;
+      state.mobileOpen = mode !== 'collapsed';
+      sheet.classList.toggle('is-collapsed', mode === 'collapsed');
+      sheet.classList.toggle('is-open', mode === 'half' || mode === 'expanded');
+      sheet.classList.toggle('is-expanded', mode === 'expanded');
+      sheet.classList.remove('is-dragging');
+      sheet.style.removeProperty('--life-sheet-y-px');
+      if (elements.mobileToggle) {
+        elements.mobileToggle.setAttribute('aria-expanded', state.mobileOpen ? 'true' : 'false');
+        elements.mobileToggle.textContent = state.mobileOpen ? '목록 닫기' : '목록 보기';
+      }
     };
-    const halfMobileSheet = () => {
-      state.mobileOpen = true;
-      sheet.classList.add('is-open');
-      sheet.classList.remove('is-expanded', 'is-collapsed');
-      sheet.style.removeProperty('--life-sheet-y');
-      syncMobileSheet();
-    };
-    const expandMobileSheet = () => {
-      state.mobileOpen = true;
-      sheet.classList.add('is-open', 'is-expanded');
-      sheet.classList.remove('is-collapsed');
-      sheet.style.removeProperty('--life-sheet-y');
-      syncMobileSheet();
+
+    const canStart = (event) => {
+      const target = event.target;
+      return Boolean(target.closest('.parking-sheet-handle') || target.closest('.parking-mobile-sheet-head') || target.closest('[data-life-sheet-handle]'));
     };
 
     const start = (event) => {
-      const target = event.target;
-      if (!target.closest('.parking-sheet-handle') && !target.closest('.parking-mobile-sheet-head')) return;
+      if (!canStart(event)) return;
       active = true;
       startY = getY(event);
       lastY = startY;
-      startPercent = currentPercent();
+      startOffset = getCurrentOffset();
       sheet.classList.add('is-dragging');
       if (event.pointerId != null && typeof sheet.setPointerCapture === 'function') {
         try { sheet.setPointerCapture(event.pointerId); } catch (_) { /* noop */ }
       }
     };
+
     const move = (event) => {
       if (!active) return;
       lastY = getY(event);
-      const delta = ((lastY - startY) / Math.max(window.innerHeight || 1, 1)) * 100;
-      setSheetPercent(startPercent + delta);
-      event.preventDefault?.();
+      setDragOffset(startOffset + (lastY - startY));
+      if (typeof event.preventDefault === 'function') event.preventDefault();
     };
+
     const end = () => {
       if (!active) return;
       active = false;
+      const endOffset = Math.max(expandedOffset(), Math.min(collapsedOffset(), startOffset + (lastY - startY)));
       sheet.classList.remove('is-dragging');
-      const deltaPx = lastY - startY;
-      const finalPercent = Math.max(0, Math.min(94, startPercent + (deltaPx / Math.max(window.innerHeight || 1, 1)) * 100));
-      sheet.style.removeProperty('--life-sheet-y');
+      sheet.style.removeProperty('--life-sheet-y-px');
 
       if (isMobileSheet()) {
-        if (deltaPx > 90 || finalPercent > 70) collapseMobileSheet();
-        else if (deltaPx < -70 || finalPercent < 24) expandMobileSheet();
-        else halfMobileSheet();
+        const height = sheetHeight();
+        if (endOffset <= height * 0.24) applyMobileState('expanded');
+        else if (endOffset >= height * 0.70) applyMobileState('collapsed');
+        else applyMobileState('half');
         return;
       }
-      if (deltaPx > 80 || finalPercent > 64) {
+
+      const deltaPx = lastY - startY;
+      if (deltaPx > 80) {
         if (expandedClass) sheet.classList.remove(expandedClass);
         onClose?.();
-      } else if (expandedClass && (deltaPx < -60 || finalPercent < 24)) {
+      } else if (expandedClass && deltaPx < -60) {
         sheet.classList.add(expandedClass);
       } else if (expandedClass) {
         sheet.classList.remove(expandedClass);
       }
     };
 
-    sheet.addEventListener('pointerdown', start);
-    window.addEventListener('pointermove', move, { passive: false });
-    window.addEventListener('pointerup', end);
-    window.addEventListener('pointercancel', end);
-    sheet.addEventListener('touchstart', start, { passive: true });
-    window.addEventListener('touchmove', move, { passive: false });
-    window.addEventListener('touchend', end, { passive: true });
-    window.addEventListener('touchcancel', end, { passive: true });
+    if (window.PointerEvent) {
+      sheet.addEventListener('pointerdown', start);
+      window.addEventListener('pointermove', move, { passive: false });
+      window.addEventListener('pointerup', end);
+      window.addEventListener('pointercancel', end);
+    } else {
+      sheet.addEventListener('touchstart', start, { passive: true });
+      window.addEventListener('touchmove', move, { passive: false });
+      window.addEventListener('touchend', end, { passive: true });
+      window.addEventListener('touchcancel', end, { passive: true });
+    }
   };
 
   const initMobileInteractions = () => {

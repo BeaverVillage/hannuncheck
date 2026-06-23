@@ -6,8 +6,8 @@ const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
 const exists = (rel) => fs.existsSync(path.join(root, rel));
 const errors = [];
 const assert = (condition, message) => { if (!condition) errors.push(message); };
-const VERSION = '20260623-v130-ev106-life-map-mobile-fix';
-const RUNTIME = 'v130-ev106-life-map-mobile-fix';
+const VERSION = '20260623-v131-ev106-emergency-mobile-life-ui';
+const RUNTIME = 'v131-ev106-emergency-mobile-life-ui';
 const tools = [
   { name: '낚시터', html: 'tools/fishing-spot-map.html', js: 'assets/js/fishing-spot-map.js', mapSearchDisallowed: true },
   { name: '무료 와이파이', html: 'tools/free-wifi-map.html', js: 'assets/js/free-wifi-map.js' },

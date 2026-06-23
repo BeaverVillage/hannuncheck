@@ -5,7 +5,7 @@ const root = process.cwd();
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const assert = (cond, message) => {
   if (!cond) {
-    console.error(`[verify-life-maps-v130-ev106-mobile-fix] ${message}`);
+    console.error(`[verify-life-maps-v131-ev106-emergency-mobile-life-ui] ${message}`);
     process.exit(1);
   }
 };
@@ -46,4 +46,4 @@ for (const kind of ['free-wifi', 'public-toilets']) {
   const gwangjin = seoul.districts.find((district) => district.label === '광진구');
   assert(gwangjin?.center?.lat && gwangjin?.center?.lng, `${kind}: 광진구 center metadata missing`);
 }
-console.log('[verify-life-maps-v130-ev106-mobile-fix] passed');
+console.log('[verify-life-maps-v131-ev106-emergency-mobile-life-ui] passed');

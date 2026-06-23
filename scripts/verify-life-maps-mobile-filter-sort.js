@@ -11,8 +11,8 @@ const assert = (condition, message) => {
   }
   checks.push(message);
 };
-const version = '20260623-v130-ev106-life-map-mobile-fix';
-const runtime = 'v130-ev106-life-map-mobile-fix';
+const version = '20260623-v131-ev106-emergency-mobile-life-ui';
+const runtime = 'v131-ev106-emergency-mobile-life-ui';
 const features = [
   { name: '낚시터', html: 'tools/fishing-spot-map.html', js: 'assets/js/fishing-spot-map.js', sortAttr: 'data-fishing-sort', score: 'fishingRecommendScore' },
   { name: '무료 와이파이', html: 'tools/free-wifi-map.html', js: 'assets/js/free-wifi-map.js', sortAttr: 'data-wifi-sort', score: 'wifiRecommendScore' },
@@ -25,8 +25,8 @@ assert(css.includes('.life-filter-toggle-button'), 'mobile filter button CSS exi
 for (const feature of features) {
   const html = read(feature.html);
   const js = read(feature.js);
-  assert(html.includes(version), `${feature.name}: v130-ev106-life-map-mobile-fix cache-busting version applied`);
-  assert(js.includes(runtime), `${feature.name}: v130-ev106-life-map-mobile-fix runtime version applied`);
+  assert(html.includes(version), `${feature.name}: v131-ev106-emergency-mobile-life-ui cache-busting version applied`);
+  assert(js.includes(runtime), `${feature.name}: v131-ev106-emergency-mobile-life-ui runtime version applied`);
   assert(html.includes('value="recommend"'), `${feature.name}: recommend sort option exists`);
   assert(html.includes(`${feature.sortAttr}="recommend"`), `${feature.name}: recommend sort tab exists`);
   assert(html.includes('data-life-filter-toggle'), `${feature.name}: mobile filter toggle exists`);

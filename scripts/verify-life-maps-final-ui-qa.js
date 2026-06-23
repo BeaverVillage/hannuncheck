@@ -8,8 +8,8 @@ const ok = [];
 const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
 const exists = (rel) => fs.existsSync(path.join(root, rel));
 const assert = (condition, message) => (condition ? ok.push(message) : errors.push(message));
-const version = '20260623-v130-ev106-life-map-mobile-fix';
-const runtime = 'v130-ev106-life-map-mobile-fix';
+const version = '20260623-v131-ev106-emergency-mobile-life-ui';
+const runtime = 'v131-ev106-emergency-mobile-life-ui';
 const tools = [
   { name: '낚시터', html: 'tools/fishing-spot-map.html', js: 'assets/js/fishing-spot-map.js', close: 'data-fishing-close', select: 'data-life-card-select', mapText: '카카오맵 바로가기' },
   { name: '무료 와이파이', html: 'tools/free-wifi-map.html', js: 'assets/js/free-wifi-map.js', close: 'data-wifi-close', select: 'data-life-card-select', mapText: '카카오맵 바로가기' },
@@ -20,8 +20,8 @@ for (const tool of tools) {
   assert(exists(tool.js), `${tool.name}: js exists`);
   const html = read(tool.html);
   const js = read(tool.js);
-  assert(html.includes(version), `${tool.name}: v130-ev106-life-map-mobile-fix cache busting applied`);
-  assert(js.includes(`const VERSION = '${runtime}'`), `${tool.name}: v130-ev106-life-map-mobile-fix runtime version applied`);
+  assert(html.includes(version), `${tool.name}: v131-ev106-emergency-mobile-life-ui cache busting applied`);
+  assert(js.includes(`const VERSION = '${runtime}'`), `${tool.name}: v131-ev106-emergency-mobile-life-ui runtime version applied`);
   assert(html.includes('life-dashboard-main'), `${tool.name}: map/list dashboard exists`);
   assert(html.includes('life-mobile-bottom-sheet'), `${tool.name}: mobile bottom sheet exists`);
   assert(html.includes('data-life-filter-toggle'), `${tool.name}: mobile filter button exists`);
@@ -61,8 +61,8 @@ for (const file of fs.readdirSync(path.join(root, 'tools')).filter((name) => nam
   const html = read(`tools/${file}`);
   if (html.includes('/assets/js/app.js') && !html.includes(`/assets/js/app.js?v=${version}`)) appVersionMisses.push(file);
 }
-assert(appVersionMisses.length === 0, `all tool app.js references use v130-ev106-life-map-mobile-fix (${appVersionMisses.join(', ') || 'ok'})`);
-assert(read('index.html').includes(`/assets/js/app.js?v=${version}`), 'index app.js reference uses v130-ev106-life-map-mobile-fix');
+assert(appVersionMisses.length === 0, `all tool app.js references use v131-ev106-emergency-mobile-life-ui (${appVersionMisses.join(', ') || 'ok'})`);
+assert(read('index.html').includes(`/assets/js/app.js?v=${version}`), 'index app.js reference uses v131-ev106-emergency-mobile-life-ui');
 if (errors.length) {
   console.error('[verify-life-maps-final-ui-qa] failed');
   for (const error of errors) console.error('- ' + error);

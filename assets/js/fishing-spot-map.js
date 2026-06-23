@@ -7,7 +7,7 @@
   const CACHE_BASE = '/assets/data/life/fishing-spots';
   const MAX_LIST = 80;
   const MAX_MARKERS = 220;
-  const VERSION = 'v128-recovered-location-search';
+  const VERSION = 'v129-location-search-ui-refine';
   const REGION_CENTERS = {
     seoul: { lat: 37.5665, lng: 126.9780, label: '서울' },
     busan: { lat: 35.1796, lng: 129.0756, label: '부산' },
@@ -645,12 +645,87 @@
   };
 
 
+
+  const REGION_NAME_TO_KEY = {
+    '서울': 'seoul', '서울특별시': 'seoul',
+    '부산': 'busan', '부산광역시': 'busan',
+    '대구': 'daegu', '대구광역시': 'daegu',
+    '인천': 'incheon', '인천광역시': 'incheon',
+    '광주': 'gwangju', '광주광역시': 'gwangju',
+    '대전': 'daejeon', '대전광역시': 'daejeon',
+    '울산': 'ulsan', '울산광역시': 'ulsan',
+    '세종': 'sejong', '세종특별자치시': 'sejong',
+    '경기': 'gyeonggi', '경기도': 'gyeonggi',
+    '강원': 'gangwon', '강원도': 'gangwon', '강원특별자치도': 'gangwon',
+    '충북': 'chungbuk', '충청북도': 'chungbuk',
+    '충남': 'chungnam', '충청남도': 'chungnam',
+    '전북': 'jeonbuk', '전라북도': 'jeonbuk', '전북특별자치도': 'jeonbuk',
+    '전남': 'jeonnam', '전라남도': 'jeonnam',
+    '경북': 'gyeongbuk', '경상북도': 'gyeongbuk',
+    '경남': 'gyeongnam', '경상남도': 'gyeongnam',
+    '제주': 'jeju', '제주도': 'jeju', '제주특별자치도': 'jeju',
+  };
+
+  const normalizeAdmin = (value) => normalize(value)
+    .replace(/\s+/g, '')
+    .replace(/특별자치시|특별자치도|특별시|광역시|자치도/g, '')
+    .replace(/충청/g, '충')
+    .replace(/전라/g, '전')
+    .replace(/경상/g, '경');
+
+  const regionKeyFromName = (name) => {
+    const direct = REGION_NAME_TO_KEY[normalize(name)];
+    if (direct) return direct;
+    const normalized = normalizeAdmin(name);
+    const entry = Object.entries(REGION_NAME_TO_KEY).find(([label]) => normalizeAdmin(label) === normalized || normalized.startsWith(normalizeAdmin(label)) || normalizeAdmin(label).startsWith(normalized));
+    return entry?.[1] || '';
+  };
+
+  const districtKeyFromName = (regionKey, districtName) => {
+    const target = normalizeAdmin(districtName);
+    if (!target) return '';
+    const districts = regionMeta(regionKey)?.districts || [];
+    const exact = districts.find((district) => normalizeAdmin(district.label) === target);
+    if (exact) return exact.key;
+    const loose = districts.find((district) => {
+      const label = normalizeAdmin(district.label);
+      return label && (target.includes(label) || label.includes(target));
+    });
+    return loose?.key || '';
+  };
+
+  const kakaoCoordToAdmin = async (point) => {
+    if (!isValidPoint(point)) return null;
+    if (!window.kakao?.maps?.services) {
+      try { await initKakaoMap(); } catch (_) { /* fallback below */ }
+    }
+    if (!window.kakao?.maps?.services) return null;
+    return new Promise((resolve) => {
+      try {
+        const geocoder = new window.kakao.maps.services.Geocoder();
+        geocoder.coord2RegionCode(Number(point.lng), Number(point.lat), (data, status) => {
+          if (status !== window.kakao.maps.services.Status.OK || !Array.isArray(data) || !data.length) {
+            resolve(null);
+            return;
+          }
+          const region = data.find((row) => row.region_type === 'H') || data[0];
+          resolve({
+            regionName: region.region_1depth_name || '',
+            districtName: region.region_2depth_name || '',
+          });
+        });
+      } catch (_) {
+        resolve(null);
+      }
+    });
+  };
+
   const centerFromMeta = (meta, fallbackKey) => {
     const c = meta?.center || REGION_CENTERS[fallbackKey] || REGION_CENTERS.seoul;
     return c && Number.isFinite(Number(c.lat)) && Number.isFinite(Number(c.lng)) ? { lat: Number(c.lat), lng: Number(c.lng), label: meta?.label || REGION_CENTERS[fallbackKey]?.label } : null;
   };
 
-  const nearestRegionKey = async (point) => {
+  const nearestRegionKeyFallback = async (point) => {
     await loadIndex();
     let best = { key: state.currentRegion || 'seoul', distance: Infinity };
     (state.index?.regions || []).forEach((region) => {
@@ -659,6 +734,13 @@
       if (Number.isFinite(d) && d < best.distance) best = { key: region.key, distance: d };
     });
     return best.key;
+  };
+
+  const nearestRegionKey = async (point) => {
+    await loadIndex();
+    const admin = await kakaoCoordToAdmin(point);
+    const regionKey = admin?.regionName ? regionKeyFromName(admin.regionName) : '';
+    return regionKey && regionMeta(regionKey) ? regionKey : nearestRegionKeyFallback(point);
   };
 
   const moveMapToPoint = (point, level = 6) => {
@@ -675,7 +757,7 @@
     const marker = document.createElement('div');
     marker.className = `life-reference-marker ${type === 'current' ? 'is-current' : 'is-search'}`;
     marker.setAttribute('aria-label', label || (type === 'current' ? '현재 위치' : '검색 위치'));
-    marker.innerHTML = `<span></span>`;
+    marker.innerHTML = `<span>${escapeHtml(label || (type === 'current' ? '현재 위치' : '검색 위치'))}</span>`;
     return marker;
   };
 
@@ -707,7 +789,7 @@
       marker.className = `life-reference-marker life-fallback-reference-marker ${ref.type === 'current' ? 'is-current' : 'is-search'}`;
       marker.style.left = `${pos.x}%`;
       marker.style.top = `${pos.y}%`;
-      marker.innerHTML = '<span></span>';
+      marker.innerHTML = `<span>${escapeHtml(ref.label || (ref.type === 'current' ? '현재 위치' : '검색 위치'))}</span>`;
       elements.markers.appendChild(marker);
     });
   };

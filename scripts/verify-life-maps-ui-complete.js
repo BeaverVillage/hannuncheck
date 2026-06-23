@@ -6,8 +6,8 @@ const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
 const exists = (rel) => fs.existsSync(path.join(root, rel));
 const errors = [];
 const assert = (condition, message) => { if (!condition) errors.push(message); };
-const VERSION = '20260623-v128-recovered-location-search';
-const RUNTIME = 'v128-recovered-location-search';
+const VERSION = '20260623-v129-location-search-ui-refine';
+const RUNTIME = 'v129-location-search-ui-refine';
 const tools = [
   { name: '낚시터', html: 'tools/fishing-spot-map.html', js: 'assets/js/fishing-spot-map.js', mapSearchDisallowed: true },
   { name: '무료 와이파이', html: 'tools/free-wifi-map.html', js: 'assets/js/free-wifi-map.js' },
@@ -18,8 +18,8 @@ for (const tool of tools) {
   assert(exists(tool.js), `${tool.name}: js exists`);
   const html = read(tool.html);
   const js = read(tool.js);
-  assert(html.includes(VERSION), `${tool.name}: v125 cache busting applied`);
-  assert(js.includes(`const VERSION = '${RUNTIME}'`), `${tool.name}: v125 runtime applied`);
+  assert(html.includes(VERSION), `${tool.name}: v129 cache busting applied`);
+  assert(js.includes(`const VERSION = '${RUNTIME}'`), `${tool.name}: v129 runtime applied`);
   assert(js.includes('카카오맵 바로가기'), `${tool.name}: single Kakao map button text exists`);
   assert(!js.includes('카카오맵 검색'), `${tool.name}: duplicate Kakao search button removed`);
   assert(js.includes('life-selected-close'), `${tool.name}: top close button exists`);

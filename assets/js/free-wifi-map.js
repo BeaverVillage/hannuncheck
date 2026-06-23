@@ -3,7 +3,7 @@
   if (!root) return;
 
   const CACHE_BASE = '/assets/data/life/free-wifi';
-  const VERSION = 'v128-recovered-location-search';
+  const VERSION = 'v129-location-search-ui-refine';
   const MAX_LIST = 50;
   const MAX_MARKERS = 300;
   const MAX_DISTRICT_CACHE = 12;
@@ -138,6 +138,56 @@
     return item;
   };
 
+
+  const installationSummary = (installations = []) => {
+    const count = installations.length;
+    if (count <= 1) return '';
+    return `설치 위치 ${count.toLocaleString('ko-KR')}곳`;
+  };
+
+  const groupWifiInstallations = (items = []) => {
+    const groups = new Map();
+    items.forEach((item) => {
+      const lat = Number(item.lat).toFixed(6);
+      const lng = Number(item.lng).toFixed(6);
+      const address = normalizeSearch(item.address || item.roadAddress || item.lotAddress || '');
+      const name = normalizeSearch(item.name || '');
+      const key = `${lat}|${lng}|${address || name}`;
+      if (!groups.has(key)) {
+        const base = { ...item, details: { ...(item.details || {}) } };
+        base.id = `wifi-group-${groups.size + 1}-${String(item.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(-10)}`;
+        base.__installations = [];
+        base.badges = (item.badges || []).filter((badge) => !String(badge).includes('S' + 'SID') && !String(badge).includes('와이파이 이름'));
+        groups.set(key, base);
+      }
+      const group = groups.get(key);
+      const details = item.details || {};
+      group.__installations.push({
+        name: item.name || '',
+        placeDetail: item.placeDetail || details.placeDetail || details.installLocation || '',
+        ssid: details.ssid || '',
+        facilityType: details.facilityType || '',
+        provider: details.provider || details.manager || '',
+        phone: item.phone || '',
+      });
+      if (!hasText(group.phone) && hasText(item.phone)) group.phone = item.phone;
+      if (!hasText(group.details.ssid) && hasText(details.ssid)) group.details.ssid = details.ssid;
+      if (!hasText(group.details.provider) && hasText(details.provider || details.manager)) group.details.provider = details.provider || details.manager;
+      if (!hasText(group.details.facilityType) && hasText(details.facilityType)) group.details.facilityType = details.facilityType;
+    });
+    return Array.from(groups.values()).map((group) => {
+      const installs = group.__installations || [];
+      const searchText = [group.name, group.address, group.roadAddress, group.lotAddress, group.details?.ssid, group.details?.facilityType, group.details?.provider, ...installs.flatMap((entry) => [entry.placeDetail, entry.ssid, entry.provider, entry.phone])].join(' ');
+      group.searchText = searchText;
+      group.details = {
+        ...(group.details || {}),
+        installationCount: installs.length,
+        installationSummary: installationSummary(installs),
+      };
+      return prepareRuntimeItem(group);
+    });
+  };
+
   const rememberDistrictCache = (cacheKey, items) => {
     state.districtCache.set(cacheKey, items);
     state.districtCacheOrder = state.districtCacheOrder.filter((key) => key !== cacheKey);
@@ -233,7 +283,6 @@
     if (keyword && !item.__searchKey.includes(keyword)) return false;
     if (facility && item.__facility !== facility) return false;
     if (provider && item.__provider !== provider && item.__manager !== provider) return false;
-    if (elements.hasSsid?.checked && !hasSsid(item)) return false;
     if (elements.hasPhone?.checked && !hasPhone(item)) return false;
     return true;
   };
@@ -248,7 +297,6 @@
   };
 
   const wifiRecommendScore = (item) => distanceScore(item.distanceM)
-    + (hasSsid(item) ? 35 : 0)
     + (hasText(item.details?.placeDetail) ? 12 : 0)
     + (hasText(item.details?.facilityType) ? 10 : 0)
     + (hasText(item.details?.provider || item.details?.manager) ? 8 : 0)
@@ -258,15 +306,13 @@
     const sort = elements.sort?.value || 'recommend';
     const byName = (a, b) => normalize(a.name).localeCompare(normalize(b.name), 'ko-KR');
     const byDistance = (a, b) => (Number.isFinite(a.distanceM) ? a.distanceM : 999999999) - (Number.isFinite(b.distanceM) ? b.distanceM : 999999999);
-    const ssidScore = (item) => hasSsid(item) ? 1 : 0;
     const phoneScore = (item) => hasPhone(item) ? 1 : 0;
     const facilityScore = (item) => hasText(item.details?.facilityType) ? 1 : 0;
     return [...items].sort((a, b) => {
       if (sort === 'name') return byName(a, b);
-      if (sort === 'ssid') return ssidScore(b) - ssidScore(a) || byDistance(a, b) || byName(a, b);
       if (sort === 'phone') return phoneScore(b) - phoneScore(a) || byDistance(a, b) || byName(a, b);
       if (sort === 'facility') return facilityScore(b) - facilityScore(a) || byDistance(a, b) || byName(a, b);
-      if (sort === 'distance') return byDistance(a, b) || ssidScore(b) - ssidScore(a) || byName(a, b);
+      if (sort === 'distance') return byDistance(a, b) || byName(a, b);
       return wifiRecommendScore(b) - wifiRecommendScore(a) || byDistance(a, b) || byName(a, b);
     });
   };
@@ -333,7 +379,7 @@
         } else {
           const payload = await fetchJson(`${CACHE_BASE}/${district.file}?v=${encodeURIComponent(VERSION)}`);
           if (requestId !== state.requestId) return;
-          state.rawItems = (Array.isArray(payload.items) ? payload.items : []).map(prepareRuntimeItem);
+          state.rawItems = groupWifiInstallations((Array.isArray(payload.items) ? payload.items : []).map(prepareRuntimeItem));
           rememberDistrictCache(cacheKey, state.rawItems);
         }
         if (requestId !== state.requestId) return;
@@ -422,7 +468,7 @@
 
   const renderSummary = () => {
     const total = state.items.length;
-    const ssidCount = state.items.filter(hasSsid).length;
+    const installCount = state.items.reduce((sum, item) => sum + Math.max(1, Number(item.details?.installationCount || 1)), 0);
     const phoneCount = state.items.filter(hasPhone).length;
     const place = locationLabel();
     if (elements.listTitle) elements.listTitle.textContent = `${place} 무료 와이파이 목록`;
@@ -431,7 +477,7 @@
     if (elements.mobileTitle) elements.mobileTitle.textContent = `${place} 무료 와이파이 목록`;
     if (elements.mobileSubtitle) elements.mobileSubtitle.textContent = total ? `${total.toLocaleString('ko-KR')}곳 중 ${Math.min(total, MAX_LIST)}곳 표시` : '조건에 맞는 결과가 없습니다.';
     updateSummaryCard(elements.countCard, '조회 후보', `${total.toLocaleString('ko-KR')}곳`, '조건 적용 결과');
-    updateSummaryCard(elements.ssidCard, '확인 가능한 위치', `${ssidCount.toLocaleString('ko-KR')}곳`, '참고 정보');
+    updateSummaryCard(elements.ssidCard, '설치 위치', `${installCount.toLocaleString('ko-KR')}곳`, '중복 위치 묶음');
     updateSummaryCard(elements.phoneCard, '관리 전화', `${phoneCount.toLocaleString('ko-KR')}곳`, '문의 가능');
     if (!state.loading) {
       const suffix = state.referencePoint || state.geo ? '현재 위치 기준 거리도 함께 표시합니다.' : '선택 지역 중심 기준으로 가까운 순을 참고합니다.';
@@ -477,7 +523,8 @@
     const selected = state.selectedId === item.id;
     const facility = details.facilityType || '시설 구분 확인 필요';
     const provider = details.provider || details.manager || '';
-    const summary = [facility, provider, hasText(item.phone) ? '관리전화 있음' : '관리전화 확인 필요'].filter(Boolean).join(' · ');
+    const install = details.installationSummary || '';
+    const summary = [facility, provider, install, hasText(item.phone) ? '관리전화 있음' : '관리전화 확인 필요'].filter(Boolean).join(' · ');
     return `<article class="parking-result-card life-list-card life-list-card--compact ${selected ? 'selected' : ''}" data-life-card-select="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="${escapeHtml(item.name)} 지도에서 선택">
       <div class="parking-result-main life-list-main">
         <div class="parking-result-title"><h3>${escapeHtml(item.name)}</h3>${distanceBadge}</div>
@@ -519,11 +566,12 @@
       <p>${escapeHtml(item.address || '주소 확인 필요')}</p></div><button class="life-selected-close" type="button" data-wifi-close aria-label="선택 카드 닫기">×</button></div>
       <div class="life-chip-row">${(item.badges || []).filter((badge) => !String(badge).includes('와이파이 이름')).slice(0, 4).map((badge) => `<span>${escapeHtml(badge)}</span>`).join('')}</div>
       <div class="life-detail-grid life-detail-grid--compact">
-        <span><small>와이파이 이름</small><strong>${escapeHtml(details.ssid || '와이파이 이름 확인 필요')}</strong></span>
+        <span><small>와이파이 이름</small><strong>${escapeHtml(details.ssid || '확인 필요')}</strong></span>
         <span><small>비밀번호</small><strong>현장 확인 필요</strong></span>
-        <span><small>설치 위치</small><strong>${escapeHtml(item.placeDetail || '설치 위치 확인 필요')}</strong></span>
+        <span><small>시설 구분</small><strong>${escapeHtml(details.facilityType || '확인 필요')}</strong></span>
         <span><small>관리 전화</small><strong>${escapeHtml(item.phone || '전화 확인 필요')}</strong></span>
       </div>
+      ${Array.isArray(item.__installations) && item.__installations.length > 1 ? `<button type="button" class="life-installation-toggle" data-wifi-installations>설치 위치 보기 ${item.__installations.length.toLocaleString('ko-KR')}곳</button><div class="life-installation-popup" hidden data-wifi-installation-panel><strong>설치 위치</strong><ul>${item.__installations.slice(0, 80).map((entry, idx) => `<li><span>${idx + 1}. ${escapeHtml(entry.placeDetail || entry.name || '상세 위치 확인 필요')}</span>${entry.ssid ? `<small>와이파이 이름 ${escapeHtml(entry.ssid)}</small>` : ''}</li>`).join('')}</ul></div>` : ''}
       <div class="life-card-actions"><a class="primary" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">카카오맵 바로가기</a>${tel ? `<a href="${escapeHtml(tel)}">전화하기</a>` : ''}<button type="button" data-wifi-close>닫기</button></div>
       <p class="fine-print">공공데이터에는 비밀번호가 제공되지 않을 수 있습니다. 실제 접속 가능 여부와 비밀번호 필요 여부는 현장에서 확인해 주세요.</p>`;
     card.querySelectorAll('[data-wifi-close]').forEach((button) => {
@@ -531,6 +579,10 @@
         state.selectedId = '';
         render();
       });
+    });
+    card.querySelector('[data-wifi-installations]')?.addEventListener('click', () => {
+      const panel = card.querySelector('[data-wifi-installation-panel]');
+      if (panel) panel.hidden = !panel.hidden;
     });
   };
 
@@ -725,27 +777,118 @@
   };
 
 
+
+  const REGION_NAME_TO_KEY = {
+    '서울': 'seoul', '서울특별시': 'seoul',
+    '부산': 'busan', '부산광역시': 'busan',
+    '대구': 'daegu', '대구광역시': 'daegu',
+    '인천': 'incheon', '인천광역시': 'incheon',
+    '광주': 'gwangju', '광주광역시': 'gwangju',
+    '대전': 'daejeon', '대전광역시': 'daejeon',
+    '울산': 'ulsan', '울산광역시': 'ulsan',
+    '세종': 'sejong', '세종특별자치시': 'sejong',
+    '경기': 'gyeonggi', '경기도': 'gyeonggi',
+    '강원': 'gangwon', '강원도': 'gangwon', '강원특별자치도': 'gangwon',
+    '충북': 'chungbuk', '충청북도': 'chungbuk',
+    '충남': 'chungnam', '충청남도': 'chungnam',
+    '전북': 'jeonbuk', '전라북도': 'jeonbuk', '전북특별자치도': 'jeonbuk',
+    '전남': 'jeonnam', '전라남도': 'jeonnam',
+    '경북': 'gyeongbuk', '경상북도': 'gyeongbuk',
+    '경남': 'gyeongnam', '경상남도': 'gyeongnam',
+    '제주': 'jeju', '제주도': 'jeju', '제주특별자치도': 'jeju',
+  };
+
+  const normalizeAdmin = (value) => normalize(value)
+    .replace(/\s+/g, '')
+    .replace(/특별자치시|특별자치도|특별시|광역시|자치도/g, '')
+    .replace(/충청/g, '충')
+    .replace(/전라/g, '전')
+    .replace(/경상/g, '경');
+
+  const regionKeyFromName = (name) => {
+    const direct = REGION_NAME_TO_KEY[normalize(name)];
+    if (direct) return direct;
+    const normalized = normalizeAdmin(name);
+    const entry = Object.entries(REGION_NAME_TO_KEY).find(([label]) => normalizeAdmin(label) === normalized || normalized.startsWith(normalizeAdmin(label)) || normalizeAdmin(label).startsWith(normalized));
+    return entry?.[1] || '';
+  };
+
+  const districtKeyFromName = (regionKey, districtName) => {
+    const target = normalizeAdmin(districtName);
+    if (!target) return '';
+    const districts = regionMeta(regionKey)?.districts || [];
+    const exact = districts.find((district) => normalizeAdmin(district.label) === target);
+    if (exact) return exact.key;
+    const loose = districts.find((district) => {
+      const label = normalizeAdmin(district.label);
+      return label && (target.includes(label) || label.includes(target));
+    });
+    return loose?.key || '';
+  };
+
+  const kakaoCoordToAdmin = async (point) => {
+    if (!isValidPoint(point)) return null;
+    if (!window.kakao?.maps?.services) {
+      try { await initKakaoMap(); } catch (_) { /* fallback below */ }
+    }
+    if (!window.kakao?.maps?.services) return null;
+    return new Promise((resolve) => {
+      try {
+        const geocoder = new window.kakao.maps.services.Geocoder();
+        geocoder.coord2RegionCode(Number(point.lng), Number(point.lat), (data, status) => {
+          if (status !== window.kakao.maps.services.Status.OK || !Array.isArray(data) || !data.length) {
+            resolve(null);
+            return;
+          }
+          const region = data.find((row) => row.region_type === 'H') || data[0];
+          resolve({
+            regionName: region.region_1depth_name || '',
+            districtName: region.region_2depth_name || '',
+          });
+        });
+      } catch (_) {
+        resolve(null);
+      }
+    });
+  };
+
   const centerFromMeta = (meta, fallbackKey) => {
     const c = meta?.center || REGION_CENTERS[fallbackKey] || REGION_CENTERS.seoul;
     return c && Number.isFinite(Number(c.lat)) && Number.isFinite(Number(c.lng)) ? { lat: Number(c.lat), lng: Number(c.lng), label: meta?.label || REGION_CENTERS[fallbackKey]?.label } : null;
   };
 
-  const nearestRegionDistrict = async (point) => {
+  const nearestRegionDistrictFallback = async (point) => {
     await loadIndex();
     let best = { regionKey: state.currentRegion || 'seoul', districtKey: state.currentDistrict || '', distance: Infinity };
     (state.index?.regions || []).forEach((region) => {
+      const regionCenter = centerFromMeta(region, region.key);
+      const regionDistance = regionCenter ? distanceM(point, regionCenter) : null;
       (region.districts || []).forEach((district) => {
         const center = centerFromMeta(district, region.key);
-        const d = center ? distanceM(point, center) : null;
-        if (Number.isFinite(d) && d < best.distance) best = { regionKey: region.key, districtKey: district.key, distance: d };
+        const d = center && center.label !== district.label ? null : distanceM(point, center);
+        const score = Number.isFinite(d) ? d : (Number.isFinite(regionDistance) ? regionDistance + 100000 : null);
+        if (Number.isFinite(score) && score < best.distance) best = { regionKey: region.key, districtKey: district.key, distance: score };
       });
-      if (!(region.districts || []).length) {
-        const center = centerFromMeta(region, region.key);
-        const d = center ? distanceM(point, center) : null;
-        if (Number.isFinite(d) && d < best.distance) best = { regionKey: region.key, districtKey: '', distance: d };
+      if (!(region.districts || []).length && Number.isFinite(regionDistance) && regionDistance < best.distance) {
+        best = { regionKey: region.key, districtKey: '', distance: regionDistance };
       }
     });
     return best;
+  };
+
+  const nearestRegionDistrict = async (point) => {
+    await loadIndex();
+    const admin = await kakaoCoordToAdmin(point);
+    if (admin?.regionName) {
+      const regionKey = regionKeyFromName(admin.regionName) || state.currentRegion || 'seoul';
+      const districtKey = districtKeyFromName(regionKey, admin.districtName);
+      if (regionKey && districtKey) return { regionKey, districtKey, distance: 0 };
+      if (regionKey && regionMeta(regionKey)) {
+        const fallbackDistrict = regionMeta(regionKey)?.districts?.[0]?.key || '';
+        return { regionKey, districtKey: fallbackDistrict, distance: 0 };
+      }
+    }
+    return nearestRegionDistrictFallback(point);
   };
 
   const moveMapToPoint = (point, level = 5) => {
@@ -762,7 +905,7 @@
     const marker = document.createElement('div');
     marker.className = `life-reference-marker ${type === 'current' ? 'is-current' : 'is-search'}`;
     marker.setAttribute('aria-label', label || (type === 'current' ? '현재 위치' : '검색 위치'));
-    marker.innerHTML = `<span></span>`;
+    marker.innerHTML = `<span>${escapeHtml(label || (type === 'current' ? '현재 위치' : '검색 위치'))}</span>`;
     return marker;
   };
 
@@ -794,7 +937,7 @@
       marker.className = `life-reference-marker life-fallback-reference-marker ${ref.type === 'current' ? 'is-current' : 'is-search'}`;
       marker.style.left = `${pos.x}%`;
       marker.style.top = `${pos.y}%`;
-      marker.innerHTML = '<span></span>';
+      marker.innerHTML = `<span>${escapeHtml(ref.label || (ref.type === 'current' ? '현재 위치' : '검색 위치'))}</span>`;
       elements.markers.appendChild(marker);
     });
   };
@@ -912,7 +1055,7 @@
     if (elements.facility) elements.facility.value = '';
     if (elements.provider) elements.provider.value = '';
     if (elements.sort) elements.sort.value = 'recommend';
-    [elements.hasSsid, elements.hasPhone].forEach((element) => {
+    [elements.hasPhone].forEach((element) => {
       if (element) element.checked = false;
     });
     state.selectedId = '';
@@ -1032,7 +1175,7 @@
     elements.sort?.addEventListener('change', () => applyFilters());
     elements.facility?.addEventListener('change', () => applyFilters({ resetSelection: true }));
     elements.provider?.addEventListener('change', () => applyFilters({ resetSelection: true }));
-    [elements.hasSsid, elements.hasPhone].forEach((element) => element?.addEventListener('change', () => applyFilters({ resetSelection: true }))); 
+    [elements.hasPhone].forEach((element) => element?.addEventListener('change', () => applyFilters({ resetSelection: true })));  
     elements.keyword?.addEventListener('input', debounce(() => {
       if (elements.mapKeyword && elements.mapKeyword.value !== elements.keyword.value) elements.mapKeyword.value = elements.keyword.value;
       applyFilters({ resetSelection: true });

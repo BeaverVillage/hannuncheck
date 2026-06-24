@@ -101,12 +101,30 @@
       els.mobileListToggle.classList.add('parking-mobile-list-toggle--floating');
       document.body.appendChild(els.mobileListToggle);
     }
+    syncEvMapActionsPlacement();
+    window.addEventListener('resize', debounce(syncEvMapActionsPlacement, 120));
+    bindEvents();
+    setupEvMobileBottomSheet();
+    loadKakaoMap().finally(() => {
+      updateMapCenter();
+      renderMapMarkers([]);
+      renderEmpty('장소를 검색하면 주변 전기차 충전소 후보를 표시합니다.');
+      syncMapToolbar();
+      syncSortButtons(els.sort?.value || 'recommended');
+      setSearchStatus('현재 지도 중심 기준으로 주변 충전소를 먼저 확인합니다.');
+      setStatus('현재 지도 중심 기준으로 주변 충전소를 불러오는 중입니다.', 'neutral');
+      window.setTimeout(() => fetchChargers({ initial: true }), 120);
+    });
+  }
+
+
+  function syncEvMapActionsPlacement() {
     const mapCard = els.map?.closest('.parking-map-card');
-    const mapActions = els.mapToolbar?.querySelector('.parking-map-toolbar__actions');
-    if (mapCard && mapActions && mapActions.parentElement !== mapCard) {
-      mapCard.appendChild(mapActions);
-    }
-    if (mapCard && mapActions) {
+    const mapActions = root.querySelector('.parking-map-toolbar__actions');
+    if (!mapCard || !els.mapToolbar || !mapActions) return;
+
+    if (isMobileEvViewport()) {
+      if (mapActions.parentElement !== mapCard) mapCard.appendChild(mapActions);
       mapCard.style.setProperty('position', 'relative', 'important');
       mapActions.style.setProperty('position', 'absolute', 'important');
       mapActions.style.setProperty('left', '12px', 'important');
@@ -132,18 +150,15 @@
         button.style.setProperty('border-radius', '14px', 'important');
         button.style.setProperty('pointer-events', 'auto', 'important');
       });
+      return;
     }
-    bindEvents();
-    setupEvMobileBottomSheet();
-    loadKakaoMap().finally(() => {
-      updateMapCenter();
-      renderMapMarkers([]);
-      renderEmpty('장소를 검색하면 주변 전기차 충전소 후보를 표시합니다.');
-      syncMapToolbar();
-      syncSortButtons(els.sort?.value || 'recommended');
-      setSearchStatus('현재 지도 중심 기준으로 주변 충전소를 먼저 확인합니다.');
-      setStatus('현재 지도 중심 기준으로 주변 충전소를 불러오는 중입니다.', 'neutral');
-      window.setTimeout(() => fetchChargers({ initial: true }), 120);
+
+    if (mapActions.parentElement !== els.mapToolbar) els.mapToolbar.appendChild(mapActions);
+    [mapActions, ...mapActions.querySelectorAll('.parking-map-control-popover, .parking-map-toolbar__button')].forEach((node) => {
+      [
+        'position', 'left', 'right', 'bottom', 'top', 'display', 'grid-template-columns', 'gap', 'z-index',
+        'pointer-events', 'width', 'min-width', 'min-height', 'padding', 'border-radius', 'height', 'max-width'
+      ].forEach((property) => node.style.removeProperty(property));
     });
   }
 
@@ -1530,11 +1545,17 @@
   }
 
 
+  function debounce(fn, delay = 120) {
+    let timer = 0;
+    return (...args) => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => fn(...args), delay);
+    };
+  }
+
+
   function isMobileEvViewport() {
-    const compactWidth = window.matchMedia('(max-width: 860px)').matches;
-    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
-    const noHover = window.matchMedia('(hover: none)').matches;
-    return compactWidth && (coarsePointer || noHover);
+    return window.matchMedia('(max-width: 860px)').matches;
   }
 
   function ensureEvMobileActionSheet() {

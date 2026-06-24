@@ -6834,6 +6834,41 @@ body {
   }
 }
 
+/* v142: keep map controls at the bottom without letting any one control cover the map. */
+@media (max-width: 860px) {
+  [data-ev-charger-map] .parking-map-toolbar {
+    position: static !important;
+    display: block !important;
+    pointer-events: none !important;
+  }
+  [data-ev-charger-map] .parking-map-toolbar__search {
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    left: 10px !important;
+    z-index: 120 !important;
+    pointer-events: auto !important;
+  }
+  [data-ev-charger-map] .parking-map-toolbar__actions {
+    position: absolute !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    left: 12px !important;
+    z-index: 120 !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    pointer-events: auto !important;
+  }
+  [data-ev-charger-map] .parking-map-research-button {
+    width: auto !important;
+    max-width: calc(100% - 24px) !important;
+    min-height: 40px !important;
+    padding-inline: 13px !important;
+    pointer-events: auto !important;
+  }
+  body #ev-mobile-action-sheet { z-index: 500 !important; }
+}
+
 /* v140: the EV search sits above a separate, always-visible action row. */
 @media (max-width: 860px) {
   [data-ev-charger-map] .parking-map-toolbar {

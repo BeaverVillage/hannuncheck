@@ -2452,3 +2452,24 @@
   .life-map-app .parking-map,
   .life-map-app .life-map { border-radius: inherit !important; }
 }
+
+/* v142: selected cards do not stretch with the map, and filters are button-only sheets. */
+@media (max-width: 860px) {
+  .life-map-app .life-selected-card {
+    top: auto !important;
+    bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+    height: auto !important;
+    max-height: 300px !important;
+    min-height: 0 !important;
+    overflow: auto !important;
+  }
+  .life-mobile-filter-head {
+    cursor: default !important;
+    touch-action: auto !important;
+  }
+  .life-mobile-filter-head .parking-sheet-handle { display: none !important; }
+  .life-tool-shell.is-filter-open .parking-dashboard__controls {
+    height: min(72svh, 620px) !important;
+    transition: none !important;
+  }
+}

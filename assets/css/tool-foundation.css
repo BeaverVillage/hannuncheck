@@ -56,6 +56,13 @@
   }
 }
 
+@media (max-width: 860px) {
+  .emergency-map-app--v100 .parking-bottom-sheet.is-detail .parking-mobile-sheet-controls,
+  .emergency-map-app--v100 .parking-bottom-sheet.is-detail .parking-mobile-sheet-sort {
+    display: none !important;
+  }
+}
+
 /* v140: keep the emergency list action above page content without covering the sheet. */
 @media (max-width: 860px) {
   body .emergency-map-app--v90 .parking-mobile-list-toggle.parking-mobile-list-toggle {

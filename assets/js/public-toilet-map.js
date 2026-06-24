@@ -1075,11 +1075,10 @@
     const header = document.createElement('div');
     header.className = 'life-mobile-filter-head';
     header.dataset.lifeFilterHead = 'true';
-    header.innerHTML = '<div><strong>상세 필터</strong><span>조건을 고른 뒤 적용하세요.</span></div><div class="parking-sheet-handle" aria-hidden="true"></div><button type="button" data-life-filter-reset>초기화</button><button type="button" data-life-filter-close aria-label="필터 닫기">닫기</button>';
+    header.innerHTML = '<div><strong>상세 필터</strong><span>조건을 고른 뒤 적용하세요.</span></div><button type="button" data-life-filter-reset>초기화</button><button type="button" data-life-filter-close aria-label="필터 닫기">×</button>';
     panel.prepend(header);
     header.querySelector('[data-life-filter-close]')?.addEventListener('click', closeMobileFilterSheet);
     header.querySelector('[data-life-filter-reset]')?.addEventListener('click', resetAdvancedFilters);
-    attachDragToSheet(panel, closeMobileFilterSheet, 'is-filter-expanded');
   };
 
   const attachDragToSheet = (sheet, onClose, expandedClass) => {

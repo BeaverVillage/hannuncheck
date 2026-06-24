@@ -97,42 +97,6 @@
   init();
 
   function init() {
-    if (els.mobileListToggle?.parentElement !== document.body) {
-      els.mobileListToggle.classList.add('parking-mobile-list-toggle--floating');
-      document.body.appendChild(els.mobileListToggle);
-    }
-    const mapCard = els.map?.closest('.parking-map-card');
-    const mapActions = els.mapToolbar?.querySelector('.parking-map-toolbar__actions');
-    if (mapCard && mapActions && mapActions.parentElement !== mapCard) {
-      mapCard.appendChild(mapActions);
-    }
-    if (mapCard && mapActions) {
-      mapCard.style.setProperty('position', 'relative', 'important');
-      mapActions.style.setProperty('position', 'absolute', 'important');
-      mapActions.style.setProperty('left', '12px', 'important');
-      mapActions.style.setProperty('right', '12px', 'important');
-      mapActions.style.setProperty('bottom', '12px', 'important');
-      mapActions.style.setProperty('display', 'grid', 'important');
-      mapActions.style.setProperty('grid-template-columns', 'repeat(3, minmax(0, 1fr))', 'important');
-      mapActions.style.setProperty('gap', '8px', 'important');
-      mapActions.style.setProperty('z-index', '1000', 'important');
-      mapActions.style.setProperty('pointer-events', 'auto', 'important');
-      mapActions.querySelectorAll('.parking-map-control-popover').forEach((control) => {
-        control.style.setProperty('display', 'block', 'important');
-        control.style.setProperty('width', '100%', 'important');
-        control.style.setProperty('min-width', '0', 'important');
-        control.style.setProperty('pointer-events', 'auto', 'important');
-      });
-      mapActions.querySelectorAll('.parking-map-toolbar__button').forEach((button) => {
-        button.style.setProperty('display', 'block', 'important');
-        button.style.setProperty('width', '100%', 'important');
-        button.style.setProperty('min-width', '0', 'important');
-        button.style.setProperty('min-height', '44px', 'important');
-        button.style.setProperty('padding', '0 8px', 'important');
-        button.style.setProperty('border-radius', '14px', 'important');
-        button.style.setProperty('pointer-events', 'auto', 'important');
-      });
-    }
     bindEvents();
     setupEvMobileBottomSheet();
     loadKakaoMap().finally(() => {
@@ -205,18 +169,9 @@
       setSort(button.dataset.evMobileSort || 'recommended');
       openMobileSheet('expanded');
     }));
-    els.mapRadiusToggle?.addEventListener('click', () => {
-      if (isMobileEvViewport()) { openEvMobileActionSheet('radius'); return; }
-      toggleMapPopover(els.mapRadiusPanel, els.mapRadiusToggle);
-    });
-    els.mapOptionsToggle?.addEventListener('click', () => {
-      if (isMobileEvViewport()) { openEvMobileActionSheet('conditions'); return; }
-      toggleMapPopover(els.mapOptionsPanel, els.mapOptionsToggle);
-    });
-    els.mapSortToggle?.addEventListener('click', () => {
-      if (isMobileEvViewport()) { openEvMobileActionSheet('sort'); return; }
-      toggleMapPopover(els.mapSortPanel, els.mapSortToggle);
-    });
+    els.mapRadiusToggle?.addEventListener('click', () => toggleMapPopover(els.mapRadiusPanel, els.mapRadiusToggle));
+    els.mapOptionsToggle?.addEventListener('click', () => toggleMapPopover(els.mapOptionsPanel, els.mapOptionsToggle));
+    els.mapSortToggle?.addEventListener('click', () => toggleMapPopover(els.mapSortPanel, els.mapSortToggle));
     els.mapRadiusButtons.forEach((button) => button.addEventListener('click', () => {
       const previousRadius = els.radius?.value || '3000';
       if (button.dataset.evMapRadius) els.radius.value = button.dataset.evMapRadius;
@@ -1714,7 +1669,7 @@
       lastMoveTime = Date.now();
       dragVelocityY = 0;
       sheet.classList.add('is-dragging', 'is-gesture-owned');
-      sheet.style.setProperty('--parking-sheet-height', `${evMobileSheetHeight(dragViewportHeight)}px`, 'important');
+      sheet.style.setProperty('--parking-sheet-height', `${evMobileSheetHeight(dragViewportHeight)}px`);
       applyEvMobileSheetY(startSheetY, dragViewportHeight);
       try { if (pointerId != null) target?.setPointerCapture?.(pointerId); } catch (_) {}
       return true;
@@ -1753,15 +1708,6 @@
       if (isInteractiveTarget(event.target)) return;
       const clientY = event.clientY ?? event.touches?.[0]?.clientY;
       if (clientY == null || !beginDrag(clientY, event.pointerId ?? null, event.currentTarget)) return;
-      if (window.PointerEvent) {
-        window.addEventListener('pointermove', onDragMove, { passive: false });
-        window.addEventListener('pointerup', onDragEnd, { passive: false });
-        window.addEventListener('pointercancel', onDragEnd, { passive: false });
-      } else {
-        window.addEventListener('touchmove', onDragMove, { passive: false });
-        window.addEventListener('touchend', onDragEnd, { passive: false });
-        window.addEventListener('touchcancel', onDragEnd, { passive: false });
-      }
       event.preventDefault();
       event.stopPropagation();
     };
@@ -1777,22 +1723,19 @@
       event.preventDefault?.();
       event.stopPropagation?.();
       endDrag();
-      if (window.PointerEvent) {
-        window.removeEventListener('pointermove', onDragMove);
-        window.removeEventListener('pointerup', onDragEnd);
-        window.removeEventListener('pointercancel', onDragEnd);
-      } else {
-        window.removeEventListener('touchmove', onDragMove);
-        window.removeEventListener('touchend', onDragEnd);
-        window.removeEventListener('touchcancel', onDragEnd);
-      }
     };
     dragTargets.forEach((target) => {
       target.addEventListener('keydown', keyHandler);
       if (window.PointerEvent) {
         target.addEventListener('pointerdown', onDragStart, { passive: false });
+        target.addEventListener('pointermove', onDragMove, { passive: false });
+        target.addEventListener('pointerup', onDragEnd, { passive: false });
+        target.addEventListener('pointercancel', onDragEnd, { passive: false });
       } else {
         target.addEventListener('touchstart', onDragStart, { passive: false });
+        target.addEventListener('touchmove', onDragMove, { passive: false });
+        target.addEventListener('touchend', onDragEnd, { passive: false });
+        target.addEventListener('touchcancel', onDragEnd, { passive: false });
       }
     });
     let lastViewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
@@ -1836,19 +1779,24 @@
   function applyEvMobileSheetY(value, viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700) {
     const pos = evMobileSheetPositions(viewportHeight);
     const y = clamp(value, pos.expanded, pos.collapsed);
-    els.mobileSheet?.style.setProperty('--parking-sheet-y', `${y}px`, 'important');
-    els.mobileSheet?.style.setProperty('bottom', `${-y}px`, 'important');
-    els.mobileSheet?.style.setProperty('transform', 'none', 'important');
+    els.mobileSheet?.style.setProperty('--parking-sheet-y', `${y}px`);
     return y;
   }
 
   function snapEvMobileSheet(currentY, startY, velocityY, viewportHeight) {
     const pos = evMobileSheetPositions(viewportHeight);
-    const nextMode = [
-      ['expanded', Math.abs(currentY - pos.expanded)],
-      ['half', Math.abs(currentY - pos.half)],
-      ['collapsed', Math.abs(currentY - pos.collapsed)]
-    ].sort((a, b) => a[1] - b[1])[0][0];
+    const travel = Math.abs(currentY - startY);
+    let nextMode;
+    if (velocityY < -0.45 && travel > 36) nextMode = 'expanded';
+    else if (velocityY > 0.45 && travel > 36) nextMode = 'collapsed';
+    else {
+      const projectedY = clamp(currentY + velocityY * 120, pos.expanded, pos.collapsed);
+      nextMode = [
+        ['expanded', Math.abs(projectedY - pos.expanded)],
+        ['half', Math.abs(projectedY - pos.half)],
+        ['collapsed', Math.abs(projectedY - pos.collapsed)]
+      ].sort((a, b) => a[1] - b[1])[0][0];
+    }
     setEvMobileSheetState(nextMode);
   }
 
@@ -1856,7 +1804,7 @@
     const sheet = els.mobileSheet;
     if (!sheet) return;
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700;
-    sheet.style.setProperty('--parking-sheet-height', `${evMobileSheetHeight(viewportHeight)}px`, 'important');
+    sheet.style.setProperty('--parking-sheet-height', `${evMobileSheetHeight(viewportHeight)}px`);
     const normalized = mode === 'open' ? 'half' : mode === 'closed' ? 'collapsed' : mode;
     applyEvMobileSheetY(yForEvMobileSheetMode(normalized, viewportHeight), viewportHeight);
     sheet.classList.remove('is-open', 'is-expanded', 'is-collapsed', 'is-dragging');

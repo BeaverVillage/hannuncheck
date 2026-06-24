@@ -514,7 +514,7 @@
     const openType = details.openType || '운영시간 확인 필요';
     const features = featureBadges(item);
     const summary = [openType, features].filter(Boolean).join(' · ');
-    return `<article class="parking-result-card life-list-card life-list-card--compact ${selected ? 'selected' : ''}" data-life-card-select="${escapeHtml(item.id)}" tabindex="0" role="button" aria-pressed="${selected ? 'true' : 'false'}" aria-label="${escapeHtml(item.name)} 지도에서 선택">
+    return `<article class="parking-result-card life-list-card life-list-card--compact ${selected ? 'selected' : ''}" data-life-card-select="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="${escapeHtml(item.name)} 지도에서 선택">
       <div class="parking-result-main life-list-main">
         <div class="parking-result-title"><h3>${escapeHtml(item.name)}</h3>${distanceBadge}</div>
         <p class="parking-result-address">${escapeHtml(item.address || '주소 확인 필요')}</p>
@@ -1140,7 +1140,6 @@
       startY = getY(event);
       lastY = startY;
       startOffset = isFilterSheet() ? sheetHeight() : getCurrentOffset();
-      if (isMobileSheet()) setDragOffset(startOffset);
       sheet.classList.add('is-dragging');
       if (event.pointerId != null && typeof sheet.setPointerCapture === 'function') {
         try { sheet.setPointerCapture(event.pointerId); } catch (_) { /* noop */ }

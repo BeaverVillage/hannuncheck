@@ -205,9 +205,18 @@
       setSort(button.dataset.evMobileSort || 'recommended');
       openMobileSheet('expanded');
     }));
-    els.mapRadiusToggle?.addEventListener('click', () => toggleMapPopover(els.mapRadiusPanel, els.mapRadiusToggle));
-    els.mapOptionsToggle?.addEventListener('click', () => toggleMapPopover(els.mapOptionsPanel, els.mapOptionsToggle));
-    els.mapSortToggle?.addEventListener('click', () => toggleMapPopover(els.mapSortPanel, els.mapSortToggle));
+    els.mapRadiusToggle?.addEventListener('click', () => {
+      if (isMobileEvViewport()) { openEvMobileActionSheet('radius'); return; }
+      toggleMapPopover(els.mapRadiusPanel, els.mapRadiusToggle);
+    });
+    els.mapOptionsToggle?.addEventListener('click', () => {
+      if (isMobileEvViewport()) { openEvMobileActionSheet('conditions'); return; }
+      toggleMapPopover(els.mapOptionsPanel, els.mapOptionsToggle);
+    });
+    els.mapSortToggle?.addEventListener('click', () => {
+      if (isMobileEvViewport()) { openEvMobileActionSheet('sort'); return; }
+      toggleMapPopover(els.mapSortPanel, els.mapSortToggle);
+    });
     els.mapRadiusButtons.forEach((button) => button.addEventListener('click', () => {
       const previousRadius = els.radius?.value || '3000';
       if (button.dataset.evMapRadius) els.radius.value = button.dataset.evMapRadius;

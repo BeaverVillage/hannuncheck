@@ -1478,16 +1478,24 @@
   const openEmergencyMobileDetailPopup = () => {
     if (!isMobileView() || !elements.mobileDetail || elements.mobileDetail.hidden) return;
     document.querySelector('#emergency-mobile-detail-popup')?.remove();
+    const selected = state.items.find((item) => item.id === state.selectedId) || null;
+    const criticalRows = getCriticalEntries(selected);
+    const criticalSection = criticalRows.length ? `<section class="emergency-mobile-detail-popup__critical" id="emergency-popup-critical-items"><h4>중증 항목</h4><ul>${criticalRows.map((entry) => `<li><strong>${escapeHtml(entry.label || '중증 항목')}</strong><span>${escapeHtml(entry.statusLabel || '전화 확인')}</span></li>`).join('')}</ul></section>` : '';
     const popup = document.createElement('div');
     popup.id = 'emergency-mobile-detail-popup';
     popup.className = 'emergency-mobile-detail-popup';
-    popup.innerHTML = `<div class="emergency-mobile-detail-popup__backdrop" data-emergency-detail-close></div><section class="emergency-mobile-detail-popup__panel" role="dialog" aria-modal="true" aria-label="병원 상세 정보">${elements.mobileDetail.innerHTML}</section>`;
+    popup.innerHTML = `<div class="emergency-mobile-detail-popup__backdrop" data-emergency-detail-close></div><section class="emergency-mobile-detail-popup__panel" role="dialog" aria-modal="true" aria-label="병원 상세 정보">${elements.mobileDetail.innerHTML}${criticalSection}</section>`;
     document.body.appendChild(popup);
     popup.addEventListener('click', (event) => {
       const target = event.target instanceof Element ? event.target : null;
       if (target?.closest('[data-emergency-detail-close], [data-close-selected]')) {
         popup.remove();
         closeSelectedCard();
+        return;
+      }
+      if (target?.closest('[data-critical-id]')) {
+        event.preventDefault();
+        popup.querySelector('#emergency-popup-critical-items')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     });
   };

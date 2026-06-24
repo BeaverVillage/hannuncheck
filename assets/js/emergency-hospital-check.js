@@ -1475,7 +1475,27 @@
     if (isMobileView()) setEmergencyMobileSheetState(options.mobileMode || (options.openDetail ? 'expanded' : 'half'));
   };
 
-  const openSelectedDetail = (id) => selectHospitalById(id, { move: false, openDetail: true, mobileMode: 'detail' });
+  const openEmergencyMobileDetailPopup = () => {
+    if (!isMobileView() || !elements.mobileDetail || elements.mobileDetail.hidden) return;
+    document.querySelector('#emergency-mobile-detail-popup')?.remove();
+    const popup = document.createElement('div');
+    popup.id = 'emergency-mobile-detail-popup';
+    popup.className = 'emergency-mobile-detail-popup';
+    popup.innerHTML = `<div class="emergency-mobile-detail-popup__backdrop" data-emergency-detail-close></div><section class="emergency-mobile-detail-popup__panel" role="dialog" aria-modal="true" aria-label="병원 상세 정보">${elements.mobileDetail.innerHTML}</section>`;
+    document.body.appendChild(popup);
+    popup.addEventListener('click', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest('[data-emergency-detail-close], [data-close-selected]')) {
+        popup.remove();
+        closeSelectedCard();
+      }
+    });
+  };
+
+  const openSelectedDetail = (id) => {
+    selectHospitalById(id, { move: false, openDetail: true, mobileMode: isMobileView() ? 'collapsed' : 'detail' });
+    openEmergencyMobileDetailPopup();
+  };
 
   const closeSelectedCard = () => {
     state.selectedId = '';

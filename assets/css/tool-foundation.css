@@ -55,6 +55,36 @@
 }
 
 @media (max-width: 860px) {
+  .emergency-mobile-detail-popup {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 700 !important;
+    display: grid !important;
+    align-items: end !important;
+    background: rgba(15, 23, 42, 0.48) !important;
+  }
+  .emergency-mobile-detail-popup__backdrop { position: absolute !important; inset: 0 !important; }
+  .emergency-mobile-detail-popup__panel {
+    position: relative !important;
+    z-index: 1 !important;
+    width: 100% !important;
+    max-height: min(82svh, 760px) !important;
+    overflow-y: auto !important;
+    padding: 22px 14px max(22px, env(safe-area-inset-bottom)) !important;
+    border-radius: 28px 28px 0 0 !important;
+    background: #fff !important;
+    box-shadow: 0 -18px 48px rgba(15, 23, 42, 0.28) !important;
+  }
+  .emergency-mobile-detail-popup__panel .emergency-detail-card--mobile {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+}
+
+@media (max-width: 860px) {
   body #emergency-mobile-list-toggle.parking-mobile-list-toggle--floating {
     position: fixed !important;
     right: 12px !important;

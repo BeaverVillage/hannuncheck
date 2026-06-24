@@ -6866,6 +6866,15 @@ body {
   }
 }
 
+@media (max-width: 860px) {
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-toolbar__button {
+    min-height: 44px !important;
+    border-radius: 14px !important;
+    padding: 0 8px !important;
+    font-size: 0.84rem !important;
+  }
+}
+
 /* v141: portal the mobile actions above page content but below modal sheets. */
 @media (max-width: 860px) {
   body #ev-mobile-list-toggle.parking-mobile-list-toggle--floating {

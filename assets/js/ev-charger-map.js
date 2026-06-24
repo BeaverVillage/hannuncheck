@@ -114,10 +114,23 @@
       mapActions.style.setProperty('bottom', '12px', 'important');
       mapActions.style.setProperty('display', 'grid', 'important');
       mapActions.style.setProperty('grid-template-columns', 'repeat(3, minmax(0, 1fr))', 'important');
-      mapActions.style.setProperty('z-index', '160', 'important');
-      mapActions.querySelectorAll('.parking-map-control-popover, .parking-map-toolbar__button').forEach((control) => {
-        control.style.setProperty('width', 'auto', 'important');
+      mapActions.style.setProperty('gap', '8px', 'important');
+      mapActions.style.setProperty('z-index', '1000', 'important');
+      mapActions.style.setProperty('pointer-events', 'auto', 'important');
+      mapActions.querySelectorAll('.parking-map-control-popover').forEach((control) => {
+        control.style.setProperty('display', 'block', 'important');
+        control.style.setProperty('width', '100%', 'important');
         control.style.setProperty('min-width', '0', 'important');
+        control.style.setProperty('pointer-events', 'auto', 'important');
+      });
+      mapActions.querySelectorAll('.parking-map-toolbar__button').forEach((button) => {
+        button.style.setProperty('display', 'block', 'important');
+        button.style.setProperty('width', '100%', 'important');
+        button.style.setProperty('min-width', '0', 'important');
+        button.style.setProperty('min-height', '44px', 'important');
+        button.style.setProperty('padding', '0 8px', 'important');
+        button.style.setProperty('border-radius', '14px', 'important');
+        button.style.setProperty('pointer-events', 'auto', 'important');
       });
     }
     bindEvents();

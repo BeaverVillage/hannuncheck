@@ -12763,3 +12763,180 @@ body .parking-hero .container > .breadcrumb span {
     transform: none !important;
   }
 }
+
+
+/* EV charger PC-only toolbar recovery v152
+   - Mobile EV UI remains untouched.
+   - On desktop/fine-pointer screens, the three map filter buttons are moved from the map bottom to the top toolbar.
+   - PC uses popover filter panels, not the mobile action sheet. */
+@media (min-width: 861px), (hover: hover) and (pointer: fine) {
+  [data-ev-charger-map] .parking-map-toolbar {
+    position: absolute !important;
+    top: 14px !important;
+    right: 14px !important;
+    left: 14px !important;
+    bottom: auto !important;
+    z-index: 45 !important;
+    display: grid !important;
+    grid-template-columns: minmax(360px, 1fr) 94px 94px !important;
+    grid-template-rows: auto auto !important;
+    column-gap: 10px !important;
+    row-gap: 8px !important;
+    align-items: start !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+
+  [data-ev-charger-map] .parking-map-toolbar__search {
+    grid-column: 1 / 2 !important;
+    grid-row: 1 / 2 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 74px !important;
+    gap: 8px !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    padding: 8px !important;
+    border: 1px solid rgba(139, 162, 184, 0.32) !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    box-shadow: 0 14px 34px rgba(15, 35, 55, 0.18) !important;
+    backdrop-filter: blur(10px) !important;
+    pointer-events: auto !important;
+  }
+
+  [data-ev-charger-map] .parking-map-toolbar__search input,
+  [data-ev-charger-map] .parking-map-toolbar__search button {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 42px !important;
+    font: inherit !important;
+  }
+
+  [data-ev-charger-map] .parking-map-toolbar__search input {
+    padding: 0.58rem 0.78rem !important;
+    border: 1px solid #cfe0eb !important;
+    border-radius: 13px !important;
+    background: #fff !important;
+    color: #102033 !important;
+    font-weight: 750 !important;
+  }
+
+  [data-ev-charger-map] .parking-map-toolbar__search button {
+    padding: 0.58rem 0.5rem !important;
+    border: 1px solid rgba(37, 99, 235, 0.28) !important;
+    border-radius: 13px !important;
+    background: #2563eb !important;
+    color: #fff !important;
+    font-weight: 900 !important;
+    box-shadow: 0 10px 24px rgba(15, 35, 55, 0.12) !important;
+    cursor: pointer !important;
+  }
+
+  [data-ev-charger-map] .parking-map-toolbar__actions {
+    position: static !important;
+    display: contents !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    pointer-events: auto !important;
+  }
+
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-control-popover {
+    position: relative !important;
+    display: block !important;
+    width: 94px !important;
+    min-width: 0 !important;
+    max-width: 94px !important;
+    pointer-events: auto !important;
+  }
+
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-control-popover:nth-child(1) {
+    grid-column: 2 / 3 !important;
+    grid-row: 1 / 2 !important;
+  }
+
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-control-popover:nth-child(2) {
+    grid-column: 3 / 4 !important;
+    grid-row: 1 / 2 !important;
+  }
+
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-control-popover:nth-child(3) {
+    grid-column: 3 / 4 !important;
+    grid-row: 2 / 3 !important;
+    justify-self: end !important;
+  }
+
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-toolbar__button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    width: 94px !important;
+    min-width: 94px !important;
+    max-width: 94px !important;
+    min-height: 50px !important;
+    padding: 0 8px !important;
+    border: 1px solid rgba(37, 99, 235, 0.26) !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    color: #2563eb !important;
+    font: inherit !important;
+    font-weight: 900 !important;
+    white-space: nowrap !important;
+    box-shadow: 0 10px 24px rgba(15, 35, 55, 0.12) !important;
+    backdrop-filter: blur(10px) !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+  }
+
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-toolbar__button[aria-expanded="true"] {
+    border-color: #2563eb !important;
+    background: #2563eb !important;
+    color: #fff !important;
+  }
+
+  [data-ev-charger-map] .parking-map-popover-panel {
+    position: absolute !important;
+    top: calc(100% + 8px) !important;
+    right: 0 !important;
+    left: auto !important;
+    bottom: auto !important;
+    z-index: 80 !important;
+    width: max-content !important;
+    min-width: 230px !important;
+    max-width: min(340px, 72vw) !important;
+    padding: 10px !important;
+    border: 1px solid rgba(139, 162, 184, 0.32) !important;
+    border-radius: 16px !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    box-shadow: 0 18px 42px rgba(15, 35, 55, 0.22) !important;
+    backdrop-filter: blur(12px) !important;
+    pointer-events: auto !important;
+  }
+
+  [data-ev-charger-map] .parking-map-popover-panel[hidden] {
+    display: none !important;
+  }
+
+  [data-ev-charger-map] .parking-map-duration-panel,
+  [data-ev-charger-map] .parking-map-sort-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  [data-ev-charger-map] .parking-map-research-button {
+    top: 126px !important;
+  }
+}

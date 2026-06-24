@@ -1531,7 +1531,10 @@
 
 
   function isMobileEvViewport() {
-    return window.matchMedia('(max-width: 860px)').matches;
+    const compactWidth = window.matchMedia('(max-width: 860px)').matches;
+    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+    const noHover = window.matchMedia('(hover: none)').matches;
+    return compactWidth && (coarsePointer || noHover);
   }
 
   function ensureEvMobileActionSheet() {

@@ -36,6 +36,26 @@
   }
 }
 
+@media (max-width: 860px) {
+  body #emergency-mobile-list-toggle.parking-mobile-list-toggle--floating {
+    position: fixed !important;
+    right: 12px !important;
+    left: auto !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 58px) !important;
+    z-index: 90 !important;
+  }
+  .emergency-map-app--v90 .parking-map-card {
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 20px !important;
+  }
+  .emergency-map-app--v90 .parking-map,
+  .emergency-map-app--v90 #emergency-map {
+    height: 100% !important;
+    border-radius: inherit !important;
+  }
+}
+
 /* v140: keep the emergency list action above page content without covering the sheet. */
 @media (max-width: 860px) {
   body .emergency-map-app--v90 .parking-mobile-list-toggle.parking-mobile-list-toggle {

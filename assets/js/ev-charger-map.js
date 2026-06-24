@@ -97,6 +97,10 @@
   init();
 
   function init() {
+    if (els.mobileListToggle?.parentElement !== document.body) {
+      els.mobileListToggle.classList.add('parking-mobile-list-toggle--floating');
+      document.body.appendChild(els.mobileListToggle);
+    }
     bindEvents();
     setupEvMobileBottomSheet();
     loadKakaoMap().finally(() => {

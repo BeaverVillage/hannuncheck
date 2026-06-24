@@ -2436,3 +2436,19 @@
     transition: none !important;
   }
 }
+
+@media (max-width: 860px) {
+  .life-map-app .parking-dashboard__map,
+  .life-map-app .life-map-column {
+    padding: 0 !important;
+    background: transparent !important;
+  }
+  .life-map-app .parking-map-card,
+  .life-map-app .life-map-card {
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 20px !important;
+  }
+  .life-map-app .parking-map,
+  .life-map-app .life-map { border-radius: inherit !important; }
+}

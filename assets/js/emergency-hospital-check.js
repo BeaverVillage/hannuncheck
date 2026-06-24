@@ -2007,6 +2007,10 @@
   state.dataMode = 'cache';
   state.summary = { criteria: '서울' };
   state.selectedId = '';
+  if (elements.mobileListToggle?.parentElement !== document.body) {
+    elements.mobileListToggle.classList.add('parking-mobile-list-toggle--floating');
+    document.body.appendChild(elements.mobileListToggle);
+  }
   syncModeUi();
   initKakaoMap();
   loadKakaoPlaceCache();

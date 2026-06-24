@@ -6807,6 +6807,33 @@ body {
   }
 }
 
+/* v141: portal the mobile actions above page content but below modal sheets. */
+@media (max-width: 860px) {
+  body #ev-mobile-list-toggle.parking-mobile-list-toggle--floating {
+    position: fixed !important;
+    right: 12px !important;
+    left: auto !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 58px) !important;
+    z-index: 90 !important;
+    transform: none !important;
+  }
+  [data-ev-charger-map] .parking-map-card {
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 20px !important;
+  }
+  [data-ev-charger-map] .parking-map,
+  [data-ev-charger-map] #ev-map {
+    height: 100% !important;
+    border-radius: inherit !important;
+  }
+  [data-ev-charger-map] .parking-map-research-button {
+    right: 12px !important;
+    bottom: 12px !important;
+    z-index: 55 !important;
+  }
+}
+
 /* v140: the EV search sits above a separate, always-visible action row. */
 @media (max-width: 860px) {
   [data-ev-charger-map] .parking-map-toolbar {

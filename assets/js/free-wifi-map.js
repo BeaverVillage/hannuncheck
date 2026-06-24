@@ -1115,6 +1115,7 @@
 
     const getY = (event) => event.clientY || event.touches?.[0]?.clientY || event.changedTouches?.[0]?.clientY || 0;
     const isMobileSheet = () => sheet.classList.contains('life-mobile-bottom-sheet');
+    const isFilterSheet = () => sheet.classList.contains('parking-dashboard__controls');
     const sheetHeight = () => Math.max(sheet.offsetHeight || 1, 1);
     const collapsedOffset = () => Math.max(sheetHeight() - 70, 0);
     const halfOffset = () => Math.round(sheetHeight() * 0.44);
@@ -1157,7 +1158,7 @@
       active = true;
       startY = getY(event);
       lastY = startY;
-      startOffset = getCurrentOffset();
+      startOffset = isFilterSheet() ? sheetHeight() : getCurrentOffset();
       sheet.classList.add('is-dragging');
       if (event.pointerId != null && typeof sheet.setPointerCapture === 'function') {
         try { sheet.setPointerCapture(event.pointerId); } catch (_) { /* noop */ }
@@ -1167,7 +1168,13 @@
     const move = (event) => {
       if (!active) return;
       lastY = getY(event);
-      setDragOffset(startOffset + (lastY - startY));
+      if (isFilterSheet()) {
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700;
+        const nextHeight = Math.max(320, Math.min(viewportHeight - 14, startOffset + (startY - lastY)));
+        sheet.style.setProperty('--life-filter-height', `${nextHeight}px`);
+      } else {
+        setDragOffset(startOffset + (lastY - startY));
+      }
       if (typeof event.preventDefault === 'function') event.preventDefault();
     };
 
@@ -1177,6 +1184,27 @@
       const endOffset = Math.max(expandedOffset(), Math.min(collapsedOffset(), startOffset + (lastY - startY)));
       sheet.classList.remove('is-dragging');
       sheet.style.removeProperty('--life-sheet-y-px');
+
+      if (isFilterSheet()) {
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700;
+        const baseHeight = Math.min(520, Math.max(360, viewportHeight * 0.58));
+        const maxHeight = viewportHeight - 14;
+        const draggedHeight = Math.max(320, Math.min(maxHeight, startOffset + (startY - lastY)));
+        if (lastY - startY > 100) {
+          sheet.style.setProperty('--life-filter-height', '84px');
+          window.setTimeout(() => {
+            onClose?.();
+            sheet.style.removeProperty('--life-filter-height');
+          }, 180);
+        } else if (draggedHeight > baseHeight + 72) {
+          sheet.classList.add(expandedClass);
+          sheet.style.setProperty('--life-filter-height', `${maxHeight}px`);
+        } else {
+          sheet.classList.remove(expandedClass);
+          sheet.style.setProperty('--life-filter-height', `${baseHeight}px`);
+        }
+        return;
+      }
 
       if (isMobileSheet()) {
         const height = sheetHeight();

@@ -36,6 +36,14 @@
   }
 }
 
+/* v140: keep the emergency list action above page content without covering the sheet. */
+@media (max-width: 860px) {
+  body .emergency-map-app--v90 .parking-mobile-list-toggle.parking-mobile-list-toggle {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
+    z-index: 320 !important;
+  }
+}
+
 .hc-tool-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);

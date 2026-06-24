@@ -2408,3 +2408,31 @@
     font-size: 0.78rem !important;
   }
 }
+
+/* v140: mobile map breathing room and continuous filter-sheet motion. */
+@media (max-width: 860px) {
+  .life-map-app.parking-app-shell { padding-inline: 0 !important; }
+  .life-map-app .parking-map-card,
+  .life-map-app .life-map-card {
+    width: calc(100vw - 12px) !important;
+    max-width: none !important;
+    margin-left: calc((100% - (100vw - 12px)) / 2) !important;
+    margin-right: calc((100% - (100vw - 12px)) / 2) !important;
+    height: 630px !important;
+    min-height: 630px !important;
+    max-height: 630px !important;
+    border-radius: 18px !important;
+  }
+  .life-tool-shell.is-filter-open .parking-dashboard__controls {
+    height: var(--life-filter-height, min(58svh, 520px)) !important;
+    min-height: 0 !important;
+    max-height: calc(100svh - 14px) !important;
+    transition: height 180ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+  }
+  .life-tool-shell.is-filter-open .parking-dashboard__controls.is-filter-expanded {
+    height: calc(100svh - 14px) !important;
+  }
+  .life-tool-shell.is-filter-open .parking-dashboard__controls.is-dragging {
+    transition: none !important;
+  }
+}

@@ -1475,7 +1475,7 @@
     if (isMobileView()) setEmergencyMobileSheetState(options.mobileMode || (options.openDetail ? 'expanded' : 'half'));
   };
 
-  const openSelectedDetail = (id) => selectHospitalById(id, { move: false, openDetail: true, mobileMode: 'expanded' });
+  const openSelectedDetail = (id) => selectHospitalById(id, { move: false, openDetail: true, mobileMode: 'detail' });
 
   const closeSelectedCard = () => {
     state.selectedId = '';
@@ -1661,14 +1661,14 @@
   const setEmergencyMobileSheetState = (mode = 'list') => {
     const sheet = elements.mobileSheet;
     if (!sheet) return;
-    const normalizedMode = mode === 'half' ? 'list' : mode === 'expanded' ? 'detail' : mode === 'closed' ? 'collapsed' : mode;
+    const normalizedMode = mode === 'half' ? 'list' : mode === 'closed' ? 'collapsed' : mode;
     state.mobileSheetMode = normalizedMode;
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700;
     const height = Math.min(Math.max(360, viewportHeight * 0.88), 760);
     const peek = 58;
     const collapsed = Math.max(0, height - peek);
     const list = Math.max(0, Math.min(collapsed, height - Math.min(viewportHeight * 0.48, height - 24)));
-    const y = normalizedMode === 'detail' ? 0 : normalizedMode === 'collapsed' ? collapsed : list;
+    const y = (normalizedMode === 'detail' || normalizedMode === 'expanded') ? 0 : normalizedMode === 'collapsed' ? collapsed : list;
     sheet.style.setProperty('--parking-sheet-height', `${height}px`, 'important');
     sheet.style.setProperty('--parking-sheet-y', `${y}px`, 'important');
     sheet.style.setProperty('bottom', `${-y}px`, 'important');
@@ -1676,6 +1676,7 @@
     sheet.dataset.sheetState = normalizedMode;
     sheet.classList.remove('is-open', 'is-expanded', 'is-collapsed', 'is-dragging', 'is-detail');
     if (normalizedMode === 'detail') sheet.classList.add('is-open', 'is-expanded', 'is-detail');
+    else if (normalizedMode === 'expanded') sheet.classList.add('is-open', 'is-expanded');
     else if (normalizedMode === 'collapsed') sheet.classList.add('is-collapsed');
     else sheet.classList.add('is-open');
     elements.mobileListToggle?.setAttribute('aria-expanded', normalizedMode !== 'collapsed' ? 'true' : 'false');
@@ -1763,7 +1764,7 @@
       dragging = false;
       sheet.classList.remove('is-dragging');
       const p = positions();
-      const y = applyY(startSheetY + lastY - startY + velocity * 120);
+      const y = applyY(startSheetY + lastY - startY);
       const mode = [['expanded', Math.abs(y - p.expanded)], ['half', Math.abs(y - p.half)], ['collapsed', Math.abs(y - p.collapsed)]].sort((a,b) => a[1] - b[1])[0][0];
       if (usesPointerEvents) {
         window.removeEventListener('pointermove', move);

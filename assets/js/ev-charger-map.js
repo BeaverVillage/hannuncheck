@@ -1799,18 +1799,11 @@
 
   function snapEvMobileSheet(currentY, startY, velocityY, viewportHeight) {
     const pos = evMobileSheetPositions(viewportHeight);
-    const travel = Math.abs(currentY - startY);
-    let nextMode;
-    if (velocityY < -0.45 && travel > 36) nextMode = 'expanded';
-    else if (velocityY > 0.45 && travel > 36) nextMode = 'collapsed';
-    else {
-      const projectedY = clamp(currentY + velocityY * 120, pos.expanded, pos.collapsed);
-      nextMode = [
-        ['expanded', Math.abs(projectedY - pos.expanded)],
-        ['half', Math.abs(projectedY - pos.half)],
-        ['collapsed', Math.abs(projectedY - pos.collapsed)]
-      ].sort((a, b) => a[1] - b[1])[0][0];
-    }
+    const nextMode = [
+      ['expanded', Math.abs(currentY - pos.expanded)],
+      ['half', Math.abs(currentY - pos.half)],
+      ['collapsed', Math.abs(currentY - pos.collapsed)]
+    ].sort((a, b) => a[1] - b[1])[0][0];
     setEvMobileSheetState(nextMode);
   }
 

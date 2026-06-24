@@ -6791,10 +6791,16 @@ body {
     pointer-events: auto !important;
   }
 
+  html body [data-ev-charger-map] .parking-bottom-sheet.is-collapsed,
+  html body [data-ev-charger-map] .parking-bottom-sheet.is-open,
+  html body [data-ev-charger-map] .parking-bottom-sheet.is-expanded {
+    transform: none !important;
+  }
+
   [data-ev-charger-map] .parking-mobile-list-toggle {
     position: fixed !important;
     right: 12px !important;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 82px) !important;
     left: auto !important;
     z-index: 120 !important;
     transform: none !important;
@@ -12397,7 +12403,7 @@ body .parking-hero .container > .breadcrumb span {
   [data-ev-charger-map] .parking-mobile-list-toggle {
     position: fixed !important;
     right: 12px !important;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 82px) !important;
     left: auto !important;
     z-index: 120 !important;
     transform: none !important;

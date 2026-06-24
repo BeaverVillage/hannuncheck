@@ -1148,7 +1148,8 @@
 
     const canStart = (event) => {
       const target = event.target;
-      return Boolean(target.closest('.parking-sheet-handle') || target.closest('.parking-mobile-sheet-head') || target.closest('[data-life-sheet-handle]'));
+      if (target.closest('button, input, select, textarea, a, label')) return false;
+      return Boolean(target.closest('.life-mobile-filter-head') || target.closest('.parking-sheet-handle') || target.closest('.parking-mobile-sheet-head') || target.closest('[data-life-sheet-handle]'));
     };
 
     const start = (event) => {

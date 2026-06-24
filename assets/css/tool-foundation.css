@@ -30,7 +30,7 @@
   body .emergency-map-app--v90 .parking-mobile-list-toggle.parking-mobile-list-toggle {
     position: fixed !important;
     right: 12px !important;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 82px) !important;
     left: auto !important;
     z-index: 260 !important;
   }
@@ -4213,7 +4213,7 @@
   html body .emergency-map-app--v100.emergency-map-app--ev-format .parking-bottom-sheet.is-collapsed,
   html body .emergency-map-app--v100.emergency-map-app--ev-format .parking-bottom-sheet.is-open,
   html body .emergency-map-app--v100.emergency-map-app--ev-format .parking-bottom-sheet.is-expanded {
-    transform: translate3d(0, var(--parking-sheet-y, calc(var(--parking-sheet-height, 620px) - 58px)), 0) !important;
+    transform: none !important;
   }
 
   .emergency-map-app--v90 .parking-map-toolbar {
@@ -4239,7 +4239,7 @@
   body .emergency-map-app--v90 .parking-mobile-list-toggle.parking-mobile-list-toggle {
     position: fixed !important;
     right: 12px !important;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 82px) !important;
     left: auto !important;
     z-index: 260 !important;
   }

@@ -1708,6 +1708,15 @@
       if (isInteractiveTarget(event.target)) return;
       const clientY = event.clientY ?? event.touches?.[0]?.clientY;
       if (clientY == null || !beginDrag(clientY, event.pointerId ?? null, event.currentTarget)) return;
+      if (window.PointerEvent) {
+        window.addEventListener('pointermove', onDragMove, { passive: false });
+        window.addEventListener('pointerup', onDragEnd, { passive: false });
+        window.addEventListener('pointercancel', onDragEnd, { passive: false });
+      } else {
+        window.addEventListener('touchmove', onDragMove, { passive: false });
+        window.addEventListener('touchend', onDragEnd, { passive: false });
+        window.addEventListener('touchcancel', onDragEnd, { passive: false });
+      }
       event.preventDefault();
       event.stopPropagation();
     };
@@ -1723,19 +1732,22 @@
       event.preventDefault?.();
       event.stopPropagation?.();
       endDrag();
+      if (window.PointerEvent) {
+        window.removeEventListener('pointermove', onDragMove);
+        window.removeEventListener('pointerup', onDragEnd);
+        window.removeEventListener('pointercancel', onDragEnd);
+      } else {
+        window.removeEventListener('touchmove', onDragMove);
+        window.removeEventListener('touchend', onDragEnd);
+        window.removeEventListener('touchcancel', onDragEnd);
+      }
     };
     dragTargets.forEach((target) => {
       target.addEventListener('keydown', keyHandler);
       if (window.PointerEvent) {
         target.addEventListener('pointerdown', onDragStart, { passive: false });
-        target.addEventListener('pointermove', onDragMove, { passive: false });
-        target.addEventListener('pointerup', onDragEnd, { passive: false });
-        target.addEventListener('pointercancel', onDragEnd, { passive: false });
       } else {
         target.addEventListener('touchstart', onDragStart, { passive: false });
-        target.addEventListener('touchmove', onDragMove, { passive: false });
-        target.addEventListener('touchend', onDragEnd, { passive: false });
-        target.addEventListener('touchcancel', onDragEnd, { passive: false });
       }
     });
     let lastViewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;

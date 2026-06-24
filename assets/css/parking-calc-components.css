@@ -6869,6 +6869,38 @@ body {
   body #ev-mobile-action-sheet { z-index: 500 !important; }
 }
 
+/* v143: compact re-search button under search; settings buttons live at the map bottom. */
+@media (max-width: 860px) {
+  [data-ev-charger-map] .parking-map-toolbar__actions {
+    position: absolute !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    left: 12px !important;
+    z-index: 140 !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    pointer-events: auto !important;
+  }
+  [data-ev-charger-map] .parking-map-research-button {
+    position: absolute !important;
+    top: 72px !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: 50% !important;
+    z-index: 150 !important;
+    display: inline-flex !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: calc(100% - 28px) !important;
+    min-height: 38px !important;
+    padding: 8px 14px !important;
+    transform: translateX(-50%) !important;
+  }
+  [data-ev-charger-map] .parking-map-toolbar__button,
+  [data-ev-charger-map] .parking-map-control-popover { pointer-events: auto !important; }
+}
+
 /* v140: the EV search sits above a separate, always-visible action row. */
 @media (max-width: 860px) {
   [data-ev-charger-map] .parking-map-toolbar {

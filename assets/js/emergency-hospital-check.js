@@ -1023,7 +1023,7 @@
     button.innerHTML = `<strong>${escapeHtml(markerText(item))}</strong>`;
     button.addEventListener('click', (event) => {
       event.preventDefault();
-      selectHospitalById(item.id, { move: true, mobileMode: 'half' });
+      selectHospitalById(item.id, { move: true, mobileMode: 'collapsed' });
     });
     return button;
   };

@@ -101,6 +101,11 @@
       els.mobileListToggle.classList.add('parking-mobile-list-toggle--floating');
       document.body.appendChild(els.mobileListToggle);
     }
+    const mapCard = els.map?.closest('.parking-map-card');
+    const mapActions = els.mapToolbar?.querySelector('.parking-map-toolbar__actions');
+    if (mapCard && mapActions && mapActions.parentElement !== mapCard) {
+      mapCard.appendChild(mapActions);
+    }
     bindEvents();
     setupEvMobileBottomSheet();
     loadKakaoMap().finally(() => {

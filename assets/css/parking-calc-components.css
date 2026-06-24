@@ -6807,6 +6807,78 @@ body {
   }
 }
 
+/* v150 final mobile EV frame: deliberately last to defeat legacy overrides. */
+@media (max-width: 860px) {
+  [data-ev-charger-map] .parking-map-card {
+    position: relative !important;
+    box-sizing: border-box !important;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    height: 660px !important;
+    min-height: 660px !important;
+    max-height: 660px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 24px !important;
+  }
+  [data-ev-charger-map] .parking-map-toolbar {
+    position: absolute !important;
+    inset: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    pointer-events: none !important;
+  }
+  [data-ev-charger-map] .parking-map-toolbar__search {
+    position: absolute !important;
+    top: 18px !important;
+    right: 16px !important;
+    left: 16px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 72px !important;
+    gap: 8px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    pointer-events: auto !important;
+  }
+  [data-ev-charger-map] .parking-map-toolbar__search input,
+  [data-ev-charger-map] .parking-map-toolbar__search button {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  [data-ev-charger-map] .parking-map-toolbar__search button { border-radius: 16px !important; }
+  [data-ev-charger-map] .parking-map-toolbar__actions {
+    position: absolute !important;
+    right: 16px !important;
+    bottom: 16px !important;
+    left: 16px !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: auto !important;
+    height: auto !important;
+    z-index: 300 !important;
+    pointer-events: auto !important;
+  }
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-control-popover,
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-toolbar__button {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 46px !important;
+    padding: 0 8px !important;
+    border-radius: 14px !important;
+    pointer-events: auto !important;
+  }
+  [data-ev-charger-map] #ev-map,
+  [data-ev-charger-map] #ev-map > div {
+    height: 100% !important;
+    border-radius: inherit !important;
+    overflow: hidden !important;
+  }
+}
+
 /* v149 final mobile EV map frame: one bounded card, one bounded search row. */
 @media (max-width: 860px) {
   [data-ev-charger-map] .parking-map-card {
@@ -12608,41 +12680,84 @@ body .parking-hero .container > .breadcrumb span {
   }
 }
 
-/* v132 final: keep the EV map's controls from covering its interactive surface. */
+/* v150 final mobile EV frame: last rule wins over legacy mobile map styles. */
 @media (max-width: 860px) {
+  [data-ev-charger-map] .parking-map-card {
+    position: relative !important;
+    box-sizing: border-box !important;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    height: 660px !important;
+    min-height: 660px !important;
+    max-height: 660px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 24px !important;
+  }
   [data-ev-charger-map] .parking-map-toolbar {
-    right: 10px !important;
-    bottom: auto !important;
+    position: absolute !important;
+    inset: 0 !important;
+    width: auto !important;
     height: auto !important;
-    min-height: 0 !important;
+    pointer-events: none !important;
+  }
+  [data-ev-charger-map] .parking-map-toolbar__search {
+    position: absolute !important;
+    top: 18px !important;
+    right: 16px !important;
+    left: 16px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 72px !important;
+    gap: 8px !important;
+    width: auto !important;
+    min-width: 0 !important;
     pointer-events: auto !important;
   }
-
+  [data-ev-charger-map] .parking-map-toolbar__search input,
+  [data-ev-charger-map] .parking-map-toolbar__search button {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  [data-ev-charger-map] .parking-map-toolbar__search button { border-radius: 16px !important; }
   [data-ev-charger-map] .parking-map-toolbar__actions {
+    position: absolute !important;
+    right: 16px !important;
+    bottom: 16px !important;
+    left: 16px !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: auto !important;
     height: auto !important;
-    min-height: 0 !important;
-    flex: 0 0 auto !important;
-    align-self: start !important;
+    z-index: 300 !important;
     pointer-events: auto !important;
   }
-
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-control-popover,
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-toolbar__button {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 46px !important;
+    padding: 0 8px !important;
+    border-radius: 14px !important;
+    pointer-events: auto !important;
+  }
   [data-ev-charger-map] #ev-map,
-  [data-ev-charger-map] .parking-map,
-  [data-ev-charger-map] #ev-map > div,
-  [data-ev-charger-map] .parking-map > div {
+  [data-ev-charger-map] #ev-map > div {
+    height: 100% !important;
+    border-radius: inherit !important;
+    overflow: hidden !important;
     pointer-events: auto !important;
     touch-action: none !important;
   }
-
   [data-ev-charger-map] .parking-bottom-sheet,
-  [data-ev-charger-map] .parking-bottom-sheet.is-collapsed {
-    pointer-events: auto !important;
-  }
-
+  [data-ev-charger-map] .parking-bottom-sheet.is-collapsed { pointer-events: auto !important; }
   [data-ev-charger-map] .parking-mobile-list-toggle {
     position: fixed !important;
     right: 12px !important;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 82px) !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 58px) !important;
     left: auto !important;
     z-index: 120 !important;
     transform: none !important;

@@ -36,6 +36,75 @@
   }
 }
 
+/* v151 final emergency detail popup: match the EV detail close control. */
+@media (max-width: 860px) {
+  .emergency-mobile-detail-popup__panel .detail-close,
+  .emergency-mobile-detail-popup__panel [data-close-selected] {
+    position: absolute !important;
+    top: 16px !important;
+    right: 16px !important;
+    left: auto !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 50px !important;
+    height: 50px !important;
+    min-width: 50px !important;
+    min-height: 50px !important;
+    padding: 0 !important;
+    border: 2px solid #d9e6f4 !important;
+    border-radius: 50% !important;
+    background: #fff !important;
+    color: #2d405f !important;
+    font-size: 28px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    box-shadow: 0 5px 18px rgba(36, 62, 101, .12) !important;
+    z-index: 4 !important;
+  }
+}
+
+/* v150 final popup close button parity with EV detail. */
+@media (max-width: 860px) {
+  .emergency-mobile-detail-popup__panel .detail-close,
+  .emergency-mobile-detail-popup__panel [data-close-selected] {
+    position: absolute !important;
+    top: 16px !important;
+    right: 16px !important;
+    left: auto !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 50px !important;
+    height: 50px !important;
+    padding: 0 !important;
+    border: 1px solid #bfdbfe !important;
+    border-radius: 50% !important;
+    color: #1e3a5f !important;
+    background: #fff !important;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12) !important;
+  }
+}
+
+/* v150 final popup close button parity with EV detail. */
+@media (max-width: 860px) {
+  .emergency-mobile-detail-popup__panel .detail-close,
+  .emergency-mobile-detail-popup__panel [data-close-selected] {
+    position: absolute !important;
+    top: 16px !important;
+    right: 16px !important;
+    left: auto !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 50px !important;
+    height: 50px !important;
+    padding: 0 !important;
+    border: 1px solid #bfdbfe !important;
+    border-radius: 50% !important;
+    color: #1e3a5f !important;
+    background: #fff !important;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12) !important;
+  }
+}
+
 @media (max-width: 860px) {
   .emergency-map-app--v100 .parking-bottom-sheet.is-detail .emergency-detail-card--mobile:not([hidden]) {
     box-sizing: border-box !important;

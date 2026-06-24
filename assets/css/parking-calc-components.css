@@ -6854,6 +6854,18 @@ body {
   body #ev-mobile-action-sheet { z-index: 600 !important; }
 }
 
+@media (max-width: 860px) {
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-control-popover {
+    min-width: 0 !important;
+    width: auto !important;
+  }
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-toolbar__button {
+    display: block !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+  }
+}
+
 /* v141: portal the mobile actions above page content but below modal sheets. */
 @media (max-width: 860px) {
   body #ev-mobile-list-toggle.parking-mobile-list-toggle--floating {

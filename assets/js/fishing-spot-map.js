@@ -972,6 +972,10 @@
 
     const getCurrentOffset = () => {
       if (!isMobileSheet()) return sheet.classList.contains(expandedClass) ? expandedOffset() : halfOffset();
+      const transform = getComputedStyle(sheet).transform;
+      const values = transform && transform !== 'none' ? transform.match(/matrix(?:3d)?\\(([^)]+)\\)/)?.[1]?.split(',') : null;
+      const visualOffset = values ? Number(values[values.length === 16 ? 13 : 5]) : NaN;
+      if (Number.isFinite(visualOffset)) return Math.max(expandedOffset(), Math.min(collapsedOffset(), visualOffset));
       if (sheet.classList.contains('is-expanded')) return expandedOffset();
       if (sheet.classList.contains('is-open')) return halfOffset();
       return collapsedOffset();

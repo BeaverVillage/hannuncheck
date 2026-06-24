@@ -106,6 +106,20 @@
     if (mapCard && mapActions && mapActions.parentElement !== mapCard) {
       mapCard.appendChild(mapActions);
     }
+    if (mapCard && mapActions) {
+      mapCard.style.setProperty('position', 'relative', 'important');
+      mapActions.style.setProperty('position', 'absolute', 'important');
+      mapActions.style.setProperty('left', '12px', 'important');
+      mapActions.style.setProperty('right', '12px', 'important');
+      mapActions.style.setProperty('bottom', '12px', 'important');
+      mapActions.style.setProperty('display', 'grid', 'important');
+      mapActions.style.setProperty('grid-template-columns', 'repeat(3, minmax(0, 1fr))', 'important');
+      mapActions.style.setProperty('z-index', '160', 'important');
+      mapActions.querySelectorAll('.parking-map-control-popover, .parking-map-toolbar__button').forEach((control) => {
+        control.style.setProperty('width', 'auto', 'important');
+        control.style.setProperty('min-width', '0', 'important');
+      });
+    }
     bindEvents();
     setupEvMobileBottomSheet();
     loadKakaoMap().finally(() => {

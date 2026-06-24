@@ -45,6 +45,7 @@
     transform: none !important;
     left: auto !important;
     right: auto !important;
+    margin-inline: 12px !important;
   }
   .emergency-map-app--v90 .parking-map-card,
   .emergency-map-app--v90 #emergency-map {

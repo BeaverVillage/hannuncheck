@@ -1181,10 +1181,9 @@
       if (!active) return;
       active = false;
       const endOffset = Math.max(expandedOffset(), Math.min(collapsedOffset(), startOffset + (lastY - startY)));
-      sheet.classList.remove('is-dragging');
-      sheet.style.removeProperty('--life-sheet-y-px');
 
       if (isFilterSheet()) {
+        sheet.classList.remove('is-dragging');
         const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 700;
         const baseHeight = Math.min(520, Math.max(360, viewportHeight * 0.58));
         const maxHeight = viewportHeight - 14;
@@ -1212,6 +1211,9 @@
         else applyMobileState('half');
         return;
       }
+
+      sheet.classList.remove('is-dragging');
+      sheet.style.removeProperty('--life-sheet-y-px');
 
       const deltaPx = lastY - startY;
       if (deltaPx > 80) {

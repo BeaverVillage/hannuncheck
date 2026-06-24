@@ -6807,6 +6807,53 @@ body {
   }
 }
 
+/* v144 final: visible EV controls with independent map-card positioning. */
+@media (max-width: 860px) {
+  [data-ev-charger-map] .parking-map-card {
+    position: relative !important;
+    overflow: hidden !important;
+    border-radius: 20px !important;
+  }
+  [data-ev-charger-map] .parking-map-toolbar__actions {
+    position: absolute !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    left: 12px !important;
+    z-index: 160 !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    height: auto !important;
+    pointer-events: auto !important;
+  }
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-control-popover,
+  [data-ev-charger-map] .parking-map-toolbar__actions .parking-map-toolbar__button {
+    display: block !important;
+    width: 100% !important;
+    pointer-events: auto !important;
+  }
+  [data-ev-charger-map] .parking-map-research-button {
+    position: absolute !important;
+    top: 82px !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: 50% !important;
+    z-index: 170 !important;
+    display: inline-flex !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: calc(100% - 28px) !important;
+    min-height: 38px !important;
+    padding: 8px 14px !important;
+    transform: translateX(-50%) !important;
+  }
+  [data-ev-charger-map] #ev-map {
+    border-radius: inherit !important;
+    overflow: hidden !important;
+  }
+  body #ev-mobile-action-sheet { z-index: 600 !important; }
+}
+
 /* v141: portal the mobile actions above page content but below modal sheets. */
 @media (max-width: 860px) {
   body #ev-mobile-list-toggle.parking-mobile-list-toggle--floating {

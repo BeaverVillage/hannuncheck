@@ -1,3 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /docs/
+Disallow: /scripts/
+Disallow: /data/source/
+Disallow: /.git/
+Disallow: /.env
+Disallow: /.env.example
 Sitemap: https://hannuncheck.com/sitemap.xml

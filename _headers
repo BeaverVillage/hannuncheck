@@ -21,3 +21,15 @@
 
 /api/*
   Cache-Control: no-store
+
+/docs/*
+  X-Robots-Tag: noindex, nofollow
+
+/scripts/*
+  X-Robots-Tag: noindex, nofollow
+
+/data/source/*
+  X-Robots-Tag: noindex, nofollow
+
+/*.md
+  X-Robots-Tag: noindex, nofollow
